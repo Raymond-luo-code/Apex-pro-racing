@@ -44,3 +44,4 @@
 
 1. 將 `.glb` 模型放入 `assets/models/` 資料夾（例如 `assets/models/my_gt3.glb`）。
 2. 在遊戲右上角 **⚙️ → 車輛模型 / 材質** 中可輸入相對路徑 `assets/models/my_gt3.glb` 載入，或直接將 `.glb` 檔案拖入瀏覽器視窗。
+

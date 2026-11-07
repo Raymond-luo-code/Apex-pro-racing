@@ -616,9 +616,173 @@
     </div>
   </div>
 
+  <!-- ===================================================================== -->
+  <!-- TITLE / LANDING INTRODUCTION SCREEN (Active on initial load)          -->
+  <!-- ===================================================================== -->
+  <div id="screen-title"
+    class="fixed inset-0 z-50 flex flex-col justify-between p-4 sm:p-7 overflow-y-auto modal-backdrop select-none text-white transition-opacity duration-300">
+    
+    <!-- Top Bar: Motorsport Brand & Tech Stack Badge -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 via-rose-600 to-amber-500 flex items-center justify-center font-mono-tech font-black text-xl shadow-lg border border-amber-400/30 text-white">
+          A
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-red-600/90 text-white font-mono-tech font-extrabold text-[10px] tracking-wider uppercase">
+              GT3 MOTORSPORT
+            </span>
+            <span class="text-xs font-mono-tech text-amber-400 font-bold">
+              v2.0 NEXT-GEN SIM
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black tracking-wider uppercase font-mono-tech italic text-white flex items-center gap-2">
+            APEX PRO <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-400">RACING</span>
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-xs font-mono-tech">
+        <span class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          WebGL 3D (Three.js r128)
+        </span>
+        <span class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 flex items-center gap-1.5">
+          <span class="text-cyan-400">🔊</span> Web Audio Engine
+        </span>
+        <a href="https://github.com/Raymond-luo-code/Apex-pro-racing" target="_blank" rel="noopener noreferrer"
+          class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30 flex items-center gap-1 transition">
+          <span>★</span> <span>GitHub 開源專案</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Center Section: Quick Introduction & 3 Feature Guides -->
+    <div class="my-auto py-5 max-w-6xl mx-auto w-full space-y-4">
+      <div class="text-center space-y-1 mb-2">
+        <p class="text-sm sm:text-base text-slate-200 font-medium">
+          專為熱愛速度打造的輕量高擬真網頁賽車模擬器 · 結合真實輪胎力學摩擦圓與 GT3 荷重轉移演算
+        </p>
+        <p class="text-xs text-slate-400 font-mono-tech">
+          背景正在 3D 賽道現場即時展示你的賽車 · 準備好進入座艙感受貼地飛行的離心快感
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Card 1: 物理與駕馭 -->
+        <div class="carbon-bg rounded-2xl p-4 sm:p-5 border border-slate-800 hover:border-red-500/50 transition-all shadow-xl space-y-2.5">
+          <div class="flex items-center gap-2 text-red-400 font-mono-tech text-xs font-bold uppercase tracking-wider">
+            <span class="text-base">🏎️</span> 01 // GT3 物理特性與荷重轉移
+          </div>
+          <h3 class="text-base font-extrabold text-white">真實摩擦力邊界與動態慣性</h3>
+          <ul class="text-xs text-slate-300 space-y-2 leading-relaxed font-sans">
+            <li class="flex items-start gap-1.5">
+              <span class="text-red-400 font-bold">•</span>
+              <span><strong>荷重轉移 (Weight Transfer)：</strong>重踩煞車時車頭下沉抓地力暴增；出彎補油後輪負載加大。</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-red-400 font-bold">•</span>
+              <span><strong>極限推頭 (Understeer)：</strong>超速入彎將超出輪胎抓地力極限外拋，須運用<strong>循跡煞車 (Trail Braking)</strong>。</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-red-400 font-bold">•</span>
+              <span><strong>擬真動力：</strong>GT3 自然進氣/渦輪聲浪，0–100 km/h 3.5s、0–300 km/h 40s 真實加速標竿。</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Card 2: 電腦鍵盤操控 -->
+        <div class="carbon-bg rounded-2xl p-4 sm:p-5 border border-slate-800 hover:border-emerald-500/50 transition-all shadow-xl space-y-2.5">
+          <div class="flex items-center gap-2 text-emerald-400 font-mono-tech text-xs font-bold uppercase tracking-wider">
+            <span class="text-base">⌨️</span> 02 // 駕駛操作指南 (PC & 快捷鍵)
+          </div>
+          <h3 class="text-base font-extrabold text-white">精準操駕與快速控制</h3>
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono-tech">
+            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-emerald-400 font-bold">W / ↑</span>
+              <div class="text-[11px] text-slate-300">全油門加速 (拉轉)</div>
+            </div>
+            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-red-400 font-bold">S / ↓</span>
+              <div class="text-[11px] text-slate-300">煞車制動 / 倒車</div>
+            </div>
+            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-cyan-400 font-bold">A / D 或 ← / →</span>
+              <div class="text-[11px] text-slate-300">轉向 (平滑動態回正)</div>
+            </div>
+            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-amber-400 font-bold">SPACE 空白鍵</span>
+              <div class="text-[11px] text-slate-300">手煞車 / 急制動</div>
+            </div>
+            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-indigo-400 font-bold">C 鍵</span>
+              <div class="text-[11px] text-slate-300">座艙 / 車頭 / 追尾視角</div>
+            </div>
+            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-amber-400 font-bold">R 鍵</span>
+              <div class="text-[11px] text-slate-300">救車重回賽道中央</div>
+            </div>
+          </div>
+          <div class="text-[11px] font-mono-tech text-slate-400">
+            * 亦支援手排換檔：<span class="text-slate-200">M</span> 切換手排，<span class="text-slate-200">Q / E</span> 退檔/升檔。
+          </div>
+        </div>
+
+        <!-- Card 3: 賽道模式與技巧 -->
+        <div class="carbon-bg rounded-2xl p-4 sm:p-5 border border-slate-800 hover:border-amber-500/50 transition-all shadow-xl space-y-2.5">
+          <div class="flex items-center gap-2 text-amber-400 font-mono-tech text-xs font-bold uppercase tracking-wider">
+            <span class="text-base">🗺️</span> 03 // 賽道模式與入彎要訣
+          </div>
+          <h3 class="text-base font-extrabold text-white">多維環境與即時戰術線</h3>
+          <ul class="text-xs text-slate-300 space-y-2 leading-relaxed font-sans">
+            <li class="flex items-start gap-1.5">
+              <span class="text-amber-400 font-bold">•</span>
+              <span><strong>三大世界級賽道：</strong>入門蒙札高速環道、中階富士GP (F1級攻防)、魔鬼箱根夜景。</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-amber-400 font-bold">•</span>
+              <span><strong>動態戰術提示線：</strong><span class="text-emerald-400">綠色全油門</span>、<span class="text-amber-400">黃色收油滑行</span>、<span class="text-red-400">紅色重煞減速</span>。</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-amber-400 font-bold">•</span>
+              <span><strong>入彎速限警戒：</strong>頂部即時顯示「彎道極限」，入彎前務必減速至速限內方可順暢切入 Apex 彎心！</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-cyan-400 font-bold">•</span>
+              <span><strong>手遊/平板模式：</strong>支援專屬雙手大虛擬按鈕與線性滑桿操控。</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Action Bar: Entry to Lobby & Direct Launch -->
+    <div class="border-t border-slate-800/80 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="text-xs text-slate-400 font-mono-tech text-center sm:text-left">
+        💡 點擊「進入競賽大廳」將解鎖瀏覽器高保真 Web Audio 引擎聲浪，並可自由配置賽道與對手
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
+        <button id="btn-title-quick-race"
+          class="px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-mono-tech font-bold text-xs uppercase border border-slate-700 transition hover:border-slate-500 flex items-center gap-2 active:scale-95 cursor-pointer">
+          <span>🏎️</span>
+          <span>快速出發 (QUICK START)</span>
+        </button>
+
+        <button id="btn-title-start"
+          class="group relative px-8 py-3.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-mono-tech font-black text-sm uppercase tracking-wider shadow-2xl transition duration-150 transform hover:scale-105 active:scale-95 flex items-center gap-3 border border-amber-400/40 cursor-pointer">
+          <span class="text-lg animate-pulse">🔊</span>
+          <span class="tracking-wide">啟動引擎．進入大廳 (ENTER LOBBY)</span>
+          <span class="text-base group-hover:translate-x-1 transition-transform">➔</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOP BAR: ULTRA-CLEAN IN MOBILE MODE, FULL TELEMETRY IN PC MODE -->
-  <header
-    class="pointer-events-none absolute top-2.5 left-3 right-3 z-20 flex flex-wrap items-start justify-between gap-2 text-xs">
+  <header id="game-hud-header"
+    class="pointer-events-none absolute top-2.5 left-3 right-3 z-20 flex flex-wrap items-start justify-between gap-2 text-xs hidden">
 
     <!-- Top-Left Radar & AI Panel (Auto-hidden in Mobile Mode for a clean screen; visible in PC Mode) -->
     <div id="top-left-panels" class="pointer-events-auto hidden items-center gap-2">
@@ -879,7 +1043,7 @@
   <!-- ULTRA-CLEAN MOBILE TOUCH CONTROLS                                     -->
   <!-- ===================================================================== -->
   <div id="mobile-gamepad-overlay"
-    class="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-between items-end px-4 sm:px-8 pb-4 sm:pb-6 select-none"
+    class="hidden pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-between items-end px-4 sm:px-8 pb-4 sm:pb-6 select-none"
     style="padding: 1rem;">
 
     <!-- Left Thumb: Translucent Left / Right Steering Buttons -->
@@ -1116,10 +1280,17 @@
             APEX PRO // 多難度擬真賽道與沉浸式競速模擬器
           </h1>
         </div>
-        <button id="btn-resume-race"
-          class="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-600">
-          返回賽道繼續 (ESC)
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="btn-lobby-to-title-top"
+            class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition"
+            title="返回遊戲介紹首頁">
+            🏠 主畫面
+          </button>
+          <button id="btn-resume-race"
+            class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-600 transition">
+            返回賽道繼續 (ESC)
+          </button>
+        </div>
       </div>
 
       <!-- STEP 1: CHOOSE CIRCUIT & DIFFICULTY (3 DISTINCT ENVIRONMENTS) -->
@@ -1246,10 +1417,16 @@
         <div class="text-[11px] text-slate-400 font-mono-tech">
           💡 點擊右上角 <span class="text-indigo-300 font-bold">🗺️ 賽道切換按鈕</span> 可在比賽中隨時秒切「入門蒙札 / 中階富士 / 魔鬼箱根夜景」！
         </div>
-        <button id="btn-start-session"
-          class="w-full sm:w-auto px-7 py-3 rounded-xl bg-red-600 text-white font-extrabold text-sm tracking-wider uppercase shadow-lg transition">
-          啟動引擎出站 (START SESSION)
-        </button>
+        <div class="flex items-center gap-2.5 w-full sm:w-auto">
+          <button id="btn-lobby-to-title"
+            class="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs tracking-wider uppercase border border-slate-700 transition">
+            🏠 返回主畫面
+          </button>
+          <button id="btn-start-session"
+            class="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-extrabold text-sm tracking-wider uppercase shadow-xl transition transform hover:scale-105 active:scale-95 cursor-pointer">
+            🏎️ 進入座艙發車 (ENTER COCKPIT)
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -3987,9 +4164,10 @@
         autoTransmission: true,
         showTacticalLine: true,
         isMobileGamepadActive: true,
-        paused: false,
-        countdownActive: true,
-        countdownTimer: 3.6, // 3, 2, 1, GO! sequence before race/timer starts
+        paused: true,
+        inShowcaseMode: true,
+        countdownActive: false,
+        countdownTimer: 0,
 
         s: 0,
         d: 0,
@@ -4125,7 +4303,7 @@
             : 'cursor-pointer rounded-xl p-3.5 border-2 border-slate-800 bg-slate-900 transition';
         });
 
-        resetSession();
+        resetSession(!simState.inShowcaseMode);
       }
 
       buildTrackGeometryData();
@@ -4438,6 +4616,20 @@
         const icon = document.getElementById('icon-input-mode');
         const drawerBtn = document.getElementById('btn-drawer-input-mode');
 
+        if (simState.inShowcaseMode) {
+          if (mobileOverlay) mobileOverlay.classList.add('hidden');
+          if (pcBottomHud) {
+            pcBottomHud.classList.add('hidden');
+            pcBottomHud.classList.remove('flex');
+          }
+          if (topLeftPanels) {
+            topLeftPanels.classList.add('hidden');
+            topLeftPanels.classList.remove('flex');
+          }
+          if (cornerBanner) cornerBanner.classList.add('hidden');
+          return;
+        }
+
         if (isMobileActive) {
           mobileOverlay.classList.remove('hidden');
           pcBottomHud.classList.add('hidden');
@@ -4471,7 +4663,7 @@
       // --------------------------------------------------------------------------
       // 7. CORE PHYSICS STEP
       // --------------------------------------------------------------------------
-      function resetSession() {
+      function resetSession(triggerCountdown = true) {
         simState.s = 0;
         simState.d = 0;
         simState.lap = 1;
@@ -4512,12 +4704,18 @@
         document.getElementById('hud-lap-count').textContent =
           simState.mode === 'ai_race' ? `1 / ${simState.totalRaceLaps}` : '1';
 
-        // Trigger 3, 2, 1, GO! Standing Start Countdown Sequence
-        simState.countdownActive = true;
-        simState.countdownTimer = 3.5;
-        simState.lastBeepStage = 4;
         const startOverlay = document.getElementById('start-lights-overlay');
-        if (startOverlay) startOverlay.classList.remove('hidden');
+        if (triggerCountdown && !simState.inShowcaseMode) {
+          // Trigger 3, 2, 1, GO! Standing Start Countdown Sequence
+          simState.countdownActive = true;
+          simState.countdownTimer = 3.5;
+          simState.lastBeepStage = 4;
+          if (startOverlay) startOverlay.classList.remove('hidden');
+        } else {
+          simState.countdownActive = false;
+          simState.countdownTimer = 0;
+          if (startOverlay) startOverlay.classList.add('hidden');
+        }
 
         const gridOffsets = [26, 17, 8];
         aiCars.forEach((ai, idx) => {
@@ -4529,7 +4727,7 @@
           ai.mistakeTimer = 0;
           ai.mistakeType = null;
           ai.stateLabel = 'GRID READY';
-          ai.mesh.visible = (simState.mode === 'ai_race');
+          ai.mesh.visible = (!simState.inShowcaseMode && simState.mode === 'ai_race');
           const w = sdToWorld(ai.s, ai.d);
           ai.mesh.position.set(w.x, w.y, w.z);
           ai.mesh.rotation.y = -w.heading;
@@ -5031,16 +5229,20 @@
 
         steerWheel3D.rotation.x = simState.steerInput * 1.45;
 
-        const targetFov = 60 + (simState.speedKmh / 300) * 15 + (simState.isNosActive ? 6.5 : 0) + (simState.inSlipstream ? 3.0 : 0);
+        const targetFov = simState.inShowcaseMode
+          ? 50
+          : (60 + (simState.speedKmh / 300) * 15 + (simState.isNosActive ? 6.5 : 0) + (simState.inSlipstream ? 3.0 : 0));
         if (Math.abs(camera.fov - targetFov) > 0.1) {
           camera.fov += (targetFov - camera.fov) * 0.15;
           camera.updateProjectionMatrix();
         }
 
-        const vibeAmp = (simState.isBrakeLockup ? 0.042 : 0) +
+        const vibeAmp = simState.inShowcaseMode ? 0 : (
+          (simState.isBrakeLockup ? 0.042 : 0) +
           (simState.onKerb || simState.offTrack ? 0.032 : 0) +
           (simState.isUndersteer ? 0.018 : 0) +
-          (simState.speedKmh / 320) * 0.006;
+          (simState.speedKmh / 320) * 0.006
+        );
         const jx = Math.sin(nowSec * 65) * vibeAmp;
         const jy = Math.cos(nowSec * 82) * vibeAmp;
 
@@ -5051,7 +5253,19 @@
         const lookX = pWorld.x + cosH * 34 + (apexLookNode.x - pWorld.x) * 0.18;
         const lookZ = pWorld.z + sinH * 34 + (apexLookNode.z - pWorld.z) * 0.18;
 
-        if (simState.cameraMode === 0) {
+        if (simState.inShowcaseMode) {
+          playerExteriorMesh.visible = true;
+          cockpitGroup.visible = false;
+          const orbitAngle = nowSec * 0.16;
+          const orbitDist = 6.6;
+          camera.position.set(
+            pWorld.x + Math.sin(orbitAngle) * orbitDist,
+            pWorld.y + 1.55 + Math.sin(nowSec * 0.35) * 0.22,
+            pWorld.z + Math.cos(orbitAngle) * orbitDist
+          );
+          camera.lookAt(pWorld.x, pWorld.y + 0.62, pWorld.z);
+          camera.rotation.z = 0;
+        } else if (simState.cameraMode === 0) {
           playerExteriorMesh.visible = false;
           cockpitGroup.visible = true;
           camera.position.set(
@@ -5086,7 +5300,7 @@
           camera.lookAt(lookX, pWorld.y + 0.9, lookZ);
         }
 
-        const showGhosts = (simState.mode === 'time_attack');
+        const showGhosts = !simState.inShowcaseMode && (simState.mode === 'time_attack');
         const showPro = showGhosts && (simState.ghostTarget === 'pro' || simState.ghostTarget === 'both');
         const showPb = showGhosts && (simState.ghostTarget === 'pb' || simState.ghostTarget === 'both') && simState.pbTelemetrySamples.length > 5;
 
@@ -5121,6 +5335,15 @@
       }
 
       function drawScreenVisualFX(nowSec) {
+        if (simState.inShowcaseMode) {
+          if (fxCanvas.width !== window.innerWidth || fxCanvas.height !== window.innerHeight) {
+            fxCanvas.width = window.innerWidth;
+            fxCanvas.height = window.innerHeight;
+          }
+          fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+          return;
+        }
+
         if (fxCanvas.width !== window.innerWidth || fxCanvas.height !== window.innerHeight) {
           fxCanvas.width = window.innerWidth;
           fxCanvas.height = window.innerHeight;
@@ -5617,34 +5840,106 @@
         simState.aiDifficulty = parseFloat(e.target.value) || 1.0;
       });
 
+      function launchRaceSession() {
+        soundEngine.init();
+        simState.inShowcaseMode = false;
+        simState.paused = false;
+
+        const screenTitle = document.getElementById('screen-title');
+        if (screenTitle) screenTitle.classList.add('hidden');
+        const modalMenu = document.getElementById('modal-menu');
+        if (modalMenu) modalMenu.classList.add('hidden');
+        const modalTelemetry = document.getElementById('modal-telemetry');
+        if (modalTelemetry) modalTelemetry.classList.add('hidden');
+
+        const header = document.getElementById('game-hud-header');
+        if (header) header.classList.remove('hidden');
+
+        setInputMode(simState.isMobileGamepadActive);
+        resetSession(true);
+      }
+
+      function returnToTitleScreen() {
+        simState.inShowcaseMode = true;
+        simState.paused = true;
+        simState.countdownActive = false;
+
+        const header = document.getElementById('game-hud-header');
+        if (header) header.classList.add('hidden');
+        const modalMenu = document.getElementById('modal-menu');
+        if (modalMenu) modalMenu.classList.add('hidden');
+        const modalTelemetry = document.getElementById('modal-telemetry');
+        if (modalTelemetry) modalTelemetry.classList.add('hidden');
+        const startOverlay = document.getElementById('start-lights-overlay');
+        if (startOverlay) startOverlay.classList.add('hidden');
+        const mobileOverlay = document.getElementById('mobile-gamepad-overlay');
+        if (mobileOverlay) mobileOverlay.classList.add('hidden');
+        const pcBottomHud = document.getElementById('pc-bottom-hud');
+        if (pcBottomHud) {
+          pcBottomHud.classList.add('hidden');
+          pcBottomHud.classList.remove('flex');
+        }
+
+        resetSession(false);
+
+        const screenTitle = document.getElementById('screen-title');
+        if (screenTitle) screenTitle.classList.remove('hidden');
+      }
+
+      function openLobbyFromTitle() {
+        soundEngine.init();
+        const screenTitle = document.getElementById('screen-title');
+        if (screenTitle) screenTitle.classList.add('hidden');
+        const modalMenu = document.getElementById('modal-menu');
+        if (modalMenu) modalMenu.classList.remove('hidden');
+      }
+
       function toggleMenuModal() {
+        const screenTitle = document.getElementById('screen-title');
+        if (screenTitle && !screenTitle.classList.contains('hidden')) {
+          openLobbyFromTitle();
+          return;
+        }
+
         const modal = document.getElementById('modal-menu');
         const isHidden = modal.classList.contains('hidden');
         if (isHidden) {
           modal.classList.remove('hidden');
           simState.paused = true;
         } else {
-          modal.classList.add('hidden');
-          simState.paused = false;
-          soundEngine.init();
+          if (simState.inShowcaseMode) {
+            launchRaceSession();
+          } else {
+            modal.classList.add('hidden');
+            simState.paused = false;
+            soundEngine.init();
+          }
         }
       }
+
+      const btnTitleStart = document.getElementById('btn-title-start');
+      if (btnTitleStart) btnTitleStart.addEventListener('click', openLobbyFromTitle);
+      const btnTitleQuickRace = document.getElementById('btn-title-quick-race');
+      if (btnTitleQuickRace) btnTitleQuickRace.addEventListener('click', launchRaceSession);
+      const btnLobbyToTitle = document.getElementById('btn-lobby-to-title');
+      if (btnLobbyToTitle) btnLobbyToTitle.addEventListener('click', returnToTitleScreen);
+      const btnLobbyToTitleTop = document.getElementById('btn-lobby-to-title-top');
+      if (btnLobbyToTitleTop) btnLobbyToTitleTop.addEventListener('click', returnToTitleScreen);
 
       document.getElementById('btn-menu-open').addEventListener('click', () => {
         document.getElementById('modal-menu').classList.remove('hidden');
         simState.paused = true;
       });
       document.getElementById('btn-resume-race').addEventListener('click', () => {
-        document.getElementById('modal-menu').classList.add('hidden');
-        simState.paused = false;
-        soundEngine.init();
+        if (simState.inShowcaseMode) {
+          launchRaceSession();
+        } else {
+          document.getElementById('modal-menu').classList.add('hidden');
+          simState.paused = false;
+          soundEngine.init();
+        }
       });
-      document.getElementById('btn-start-session').addEventListener('click', () => {
-        soundEngine.init();
-        resetSession();
-        document.getElementById('modal-menu').classList.add('hidden');
-        simState.paused = false;
-      });
+      document.getElementById('btn-start-session').addEventListener('click', launchRaceSession);
 
       document.getElementById('btn-quick-gear').addEventListener('click', () => {
         document.getElementById('quick-settings-drawer').classList.toggle('hidden');
@@ -5675,7 +5970,7 @@
       });
       document.getElementById('btn-telemetry-restart').addEventListener('click', () => {
         document.getElementById('modal-telemetry').classList.add('hidden');
-        resetSession();
+        resetSession(!simState.inShowcaseMode);
         simState.paused = false;
       });
 
@@ -5852,9 +6147,11 @@
       // --------------------------------------------------------------------------
       // 12. MAIN SIMULATION LOOP
       // --------------------------------------------------------------------------
-      resetSession();
+      resetSession(false);
       setPhysicsEdition('realistic');
       setInputMode(true);
+      simState.inShowcaseMode = true;
+      simState.paused = true;
       let lastFrameTime = performance.now();
 
       function animate(now) {
@@ -5862,7 +6159,7 @@
         const frameDt = Math.min(0.05, Math.max(0.001, (now - lastFrameTime) / 1000));
         lastFrameTime = now;
 
-        if (!simState.paused) {
+        if (!simState.paused && !simState.inShowcaseMode) {
           const subDt = frameDt * 0.5;
           stepPhysics(subDt);
           stepPhysics(subDt);
@@ -5877,11 +6174,13 @@
           simState.isUndersteer,
           simState.isNosActive,
           simState.onKerb,
-          simState.paused
+          simState.paused || simState.inShowcaseMode
         );
 
         update3DSceneAndVisualFX(now * 0.001);
-        updateHUD();
+        if (!simState.inShowcaseMode) {
+          updateHUD();
+        }
       }
 
       window.onload = () => {

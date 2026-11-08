@@ -583,6 +583,196 @@
       border: 1px solid rgba(71, 85, 105, 0.8);
       border-radius: 1rem;
     }
+
+    /* ========================================================================
+       APEX FLOW — FULL GAME LIFECYCLE SCREENS (splash / loading / home /
+       garage / setup / pause / results). Pure CSS, no Tailwind dependency.
+       ======================================================================== */
+    .af-screen { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; color: #f8fafc; opacity: 0; transition: opacity .35s ease; overflow: hidden; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif; }
+    .af-screen.af-in { opacity: 1; }
+    .af-kicker { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: #fbbf24; font-weight: 800; }
+    .af-h1 { font-size: clamp(20px, 3vw, 30px); font-weight: 900; font-style: italic; letter-spacing: .02em; line-height: 1.15; }
+    .af-h2 { font-size: clamp(22px, 2.6vw, 30px); font-weight: 900; font-style: italic; line-height: 1.1; margin-top: 4px; }
+    .af-btn { appearance: none; border: 0; cursor: pointer; font-weight: 900; font-style: italic; letter-spacing: .06em; text-transform: uppercase; color: #fff; padding: 14px 28px; font-size: 15px; clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); transition: transform .12s ease, filter .12s ease; display: inline-flex; align-items: center; justify-content: center; gap: 12px; line-height: 1.1; }
+    .af-btn:hover { filter: brightness(1.18); transform: translateY(-1px); }
+    .af-btn:active { transform: scale(.97); }
+    .af-btn[disabled] { opacity: .45; pointer-events: none; }
+    .af-btn-primary { background: linear-gradient(90deg, #dc2626, #f97316); box-shadow: 0 10px 30px rgba(239, 68, 68, .35); }
+    .af-btn-ghost { background: rgba(30, 41, 59, .88); }
+    .af-btn-danger { background: linear-gradient(90deg, #7f1d1d, #b91c1c); }
+    .af-btn-xl { padding: 16px 40px; font-size: clamp(18px, 2.2vw, 24px); }
+    .af-btn-xl small { display: block; font-size: 11px; opacity: .85; letter-spacing: .25em; margin-top: 3px; }
+    .af-btn-sm { padding: 9px 18px; font-size: 12px; }
+    .af-btn-block { width: 100%; margin-top: 10px; }
+    .af-topbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px clamp(14px, 3vw, 32px); background: linear-gradient(180deg, rgba(2, 6, 23, .85), rgba(2, 6, 23, 0)); flex-wrap: wrap; position: relative; z-index: 2; }
+    .af-topbar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+    .af-title-block { flex: 1; min-width: 0; }
+    .af-brand { font-weight: 900; font-style: italic; font-size: 22px; letter-spacing: .04em; }
+    .af-brand span, .af-logo span { color: #ef4444; }
+    .af-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(15, 23, 42, .78); border: 1px solid rgba(148, 163, 184, .25); font-size: 12px; }
+    .af-panel { background: linear-gradient(160deg, rgba(15, 23, 42, .93), rgba(2, 6, 23, .9)); border: 1px solid rgba(148, 163, 184, .18); border-radius: 18px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+    .af-steps { display: flex; gap: 6px; }
+    .af-steps i { display: block; width: 26px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .15); transform: skewX(-20deg); transition: background .3s; }
+    .af-steps i.on { background: #f97316; box-shadow: 0 0 8px rgba(249, 115, 22, .6); }
+    .af-pos { color: #34d399; } .af-neg { color: #f87171; }
+    @keyframes afRise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+    @keyframes afBlink { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+    @keyframes afSpin { to { transform: rotate(360deg); } }
+
+    /* --- Splash --- */
+    .af-splash { background: #000; cursor: pointer; z-index: 85; }
+    .af-splash-art { position: absolute; inset: -4%; background: url('assets/images/splash_keyart.jpg') center / cover no-repeat, radial-gradient(circle at 60% 50%, #7f1d1d, #020617 70%); animation: afKenBurns 18s ease-in-out infinite alternate; }
+    @keyframes afKenBurns { from { transform: scale(1.02); } to { transform: scale(1.12) translate(-2%, 1%); } }
+    .af-splash-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .78) 0%, rgba(0, 0, 0, .15) 45%, rgba(0, 0, 0, 0) 70%), linear-gradient(0deg, rgba(0, 0, 0, .88) 0%, rgba(0, 0, 0, 0) 42%); }
+    .af-splash-streaks span { position: absolute; left: 0; height: 2px; width: 40vw; background: linear-gradient(90deg, transparent, #f97316, transparent); opacity: 0; animation: afStreak 3.2s linear infinite; }
+    .af-splash-streaks span:nth-child(1) { top: 60%; animation-delay: .3s; }
+    .af-splash-streaks span:nth-child(2) { top: 68%; animation-delay: 1.4s; background: linear-gradient(90deg, transparent, #ef4444, transparent); }
+    .af-splash-streaks span:nth-child(3) { top: 76%; animation-delay: 2.3s; }
+    @keyframes afStreak { 0% { transform: translateX(110vw); opacity: 0; } 10% { opacity: .9; } 100% { transform: translateX(-50vw); opacity: 0; } }
+    .af-splash-logo { position: absolute; top: clamp(20px, 7vh, 70px); left: clamp(20px, 5vw, 70px); animation: afSlideIn .9s cubic-bezier(.2, .8, .2, 1) both; }
+    .af-logo { font-size: clamp(52px, 9vw, 124px); font-weight: 900; font-style: italic; line-height: .9; letter-spacing: -.02em; text-shadow: 0 6px 30px rgba(0, 0, 0, .6); }
+    .af-logo-sub { font-size: clamp(16px, 2.6vw, 34px); font-weight: 900; font-style: italic; letter-spacing: .6em; color: #e2e8f0; margin-top: 6px; }
+    @keyframes afSlideIn { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+    .af-splash-bottom { position: absolute; left: 0; right: 0; bottom: clamp(36px, 10vh, 100px); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .af-start-btn { appearance: none; cursor: pointer; background: linear-gradient(90deg, transparent, rgba(220, 38, 38, .35), transparent); color: #fff; font-size: clamp(22px, 3.6vw, 40px); font-weight: 900; font-style: italic; letter-spacing: .3em; padding: 10px 60px; border: 0; border-top: 2px solid rgba(249, 115, 22, .75); border-bottom: 2px solid rgba(249, 115, 22, .75); text-shadow: 0 0 18px rgba(249, 115, 22, .85); animation: afBlink 1.6s ease-in-out infinite; }
+    .af-splash-hint { font-size: 13px; color: #cbd5e1; letter-spacing: .1em; }
+    .af-device-badge { font-size: 11px; padding: 4px 12px; border-radius: 999px; background: rgba(15, 23, 42, .7); border: 1px solid rgba(148, 163, 184, .3); color: #94a3b8; }
+    .af-splash-foot { position: absolute; right: 16px; bottom: 10px; font-size: 10px; color: #64748b; }
+    .af-splash-foot a { color: #fbbf24; }
+
+    /* --- Loading --- */
+    .af-loading { z-index: 90; background: #020617; transition: opacity .22s ease; }
+    .af-loading-bg { position: absolute; inset: 0; background: url('assets/images/splash_keyart.jpg') center / cover no-repeat; filter: blur(16px) brightness(.32); transform: scale(1.12); }
+    .af-loading-center { position: relative; margin: auto; text-align: center; padding: 0 20px; }
+    .af-loading-wheel { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%; border: 5px solid rgba(255, 255, 255, .12); border-top-color: #ef4444; border-right-color: #f97316; animation: afSpin .8s linear infinite; }
+    .af-loading-title { font-size: clamp(24px, 4vw, 42px); font-weight: 900; font-style: italic; letter-spacing: .08em; }
+    .af-loading-sub { color: #94a3b8; font-size: 13px; margin-top: 6px; }
+    .af-loading-bottom { position: relative; padding: 0 clamp(18px, 6vw, 80px) clamp(24px, 6vh, 50px); }
+    .af-loading-tip { font-size: 13px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.6; }
+    .af-loading-tip b { color: #fbbf24; margin-right: 10px; letter-spacing: .15em; }
+    .af-loading-bar { height: 6px; background: rgba(255, 255, 255, .08); border-radius: 3px; overflow: hidden; }
+    .af-loading-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #dc2626, #f97316, #fbbf24); box-shadow: 0 0 12px #f97316; }
+    .af-loading-pct { text-align: right; font-size: 12px; color: #94a3b8; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+    /* --- Home --- */
+    .af-home { pointer-events: none; background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0) 45%, rgba(2, 6, 23, .6) 100%); }
+    .af-home .af-topbar, .af-home-bottom > *, .af-home-hint { pointer-events: auto; }
+    .af-home-hint { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; top: 18%; padding: 8px 18px; border-radius: 999px; background: rgba(2, 6, 23, .6); border: 1px solid rgba(251, 191, 36, .4); font-size: 13px; color: #fde68a; cursor: pointer; animation: afBlink 2.4s infinite; }
+    .af-home-bottom { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding: 24px clamp(14px, 3vw, 36px) clamp(18px, 4vh, 34px); background: linear-gradient(0deg, rgba(2, 6, 23, .92), rgba(2, 6, 23, 0)); flex-wrap: wrap; }
+    .af-home-car { animation: afSlideIn .7s cubic-bezier(.2, .8, .2, 1) both; }
+    .af-home-carname { font-size: clamp(30px, 5vw, 58px); font-weight: 900; font-style: italic; line-height: 1; text-shadow: 0 4px 20px rgba(0, 0, 0, .6); margin-top: 4px; }
+    .af-mini-stats { display: grid; grid-template-columns: repeat(4, minmax(66px, 1fr)); gap: 12px; margin-top: 14px; max-width: 460px; }
+    .af-mini-stat { border-left: 3px solid #f97316; padding-left: 8px; }
+    .af-mini-stat .k { font-size: 10px; color: #94a3b8; letter-spacing: .12em; }
+    .af-mini-stat .v { font-size: 17px; font-weight: 900; font-style: italic; }
+    .af-home-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+    /* --- Garage --- */
+    .af-garage { pointer-events: none; background: linear-gradient(90deg, rgba(2, 6, 23, 0) 45%, rgba(2, 6, 23, .55) 100%); }
+    .af-garage .af-topbar, .af-garage-panel, .af-garage-bottom { pointer-events: auto; }
+    .af-garage-body { flex: 1; display: flex; min-height: 0; padding: 0 clamp(14px, 3vw, 32px); }
+    .af-garage-spacer { flex: 1; }
+    .af-garage-panel { width: min(400px, 100%); padding: 20px; overflow-y: auto; align-self: center; max-height: 100%; animation: afRise .45s both; }
+    .af-gar-origin { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .af-gar-desc { font-size: 13px; color: #cbd5e1; margin: 10px 0 14px; line-height: 1.65; }
+    .af-spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .af-spec { background: rgba(2, 6, 23, .6); border: 1px solid rgba(148, 163, 184, .15); border-radius: 10px; padding: 8px 10px; }
+    .af-spec .k { font-size: 10px; color: #94a3b8; letter-spacing: .1em; }
+    .af-spec .v { font-size: 16px; font-weight: 900; font-style: italic; }
+    .af-stat-row { display: grid; grid-template-columns: 64px 1fr 30px; align-items: center; gap: 10px; font-size: 12px; margin: 9px 0; }
+    .af-stat-row b { text-align: right; font-style: italic; }
+    .af-stat-track { height: 8px; background: rgba(255, 255, 255, .08); border-radius: 4px; overflow: hidden; transform: skewX(-20deg); }
+    .af-stat-fill { height: 100%; width: 0; background: linear-gradient(90deg, #f97316, #ef4444); transition: width .7s cubic-bezier(.2, .8, .2, 1); }
+    .af-gar-status { font-size: 12px; color: #94a3b8; margin-top: 12px; min-height: 16px; }
+    .af-gar-note { font-size: 11px; color: #64748b; margin-top: 8px; line-height: 1.5; }
+    .af-link { background: none; border: 0; color: #7dd3fc; font-size: 12px; cursor: pointer; margin-top: 10px; padding: 0; }
+    .af-garage-bottom { display: flex; align-items: center; gap: 14px; padding: 14px clamp(14px, 3vw, 32px) clamp(16px, 3vh, 28px); background: linear-gradient(0deg, rgba(2, 6, 23, .94), rgba(2, 6, 23, 0)); }
+    .af-car-strip { flex: 1; display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px; }
+    .af-car-card { flex: 0 0 auto; width: 172px; padding: 10px 12px; border-radius: 12px; background: rgba(15, 23, 42, .88); border: 2px solid rgba(148, 163, 184, .18); cursor: pointer; text-align: left; color: #fff; transition: border-color .15s, box-shadow .15s, transform .15s; }
+    .af-car-card:hover { border-color: rgba(249, 115, 22, .6); transform: translateY(-2px); }
+    .af-car-card.is-active { border-color: #f97316; box-shadow: 0 8px 24px rgba(249, 115, 22, .3); }
+    .af-car-card.is-locked { opacity: .45; cursor: not-allowed; transform: none; }
+    .af-car-card .c { font-size: 10px; color: #fbbf24; letter-spacing: .15em; font-weight: 800; }
+    .af-car-card .n { font-weight: 900; font-style: italic; font-size: 14px; margin-top: 2px; }
+    .af-car-card .t { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+
+    /* --- Setup wizard --- */
+    .af-setup { background: linear-gradient(180deg, rgba(2, 6, 23, .5), rgba(2, 6, 23, .86)); }
+    .af-setup-body { flex: 1; overflow-y: auto; padding: 10px clamp(14px, 3vw, 32px) 28px; display: flex; align-items: center; justify-content: center; }
+    .af-choice-grid { display: grid; gap: 16px; width: 100%; max-width: 1100px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin: auto; }
+    .af-choice { position: relative; text-align: left; color: #fff; cursor: pointer; border-radius: 18px; padding: 22px; min-height: 230px; background: linear-gradient(160deg, rgba(30, 41, 59, .94), rgba(2, 6, 23, .94)); border: 2px solid rgba(148, 163, 184, .18); overflow: hidden; transition: transform .15s, border-color .15s, box-shadow .15s; animation: afRise .45s cubic-bezier(.2, .8, .2, 1) both; display: flex; flex-direction: column; }
+    .af-choice:hover { transform: translateY(-4px); border-color: var(--accent, #f97316); box-shadow: 0 16px 40px rgba(0, 0, 0, .45); }
+    .af-choice.is-active { border-color: var(--accent, #f97316); }
+    .af-choice::before { content: ''; position: absolute; right: -40px; top: -40px; width: 170px; height: 170px; border-radius: 50%; background: var(--accent, #f97316); opacity: .14; filter: blur(12px); pointer-events: none; }
+    .af-choice .ico { font-size: 42px; line-height: 1; }
+    .af-choice .tag { font-size: 10px; letter-spacing: .25em; color: var(--accent, #f97316); font-weight: 800; margin-top: 12px; }
+    .af-choice .ttl { font-size: 24px; font-weight: 900; font-style: italic; margin-top: 4px; }
+    .af-choice .dsc { font-size: 13px; color: #cbd5e1; line-height: 1.65; margin-top: 8px; flex: 1; }
+    .af-choice .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+    .af-choice .meta span { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(2, 6, 23, .6); border: 1px solid rgba(148, 163, 184, .2); }
+    .af-choice .go { margin-top: 14px; font-weight: 900; font-style: italic; color: var(--accent, #f97316); font-size: 13px; letter-spacing: .1em; }
+    .af-diff-row { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .af-diff { flex: 1; min-width: 78px; padding: 9px 6px; border-radius: 8px; border: 1px solid rgba(148, 163, 184, .25); background: rgba(2, 6, 23, .6); color: #e2e8f0; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .af-diff:hover, .af-diff.is-active { border-color: var(--accent, #f59e0b); color: #fff; background: rgba(245, 158, 11, .18); }
+
+    /* --- Pause --- */
+    .af-pause-btn { position: fixed; top: 10px; left: 10px; z-index: 35; width: 46px; height: 46px; border-radius: 14px; border: 2px solid rgba(255, 255, 255, .4); background: rgba(220, 38, 38, .9); box-shadow: 0 6px 20px rgba(0, 0, 0, .45); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .af-pause-btn:active { transform: scale(.92); }
+    .af-pause-icon { display: flex; gap: 5px; }
+    .af-pause-icon i { display: block; width: 6px; height: 18px; background: #fff; border-radius: 2px; }
+    .af-pause { z-index: 70; background: rgba(2, 6, 23, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; }
+    .af-pause-card { width: min(400px, 100%); padding: 26px; text-align: center; animation: afRise .3s both; }
+    .af-pause-info { font-size: 13px; color: #94a3b8; margin: 8px 0 14px; line-height: 1.7; }
+    .af-pause-hint { font-size: 11px; color: #64748b; margin-top: 12px; }
+
+    /* --- Finish flash + Results --- */
+    .af-finish-flash { position: fixed; inset: 0; z-index: 75; display: flex; align-items: center; justify-content: center; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0, 0, 0, .25), rgba(0, 0, 0, .65)); }
+    .af-finish-flash span { font-size: clamp(64px, 14vw, 170px); font-weight: 900; font-style: italic; letter-spacing: .08em; color: #fff; text-shadow: 0 0 40px rgba(249, 115, 22, .9), 0 8px 0 #b91c1c; animation: afFinish 1.2s cubic-bezier(.2, .8, .2, 1) both; }
+    @keyframes afFinish { 0% { transform: scale(2.4); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 80% { transform: scale(1.04); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; } }
+    .af-results { background: linear-gradient(180deg, rgba(2, 6, 23, .55), rgba(2, 6, 23, .88)); }
+    .af-results-body { flex: 1; overflow-y: auto; display: flex; padding: 10px clamp(14px, 3vw, 32px); }
+    .af-res-page { width: 100%; max-width: 980px; margin: auto; animation: afRise .5s cubic-bezier(.2, .8, .2, 1) both; }
+    .af-results-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px clamp(14px, 3vw, 32px) clamp(16px, 3vh, 28px); flex-wrap: wrap; }
+    .af-results-right { display: flex; gap: 10px; flex-wrap: wrap; }
+    .af-res-hero { text-align: center; }
+    .af-res-pos { font-size: clamp(90px, 17vw, 180px); font-weight: 900; font-style: italic; line-height: .95; background: linear-gradient(180deg, #fff, #fbbf24 60%, #f97316); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 8px 30px rgba(249, 115, 22, .35)); }
+    .af-res-pos small { font-size: .28em; }
+    .af-res-time { font-size: clamp(40px, 7vw, 76px); font-weight: 900; font-style: italic; font-variant-numeric: tabular-nums; line-height: 1.05; }
+    .af-res-badge { display: inline-block; margin-top: 12px; padding: 6px 16px; border-radius: 999px; font-weight: 900; font-size: 12px; letter-spacing: .18em; background: linear-gradient(90deg, #a855f7, #ec4899); animation: afBlink 1.4s infinite; }
+    .af-res-sub { color: #94a3b8; font-size: 13px; margin-top: 10px; line-height: 1.7; }
+    .af-standings { margin: 22px auto 0; max-width: 560px; display: flex; flex-direction: column; gap: 6px; }
+    .af-standing { display: grid; grid-template-columns: 46px 1fr auto; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(15, 23, 42, .85); border-radius: 10px; border-left: 4px solid #475569; animation: afRise .4s both; text-align: left; font-size: 14px; }
+    .af-standing.me { border-left-color: #f97316; background: rgba(249, 115, 22, .16); }
+    .af-standing .p { font-weight: 900; font-style: italic; font-size: 18px; }
+    .af-standing .g { font-variant-numeric: tabular-nums; color: #cbd5e1; font-size: 13px; }
+    .af-res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 14px; }
+    .af-res-card { padding: 16px; animation: afRise .45s both; }
+    .af-res-card .k { font-size: 10px; color: #94a3b8; letter-spacing: .15em; }
+    .af-res-card .v { font-size: 26px; font-weight: 900; font-style: italic; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .af-res-card .d { font-size: 12px; margin-top: 2px; color: #94a3b8; }
+    .af-sector-row { display: grid; grid-template-columns: 38px 1fr 92px 80px; gap: 12px; align-items: center; margin: 12px 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .af-sector-row .lbl { font-weight: 900; font-style: italic; color: #fbbf24; }
+    .af-grade-wrap { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .af-grade { font-size: clamp(100px, 16vw, 160px); font-weight: 900; font-style: italic; line-height: 1; animation: afFinish2 .7s cubic-bezier(.2, .8, .2, 1) both; }
+    @keyframes afFinish2 { from { transform: scale(2); opacity: 0; } to { transform: none; opacity: 1; } }
+    .af-tips { text-align: left; font-size: 13px; line-height: 1.8; color: #cbd5e1; padding: 16px 18px; flex: 1; min-width: 260px; }
+
+    @media (max-width: 760px) {
+      .af-garage { background: linear-gradient(180deg, rgba(2, 6, 23, 0) 22%, rgba(2, 6, 23, .7) 50%); }
+      .af-garage-body { flex-direction: column; }
+      .af-garage-spacer { flex: 0 0 26vh; }
+      .af-garage-panel { width: 100%; align-self: stretch; padding: 14px; }
+      .af-home-actions { width: 100%; }
+      .af-home-actions .af-btn { flex: 1; }
+      .af-mini-stats { grid-template-columns: repeat(2, minmax(66px, 1fr)); }
+      .af-choice { min-height: 0; padding: 16px; }
+      .af-sector-row { grid-template-columns: 32px 1fr 76px 64px; gap: 8px; }
+    }
+    @media (max-height: 480px) {
+      .af-garage-spacer { flex-basis: 0; }
+      .af-home-hint { top: 22%; }
+      .af-choice { min-height: 0; }
+    }
   </style>
 </head>
 
@@ -617,171 +807,153 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- TITLE / LANDING INTRODUCTION SCREEN (Active on initial load)          -->
+  <!-- APEX FLOW: SPLASH / LOADING / HOME / GARAGE / SETUP / PAUSE / RESULTS -->
   <!-- ===================================================================== -->
-  <div id="screen-title"
-    class="fixed inset-0 z-50 flex flex-col justify-between p-4 sm:p-7 overflow-y-auto modal-backdrop select-none text-white transition-opacity duration-300">
-    
-    <!-- Top Bar: Motorsport Brand & Tech Stack Badge -->
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 via-rose-600 to-amber-500 flex items-center justify-center font-mono-tech font-black text-xl shadow-lg border border-amber-400/30 text-white">
-          A
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded bg-red-600/90 text-white font-mono-tech font-extrabold text-[10px] tracking-wider uppercase">
-              GT3 MOTORSPORT
-            </span>
-            <span class="text-xs font-mono-tech text-amber-400 font-bold">
-              v2.0 NEXT-GEN SIM
-            </span>
-          </div>
-          <h1 class="text-2xl sm:text-3xl font-black tracking-wider uppercase font-mono-tech italic text-white flex items-center gap-2">
-            APEX PRO <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-400">RACING</span>
-          </h1>
-        </div>
-      </div>
 
-      <div class="flex flex-wrap items-center gap-2 text-xs font-mono-tech">
-        <span class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          WebGL 3D (Three.js r128)
-        </span>
-        <span class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 flex items-center gap-1.5">
-          <span class="text-cyan-400">🔊</span> Web Audio Engine
-        </span>
-        <a href="https://github.com/Raymond-luo-code/Apex-pro-racing" target="_blank" rel="noopener noreferrer"
-          class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30 flex items-center gap-1 transition">
-          <span>★</span> <span>GitHub 開源專案</span>
-        </a>
+  <!-- In-race prominent PAUSE button (PC: ESC also works) -->
+  <button id="btn-pause-race" class="af-pause-btn hidden" aria-label="暫停" title="暫停 (ESC)">
+    <span class="af-pause-icon"><i></i><i></i></span>
+  </button>
+
+  <!-- 1. SPLASH KEY ART -->
+  <div id="scr-splash" class="af-screen af-splash af-in">
+    <div class="af-splash-art"></div>
+    <div class="af-splash-shade"></div>
+    <div class="af-splash-streaks"><span></span><span></span><span></span></div>
+    <div class="af-splash-logo">
+      <div class="af-kicker">GT3 MOTORSPORT SIMULATOR</div>
+      <div class="af-logo">APEX<span>PRO</span></div>
+      <div class="af-logo-sub">RACING</div>
+    </div>
+    <div class="af-splash-bottom">
+      <button id="btn-splash-start" class="af-start-btn" type="button">PRESS START</button>
+      <div id="lbl-splash-hint" class="af-splash-hint">點擊任意處或按任意鍵開始</div>
+      <div id="lbl-device-badge" class="af-device-badge">偵測裝置中…</div>
+    </div>
+    <div class="af-splash-foot">v2.1 · WebGL · Web Audio ·
+      <a id="lnk-splash-github" href="https://github.com/Raymond-luo-code/Apex-pro-racing" target="_blank"
+        rel="noopener noreferrer">GitHub</a>
+    </div>
+  </div>
+
+  <!-- 2. LOADING SCREEN (between major transitions) -->
+  <div id="scr-loading" class="af-screen af-loading hidden">
+    <div class="af-loading-bg"></div>
+    <div class="af-loading-center">
+      <div class="af-loading-wheel"></div>
+      <div id="lbl-loading-title" class="af-loading-title">LOADING</div>
+      <div id="lbl-loading-sub" class="af-loading-sub"></div>
+    </div>
+    <div class="af-loading-bottom">
+      <div class="af-loading-tip"><b>TIP</b><span id="lbl-loading-tip"></span></div>
+      <div class="af-loading-bar"><i id="bar-loading"></i></div>
+      <div id="lbl-loading-pct" class="af-loading-pct">0%</div>
+    </div>
+  </div>
+
+  <!-- 3. HOME (garage showcase) -->
+  <div id="scr-home" class="af-screen af-home hidden">
+    <div class="af-topbar">
+      <div class="af-brand">APEX<span>PRO</span></div>
+      <div class="af-topbar-right">
+        <span id="lbl-home-device" class="af-chip">💻 電腦鍵盤</span>
+        <span class="af-chip">🏆 <b id="lbl-home-records">0</b> 項個人紀錄</span>
       </div>
     </div>
-
-    <!-- Center Section: Quick Introduction & 3 Feature Guides -->
-    <div class="my-auto py-5 max-w-6xl mx-auto w-full space-y-4">
-      <div class="text-center space-y-1 mb-2">
-        <p class="text-sm sm:text-base text-slate-200 font-medium">
-          專為熱愛速度打造的輕量高擬真網頁賽車模擬器 · 結合真實輪胎力學摩擦圓與 GT3 荷重轉移演算
-        </p>
-        <p class="text-xs text-slate-400 font-mono-tech">
-          背景正在 3D 賽道現場即時展示你的賽車 · 準備好進入座艙感受貼地飛行的離心快感
-        </p>
+    <button id="btn-home-hint" class="af-home-hint" type="button">👆 點擊車輛進入車庫</button>
+    <div class="af-home-bottom">
+      <div class="af-home-car">
+        <div class="af-kicker" id="lbl-home-class">GT3 · CLASS A</div>
+        <div class="af-home-carname" id="lbl-home-carname">APEX GT3</div>
+        <div class="af-mini-stats" id="home-mini-stats"></div>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Card 1: 物理與駕馭 -->
-        <div class="carbon-bg rounded-2xl p-4 sm:p-5 border border-slate-800 hover:border-red-500/50 transition-all shadow-xl space-y-2.5">
-          <div class="flex items-center gap-2 text-red-400 font-mono-tech text-xs font-bold uppercase tracking-wider">
-            <span class="text-base">🏎️</span> 01 // GT3 物理特性與荷重轉移
-          </div>
-          <h3 class="text-base font-extrabold text-white">真實摩擦力邊界與動態慣性</h3>
-          <ul class="text-xs text-slate-300 space-y-2 leading-relaxed font-sans">
-            <li class="flex items-start gap-1.5">
-              <span class="text-red-400 font-bold">•</span>
-              <span><strong>荷重轉移 (Weight Transfer)：</strong>重踩煞車時車頭下沉抓地力暴增；出彎補油後輪負載加大。</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-              <span class="text-red-400 font-bold">•</span>
-              <span><strong>極限推頭 (Understeer)：</strong>超速入彎將超出輪胎抓地力極限外拋，須運用<strong>循跡煞車 (Trail Braking)</strong>。</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-              <span class="text-red-400 font-bold">•</span>
-              <span><strong>擬真動力：</strong>GT3 自然進氣/渦輪聲浪，0–100 km/h 3.5s、0–300 km/h 40s 真實加速標竿。</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Card 2: 電腦鍵盤操控 -->
-        <div class="carbon-bg rounded-2xl p-4 sm:p-5 border border-slate-800 hover:border-emerald-500/50 transition-all shadow-xl space-y-2.5">
-          <div class="flex items-center gap-2 text-emerald-400 font-mono-tech text-xs font-bold uppercase tracking-wider">
-            <span class="text-base">⌨️</span> 02 // 駕駛操作指南 (PC & 快捷鍵)
-          </div>
-          <h3 class="text-base font-extrabold text-white">精準操駕與快速控制</h3>
-          <div class="grid grid-cols-2 gap-2 text-xs font-mono-tech">
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-emerald-400 font-bold">W / ↑</span>
-              <div class="text-[11px] text-slate-300">全油門加速 (拉轉)</div>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-red-400 font-bold">S / ↓</span>
-              <div class="text-[11px] text-slate-300">煞車制動 / 倒車</div>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-cyan-400 font-bold">A / D 或 ← / →</span>
-              <div class="text-[11px] text-slate-300">轉向 (平滑動態回正)</div>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-amber-400 font-bold">SPACE 空白鍵</span>
-              <div class="text-[11px] text-slate-300">手煞車 / 急制動</div>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-indigo-400 font-bold">C 鍵</span>
-              <div class="text-[11px] text-slate-300">座艙 / 車頭 / 追尾視角</div>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-amber-400 font-bold">R 鍵</span>
-              <div class="text-[11px] text-slate-300">救車重回賽道中央</div>
-            </div>
-          </div>
-          <div class="text-[11px] font-mono-tech text-slate-400">
-            * 亦支援手排換檔：<span class="text-slate-200">M</span> 切換手排，<span class="text-slate-200">Q / E</span> 退檔/升檔。
-          </div>
-        </div>
-
-        <!-- Card 3: 賽道模式與技巧 -->
-        <div class="carbon-bg rounded-2xl p-4 sm:p-5 border border-slate-800 hover:border-amber-500/50 transition-all shadow-xl space-y-2.5">
-          <div class="flex items-center gap-2 text-amber-400 font-mono-tech text-xs font-bold uppercase tracking-wider">
-            <span class="text-base">🗺️</span> 03 // 賽道模式與入彎要訣
-          </div>
-          <h3 class="text-base font-extrabold text-white">多維環境與即時戰術線</h3>
-          <ul class="text-xs text-slate-300 space-y-2 leading-relaxed font-sans">
-            <li class="flex items-start gap-1.5">
-              <span class="text-amber-400 font-bold">•</span>
-              <span><strong>三大世界級賽道：</strong>入門蒙札高速環道、中階富士GP (F1級攻防)、魔鬼箱根夜景。</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-              <span class="text-amber-400 font-bold">•</span>
-              <span><strong>動態戰術提示線：</strong><span class="text-emerald-400">綠色全油門</span>、<span class="text-amber-400">黃色收油滑行</span>、<span class="text-red-400">紅色重煞減速</span>。</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-              <span class="text-amber-400 font-bold">•</span>
-              <span><strong>入彎速限警戒：</strong>頂部即時顯示「彎道極限」，入彎前務必減速至速限內方可順暢切入 Apex 彎心！</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-              <span class="text-cyan-400 font-bold">•</span>
-              <span><strong>手遊/平板模式：</strong>支援專屬雙手大虛擬按鈕與線性滑桿操控。</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Action Bar: Entry to Lobby & Direct Launch -->
-    <div class="border-t border-slate-800/80 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="text-xs text-slate-400 font-mono-tech text-center sm:text-left">
-        💡 點擊「進入競賽大廳」將解鎖瀏覽器高保真 Web Audio 引擎聲浪，並可自由配置賽道與對手
-      </div>
-
-      <div class="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
-        <button id="btn-title-quick-race"
-          class="px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-mono-tech font-bold text-xs uppercase border border-slate-700 transition hover:border-slate-500 flex items-center gap-2 active:scale-95 cursor-pointer">
-          <span>🏎️</span>
-          <span>快速出發 (QUICK START)</span>
-        </button>
-
-        <button id="btn-title-start"
-          class="group relative px-8 py-3.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-mono-tech font-black text-sm uppercase tracking-wider shadow-2xl transition duration-150 transform hover:scale-105 active:scale-95 flex items-center gap-3 border border-amber-400/40 cursor-pointer">
-          <span class="text-lg animate-pulse">🔊</span>
-          <span class="tracking-wide">啟動引擎．進入大廳 (ENTER LOBBY)</span>
-          <span class="text-base group-hover:translate-x-1 transition-transform">➔</span>
+      <div class="af-home-actions">
+        <button id="btn-home-garage" class="af-btn af-btn-ghost" type="button">🔧 車庫 GARAGE</button>
+        <button id="btn-home-play" class="af-btn af-btn-primary af-btn-xl" type="button">
+          <span>準備出發<small>READY TO RACE</small></span><span>➔</span>
         </button>
       </div>
     </div>
   </div>
 
+  <!-- 4. GARAGE (car list + performance) -->
+  <div id="scr-garage" class="af-screen af-garage hidden">
+    <div class="af-topbar">
+      <button id="btn-garage-back" class="af-btn af-btn-ghost af-btn-sm" type="button">◀ 返回</button>
+      <div class="af-title-block">
+        <div class="af-kicker" id="lbl-garage-kicker">GARAGE</div>
+        <div class="af-h1" id="lbl-garage-title">我的車庫</div>
+      </div>
+      <div id="garage-steps" class="af-steps"></div>
+    </div>
+    <div class="af-garage-body">
+      <div class="af-garage-spacer"></div>
+      <aside class="af-panel af-garage-panel">
+        <div class="af-kicker" id="lbl-gar-class"></div>
+        <div class="af-h2" id="lbl-gar-name"></div>
+        <div class="af-gar-origin" id="lbl-gar-origin"></div>
+        <div class="af-gar-desc" id="lbl-gar-desc"></div>
+        <div class="af-spec-grid" id="gar-spec-grid"></div>
+        <div id="gar-stat-bars"></div>
+        <div class="af-gar-status" id="lbl-gar-status"></div>
+        <div class="af-gar-note">※ 目前所有車輛共用同一套 GT3 物理參數，車輛專屬調校將於後續版本加入。</div>
+        <button id="btn-garage-advanced" class="af-link" type="button">⚙ 進階：自訂 3D 模型與畫質設定</button>
+      </aside>
+    </div>
+    <div class="af-garage-bottom">
+      <div class="af-car-strip" id="gar-car-strip"></div>
+      <button id="btn-garage-confirm" class="af-btn af-btn-primary" type="button">✔ 設為座駕</button>
+    </div>
+  </div>
+
+  <!-- 5. RACE SETUP WIZARD (experience → mode → track → car) -->
+  <div id="scr-setup" class="af-screen af-setup hidden">
+    <div class="af-topbar">
+      <button id="btn-setup-back" class="af-btn af-btn-ghost af-btn-sm" type="button">◀ 上一步</button>
+      <div class="af-title-block">
+        <div class="af-kicker" id="lbl-setup-kicker">STEP 1 / 4</div>
+        <div class="af-h1" id="lbl-setup-title">選擇駕駛體驗</div>
+      </div>
+      <div id="setup-steps" class="af-steps"></div>
+    </div>
+    <div class="af-setup-body" id="setup-body"></div>
+  </div>
+
+  <!-- 6. PAUSE MENU -->
+  <div id="scr-pause" class="af-screen af-pause hidden">
+    <div class="af-panel af-pause-card">
+      <div class="af-kicker">PAUSED</div>
+      <div class="af-h1">比賽暫停</div>
+      <div class="af-pause-info" id="lbl-pause-info"></div>
+      <button id="btn-pause-resume" class="af-btn af-btn-primary af-btn-block" type="button">▶ 繼續比賽</button>
+      <button id="btn-pause-restart" class="af-btn af-btn-ghost af-btn-block" type="button">↻ 重新開始（同樣設定）</button>
+      <button id="btn-pause-quit" class="af-btn af-btn-danger af-btn-block" type="button">⏏ 退出至主頁</button>
+      <div class="af-pause-hint" id="lbl-pause-hint">按 ESC 繼續比賽</div>
+    </div>
+  </div>
+
+  <!-- 7. FINISH FLASH + RESULTS (multi-page) -->
+  <div id="af-finish-flash" class="af-finish-flash hidden"><span>FINISH</span></div>
+  <div id="scr-results" class="af-screen af-results hidden">
+    <div class="af-topbar">
+      <div class="af-title-block">
+        <div class="af-kicker" id="lbl-res-kicker">RACE RESULT</div>
+        <div class="af-h1" id="lbl-res-title">比賽結果</div>
+      </div>
+      <div class="af-steps" id="res-dots"></div>
+    </div>
+    <div class="af-results-body" id="res-body"></div>
+    <div class="af-results-bottom">
+      <button id="btn-res-skip" class="af-btn af-btn-ghost" type="button">跳過 SKIP ⏭</button>
+      <div class="af-results-right">
+        <button id="btn-res-retry" class="af-btn af-btn-ghost hidden" type="button">↻ 再戰一次</button>
+        <button id="btn-res-next" class="af-btn af-btn-primary" type="button">下一頁 ➔</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOP BAR: ULTRA-CLEAN IN MOBILE MODE, FULL TELEMETRY IN PC MODE -->
-  <header id="game-hud-header"
+  <header id="game-hud-header" style="padding-left: 52px;"
     class="pointer-events-none absolute top-2.5 left-3 right-3 z-20 flex flex-wrap items-start justify-between gap-2 text-xs hidden">
 
     <!-- Top-Left Radar & AI Panel (Auto-hidden in Mobile Mode for a clean screen; visible in PC Mode) -->
@@ -921,7 +1093,7 @@
     <!-- Top-Right Quick Circuit Switcher, Physics Edition Switch, Mobile/PC Switch & Menu Trigger -->
     <div class="pointer-events-auto relative flex flex-wrap items-center justify-end gap-1.5">
       <button id="btn-track-cycle"
-        class="hud-minimal px-2.5 py-1 rounded-full text-indigo-200 font-mono-tech font-bold flex items-center gap-1 text-[11px]"
+        class="hidden hud-minimal px-2.5 py-1 rounded-full text-indigo-200 font-mono-tech font-bold flex items-center gap-1 text-[11px]"
         title="點擊快速切換不同難度賽道">
         <span>🗺️</span> <span id="lbl-track-short">中階:富士GP</span>
       </button>
@@ -933,7 +1105,7 @@
       </button>
 
       <button id="btn-edition-toggle"
-        class="hud-minimal px-2.5 py-1 rounded-full text-amber-300 font-mono-tech font-extrabold flex items-center gap-1 text-[11px]"
+        class="hidden hud-minimal px-2.5 py-1 rounded-full text-amber-300 font-mono-tech font-extrabold flex items-center gap-1 text-[11px]"
         title="切換：真實物理版 vs 娛樂版">
         <span id="icon-edition">🏁</span> <span id="lbl-edition">真實版</span>
       </button>
@@ -949,11 +1121,11 @@
         視角: <span id="lbl-camera" class="text-amber-400 font-mono-tech">追尾視角</span>
       </button>
 
-      <button id="btn-telemetry-open" class="hud-minimal px-2.5 py-1 rounded-full text-white font-semibold text-[11px]">
+      <button id="btn-telemetry-open" class="hidden hud-minimal px-2.5 py-1 rounded-full text-white font-semibold text-[11px]">
         遙測覆盤
       </button>
       <button id="btn-menu-open"
-        class="hud-minimal px-2.5 py-1 rounded-full bg-red-600 text-white font-semibold text-[11px]">
+        class="hidden hud-minimal px-2.5 py-1 rounded-full bg-red-600 text-white font-semibold text-[11px]">
         模式設定
       </button>
       <button id="btn-quick-gear" class="hud-minimal px-2 py-1 rounded-full text-slate-300 font-mono-tech text-[11px]"
@@ -4006,16 +4178,26 @@
       // ---- Garage UI controller ----
       const garageUI = {
         setStatus(msg, type) {
+          const col = type === 'err' ? '#f87171' : (type === 'ok' ? '#34d399' : '#94a3b8');
           const el = document.getElementById('garage-status');
-          if (!el) return;
-          el.textContent = msg;
-          el.style.color = type === 'err' ? '#f87171' : (type === 'ok' ? '#34d399' : '#94a3b8');
+          if (el) {
+            el.textContent = msg;
+            el.style.color = col;
+          }
+          const garStatusEl = document.getElementById('lbl-gar-status');
+          if (garStatusEl) {
+            garStatusEl.textContent = msg;
+            garStatusEl.style.color = col;
+          }
         },
         setProgress(p) {
           const el = document.getElementById('garage-progress');
           if (el) el.style.width = `${Math.max(0, Math.min(100, p))}%`;
         },
         refresh() {
+          if (typeof window.__apexFlowOnGarageRefresh === 'function') {
+            window.__apexFlowOnGarageRefresh();
+          }
           const cur = document.getElementById('garage-current');
           if (cur) cur.textContent = carAssetState.label;
           const list = document.getElementById('garage-preset-list');
@@ -4460,6 +4642,8 @@
           toggleMenuModal();
           return;
         }
+        // Racing hotkeys are only active while actually driving (not on menus / pause / results)
+        if (simState.inShowcaseMode || simState.paused) return;
         if (e.code === 'KeyH') {
           document.getElementById('quick-settings-drawer').classList.toggle('hidden');
           return;
@@ -4654,10 +4838,12 @@
       }
 
       document.getElementById('btn-input-mode-toggle').addEventListener('click', () => {
-        setInputMode(!simState.isMobileGamepadActive);
+        if (typeof applyDeviceProfile === 'function') applyDeviceProfile(!simState.isMobileGamepadActive);
+        else setInputMode(!simState.isMobileGamepadActive);
       });
       document.getElementById('btn-drawer-input-mode').addEventListener('click', () => {
-        setInputMode(!simState.isMobileGamepadActive);
+        if (typeof applyDeviceProfile === 'function') applyDeviceProfile(!simState.isMobileGamepadActive);
+        else setInputMode(!simState.isMobileGamepadActive);
       });
 
       // --------------------------------------------------------------------------
@@ -4697,6 +4883,8 @@
         simState.lockupCount = 0;
         simState.understeerCount = 0;
         simState.oversteerCount = 0;
+        simState.sessionLapTimes = [];
+        simState.sessionTopSpeed = 0;
 
         document.getElementById('hud-s1').textContent = '--.---';
         document.getElementById('hud-s2').textContent = '--.---';
@@ -4929,6 +5117,9 @@
         const netLongAccel = driveAccel + nosBoostAccel - effectiveBrakeDecel - dragAccel - engineBraking;
         simState.speedMs = Math.max(0, simState.speedMs + netLongAccel * dt);
         simState.speedKmh = simState.speedMs * 3.6;
+        if (simState.speedKmh > (simState.sessionTopSpeed || 0)) {
+          simState.sessionTopSpeed = simState.speedKmh;
+        }
         simState.longG = netLongAccel / 9.81;
 
         if (simState.speedKmh > 0.5) {
@@ -5099,8 +5290,15 @@
             simState.pbTelemetrySamples = simState.currentLapSamples.slice();
           }
 
+          if (!simState.sessionLapTimes) simState.sessionLapTimes = [];
+          simState.sessionLapTimes.push(completedLapTime);
+
           if (simState.mode === 'time_attack' || simState.lap >= simState.totalRaceLaps) {
-            openTelemetryModal('current', completedLapTime);
+            if (typeof window.__apexFlowFinish === 'function') {
+              window.__apexFlowFinish(completedLapTime);
+            } else {
+              openTelemetryModal('current', completedLapTime);
+            }
           } else {
             simState.lap++;
             simState.lapElapsed = 0;
@@ -5256,14 +5454,21 @@
         if (simState.inShowcaseMode) {
           playerExteriorMesh.visible = true;
           cockpitGroup.visible = false;
-          const orbitAngle = nowSec * 0.16;
-          const orbitDist = 6.6;
-          camera.position.set(
-            pWorld.x + Math.sin(orbitAngle) * orbitDist,
-            pWorld.y + 1.55 + Math.sin(nowSec * 0.35) * 0.22,
-            pWorld.z + Math.cos(orbitAngle) * orbitDist
-          );
-          camera.lookAt(pWorld.x, pWorld.y + 0.62, pWorld.z);
+          // Showcase styles: 'home' (hero orbit), 'garage' (car framed left, closer), 'results' (slow wide orbit)
+          const style = simState.showcaseStyle || 'home';
+          const orbitSpeed = style === 'garage' ? 0.11 : (style === 'results' ? 0.07 : 0.16);
+          const orbitDist = style === 'garage' ? 5.6 : (style === 'results' ? 8.2 : 6.6);
+          const camH = style === 'garage' ? 1.25 : (style === 'results' ? 2.3 : 1.55);
+          const orbitAngle = nowSec * orbitSpeed + (simState.showcaseAngleOffset || 0);
+          const camX = pWorld.x + Math.sin(orbitAngle) * orbitDist;
+          const camZ = pWorld.z + Math.cos(orbitAngle) * orbitDist;
+          camera.position.set(camX, pWorld.y + camH + Math.sin(nowSec * 0.35) * 0.18, camZ);
+          // Shift the look target sideways so the car sits left/right of the UI panels
+          const lateral = style === 'garage' ? 1.55 : 0;
+          let dX = pWorld.x - camX, dZ = pWorld.z - camZ;
+          const dLen = Math.hypot(dX, dZ) || 1;
+          dX /= dLen; dZ /= dLen;
+          camera.lookAt(pWorld.x - dZ * lateral, pWorld.y + 0.62, pWorld.z + dX * lateral);
           camera.rotation.z = 0;
         } else if (simState.cameraMode === 0) {
           playerExteriorMesh.visible = false;
@@ -5966,10 +6171,15 @@
       });
       document.getElementById('btn-telemetry-close').addEventListener('click', () => {
         document.getElementById('modal-telemetry').classList.add('hidden');
-        simState.paused = false;
+        // When opened from the results screen, just return to the results (stay paused)
+        if (!simState.inShowcaseMode) simState.paused = false;
       });
       document.getElementById('btn-telemetry-restart').addEventListener('click', () => {
         document.getElementById('modal-telemetry').classList.add('hidden');
+        if (typeof window.__apexFlowRestart === 'function') {
+          window.__apexFlowRestart();
+          return;
+        }
         resetSession(!simState.inShowcaseMode);
         simState.paused = false;
       });
@@ -6152,6 +6362,1203 @@
       setInputMode(true);
       simState.inShowcaseMode = true;
       simState.paused = true;
+
+      // ==========================================================================
+      // 11B. APEX FLOW — ASPHALT-STYLE FULL GAME LIFECYCLE CONTROLLER
+      //      Splash Key Art -> Loading -> Home Showcase -> Garage ->
+      //      Step-by-Step Setup (Edition -> Mode -> Circuit -> Car) ->
+      //      Racing + Prominent Pause -> 3-Page Sequential Results -> Home
+      // ==========================================================================
+
+      // --- 1. Automatic Device Detection (Mobile/Tablet vs Desktop PC) ---
+      function detectClientDevice() {
+        const ua = navigator.userAgent || '';
+        const uaMobile = !!(navigator.userAgentData && navigator.userAgentData.mobile);
+        const regexMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
+        const iPadOS = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const coarseSmall = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth <= 1024);
+        return uaMobile || regexMobile || iPadOS || coarseSmall;
+      }
+
+      const clientDevice = {
+        isMobile: detectClientDevice(),
+        manualOverride: null
+      };
+
+      function applyDeviceProfile(isMobile) {
+        clientDevice.isMobile = isMobile;
+        simState.isMobileGamepadActive = isMobile;
+
+        const badge = document.getElementById('lbl-device-badge');
+        if (badge) {
+          badge.textContent = isMobile
+            ? '📱 已自動偵測：行動觸控裝置（自動啟用虛擬方向鍵與油門煞車）'
+            : '💻 已自動偵測：電腦裝置（自動啟用鍵盤操控與 MoTeC 專業儀表）';
+        }
+        const splashHint = document.getElementById('lbl-splash-hint');
+        if (splashHint) {
+          splashHint.textContent = isMobile
+            ? '輕觸螢幕任意處啟動引擎'
+            : '點擊任意處或按 Enter / 空白鍵啟動引擎';
+        }
+        const homeDev = document.getElementById('lbl-home-device');
+        if (homeDev) {
+          homeDev.textContent = isMobile ? '📱 手機觸控模式 (點此切換)' : '💻 電腦鍵盤模式 (點此切換)';
+          homeDev.style.cursor = 'pointer';
+          homeDev.title = '點擊可手動切換手機觸控 / 電腦鍵盤介面';
+        }
+        const pauseHint = document.getElementById('lbl-pause-hint');
+        if (pauseHint) {
+          pauseHint.textContent = isMobile ? '點擊「繼續比賽」返回賽道' : '按 ESC 鍵可隨時繼續或暫停比賽';
+        }
+        if (!simState.inShowcaseMode) {
+          setInputMode(isMobile);
+        } else {
+          // Update HUD labels even while in showcase mode
+          const lbl = document.getElementById('lbl-input-mode');
+          const icon = document.getElementById('icon-input-mode');
+          const drawerBtn = document.getElementById('btn-drawer-input-mode');
+          if (lbl) lbl.textContent = isMobile ? '手遊模式' : '電腦模式';
+          if (icon) icon.textContent = isMobile ? '📱' : '💻';
+          if (drawerBtn) drawerBtn.textContent = isMobile ? '手遊極簡版 (ON)' : '電腦專業版 (ON)';
+        }
+      }
+
+      // --- 2. Car Catalog & Personal Records Storage ---
+      const CAR_CATALOG = [
+        {
+          id: 'procedural',
+          classLabel: 'GT3 · CLASS A',
+          name: 'APEX GT3 PROTOTYPE',
+          shortTag: '廠隊輕量化原型車 · 離線秒開',
+          origin: '🇩🇪 紐柏林廠隊研發 · 4.0L V8 自然進氣 · 後輪驅動 (RWD)',
+          desc: '專為極限彎道下壓力與精準荷重轉移打造的 GT3 原型賽車。搭載高轉速自然進氣 V8 引擎與六速序列式變速箱，碳纖維單體殼結構帶來極致靈敏的入彎指向性。',
+          specs: { topSpeed: '305 km/h', accel: '3.5 s', power: '620 HP', weight: '1,245 kg' },
+          bars: { speed: 88, accel: 90, handling: 95, braking: 94 },
+          unlocked: true
+        },
+        {
+          id: 'ferrari458',
+          classLabel: 'GT3 · CLASS S',
+          name: 'FERRARI 458 ITALIA GT3',
+          shortTag: '高精度 3D 模型 · V8 超跑',
+          origin: '🇮🇹 義大利馬拉內羅 · 4.5L V8 自然進氣 · 中置後驅 (MR)',
+          desc: '源自義大利傳奇躍馬血統的 GT3 統規賽車。中置 9,000 rpm 高轉速 V8 引擎兼顧迷人聲浪與出彎爆發力，低重心流線車體在高速長彎具備極佳穩定度。',
+          specs: { topSpeed: '308 km/h', accel: '3.4 s', power: '570 HP', weight: '1,215 kg' },
+          bars: { speed: 92, accel: 93, handling: 94, braking: 92 },
+          unlocked: true
+        },
+        {
+          id: 'porsche911_locked',
+          classLabel: 'GT3 · CLASS S',
+          name: 'PORSCHE 911 GT3 R',
+          shortTag: '🔒 敬請期待 (COMING SOON)',
+          origin: '🇩🇪 斯圖加特 · 4.2L 水平對臥六缸 · 後置後驅 (RR)',
+          desc: '經典後置引擎賽道機器，後續版本將開放解鎖。',
+          specs: { topSpeed: '306 km/h', accel: '3.4 s', power: '565 HP', weight: '1,250 kg' },
+          bars: { speed: 90, accel: 92, handling: 96, braking: 95 },
+          unlocked: false
+        },
+        {
+          id: 'amggt3_locked',
+          classLabel: 'GT3 · CLASS A',
+          name: 'MERCEDES-AMG GT3 EVO',
+          shortTag: '🔒 敬請期待 (COMING SOON)',
+          origin: '🇩🇪 阿法爾特巴赫 · 6.2L V8 自然進氣 · 前中置後驅 (FMR)',
+          desc: '大排量 V8 重裝猛獸，後續版本將開放解鎖。',
+          specs: { topSpeed: '310 km/h', accel: '3.5 s', power: '600 HP', weight: '1,285 kg' },
+          bars: { speed: 94, accel: 89, handling: 91, braking: 93 },
+          unlocked: false
+        }
+      ];
+
+      function getActiveCarMeta() {
+        const found = CAR_CATALOG.find(c => c.id === carAssetState.presetId);
+        if (found) return found;
+        return {
+          id: carAssetState.presetId,
+          classLabel: 'GT3 · CUSTOM',
+          name: (carAssetState.label || 'CUSTOM GT3').toUpperCase(),
+          shortTag: '自訂匯入 3D 模型',
+          origin: '🔧 自訂 glTF / GLB 賽車資產 · GT3 統規底盤',
+          desc: '由玩家自訂載入之 3D 賽車模型，已自動對齊 GT3 軸距並綁定四輪轉向與滾動骨骼。',
+          specs: { topSpeed: '306 km/h', accel: '3.5 s', power: '610 HP', weight: '1,240 kg' },
+          bars: { speed: 90, accel: 91, handling: 93, braking: 93 },
+          unlocked: true
+        };
+      }
+
+      let personalRecords = {};
+      try {
+        personalRecords = JSON.parse(localStorage.getItem('apexpro.records') || '{}') || {};
+      } catch (e) { personalRecords = {}; }
+
+      function savePersonalRecord(key, lapTime) {
+        const prev = personalRecords[key];
+        if (!prev || lapTime < prev) {
+          personalRecords[key] = lapTime;
+          try { localStorage.setItem('apexpro.records', JSON.stringify(personalRecords)); } catch (e) { /* ignore */ }
+          return true;
+        }
+        return false;
+      }
+
+      // --- 3. Flow State & Screen Transitions ---
+      const ALL_FLOW_SCREENS = ['scr-splash', 'scr-loading', 'scr-home', 'scr-garage', 'scr-setup', 'scr-pause', 'scr-results'];
+      const flowState = {
+        screen: 'splash',       // 'splash' | 'home' | 'garage' | 'setup' | 'racing' | 'pause' | 'results'
+        garageReturnTo: 'home', // 'home' | 'setup'
+        setupStep: 1,           // 1: edition, 2: mode, 3: circuit, 4: garage
+        resultPage: 0,          // 0, 1, 2
+        lastResult: null,
+        loadingActive: false
+      };
+
+      const LOADING_TIPS = [
+        '入彎前請留意上方「彎道極限速度」，提前在直線尾端重踩煞車減速，避免超速推頭外拋。',
+        '娛樂氮氣模式中，按住 Shift（或手遊「💨甩尾」鈕）滑入彎心即可快速充能氮氣 NOS！',
+        '真實沉浸模式遵循 GT3 荷重轉移：煞車時前輪抓地力增加，微帶煞車入彎（Trail Braking）能顯著提升指向性。',
+        '在主頁或車庫畫面中，您可以直接用滑鼠或手指左右拖曳 3D 賽車，360° 檢視車身細節。',
+        '追近前車 28 公尺內可觸發「⚡ 尾流效應 (Slipstream)」，風阻降低 28% 助您直線抽頭超車！',
+        '偏離賽道陷入草地或護欄時，可隨時按下 [R] 鍵或點擊頂部橫幅立即重回賽道中央。'
+      ];
+
+      function showFlowScreen(target) {
+        flowState.screen = target;
+        const map = {
+          splash: 'scr-splash',
+          home: 'scr-home',
+          garage: 'scr-garage',
+          setup: 'scr-setup',
+          pause: 'scr-pause',
+          results: 'scr-results'
+        };
+        const activeId = map[target] || null;
+        ALL_FLOW_SCREENS.forEach(id => {
+          if (id === 'scr-loading') return;
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (id === activeId) {
+            el.classList.remove('hidden');
+            requestAnimationFrame(() => el.classList.add('af-in'));
+          } else {
+            el.classList.remove('af-in');
+            el.classList.add('hidden');
+          }
+        });
+
+        // Hide legacy modals whenever switching flow screens
+        ['modal-menu', 'modal-telemetry', 'modal-spec', 'modal-garage'].forEach(id => {
+          const m = document.getElementById(id);
+          if (m) m.classList.add('hidden');
+        });
+
+        const pauseBtn = document.getElementById('btn-pause-race');
+        const hudHeader = document.getElementById('game-hud-header');
+
+        if (target === 'racing') {
+          simState.inShowcaseMode = false;
+          simState.paused = false;
+          if (hudHeader) hudHeader.classList.remove('hidden');
+          if (pauseBtn) pauseBtn.classList.remove('hidden');
+          setInputMode(clientDevice.isMobile);
+        } else if (target === 'pause') {
+          simState.inShowcaseMode = false;
+          simState.paused = true;
+          if (hudHeader) hudHeader.classList.remove('hidden');
+          if (pauseBtn) pauseBtn.classList.add('hidden');
+        } else {
+          // Showcase screens (splash / home / garage / setup / results)
+          simState.inShowcaseMode = true;
+          simState.paused = true;
+          simState.countdownActive = false;
+          simState.showcaseStyle = target === 'garage' ? 'garage' : (target === 'results' ? 'results' : 'home');
+          if (hudHeader) hudHeader.classList.add('hidden');
+          if (pauseBtn) pauseBtn.classList.add('hidden');
+          const startOverlay = document.getElementById('start-lights-overlay');
+          if (startOverlay) startOverlay.classList.add('hidden');
+          const mobileOverlay = document.getElementById('mobile-gamepad-overlay');
+          if (mobileOverlay) mobileOverlay.classList.add('hidden');
+          const pcBottomHud = document.getElementById('pc-bottom-hud');
+          if (pcBottomHud) {
+            pcBottomHud.classList.add('hidden');
+            pcBottomHud.classList.remove('flex');
+          }
+        }
+      }
+
+      function clearAllHeldInputs() {
+        Object.keys(keyboardKeys).forEach(k => { keyboardKeys[k] = false; });
+        Object.keys(touchKeys).forEach(k => { touchKeys[k] = false; });
+        simState.throttleInput = 0;
+        simState.brakeInput = 0;
+      }
+
+      function runLoadingTransition(opts, onMidpoint, onComplete) {
+        if (flowState.loadingActive) return;
+        flowState.loadingActive = true;
+        const scr = document.getElementById('scr-loading');
+        const titleEl = document.getElementById('lbl-loading-title');
+        const subEl = document.getElementById('lbl-loading-sub');
+        const tipEl = document.getElementById('lbl-loading-tip');
+        const barEl = document.getElementById('bar-loading');
+        const pctEl = document.getElementById('lbl-loading-pct');
+
+        if (titleEl) titleEl.textContent = (opts && opts.title) || 'LOADING';
+        if (subEl) subEl.textContent = (opts && opts.sub) || '正在準備 3D 賽道與車輛資源…';
+        if (tipEl) tipEl.textContent = LOADING_TIPS[Math.floor(Math.random() * LOADING_TIPS.length)];
+        if (barEl) barEl.style.width = '0%';
+        if (pctEl) pctEl.textContent = '0%';
+
+        scr.classList.remove('hidden');
+        requestAnimationFrame(() => scr.classList.add('af-in'));
+
+        const duration = (opts && opts.duration) || 950;
+        const t0 = performance.now();
+        let midCalled = false;
+
+        function tick(now) {
+          const p = Math.min(1, (now - t0) / duration);
+          const eased = 1 - Math.pow(1 - p, 2.2);
+          const pct = Math.round(eased * 100);
+          if (barEl) barEl.style.width = pct + '%';
+          if (pctEl) pctEl.textContent = pct + '%';
+
+          if (!midCalled && p >= 0.45) {
+            midCalled = true;
+            try { if (onMidpoint) onMidpoint(); } catch (e) { console.error(e); }
+          }
+          if (p < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            setTimeout(() => {
+              scr.classList.remove('af-in');
+              setTimeout(() => {
+                scr.classList.add('hidden');
+                flowState.loadingActive = false;
+                if (onComplete) onComplete();
+              }, 220);
+            }, 120);
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      // --- 4. Home Screen (Garage Showcase) ---
+      function renderHomeScreen() {
+        const meta = getActiveCarMeta();
+        const clsEl = document.getElementById('lbl-home-class');
+        const nameEl = document.getElementById('lbl-home-carname');
+        const statsEl = document.getElementById('home-mini-stats');
+        const recEl = document.getElementById('lbl-home-records');
+
+        if (clsEl) clsEl.textContent = meta.classLabel;
+        if (nameEl) nameEl.textContent = meta.name;
+        if (recEl) recEl.textContent = String(Object.keys(personalRecords).length);
+
+        if (statsEl) {
+          const items = [
+            { k: 'TOP SPEED 極速', v: meta.specs.topSpeed },
+            { k: '0-100 KM/H', v: meta.specs.accel },
+            { k: 'POWER 馬力', v: meta.specs.power },
+            { k: 'HANDLING 操控', v: meta.bars.handling + ' / 100' }
+          ];
+          statsEl.innerHTML = items.map(it =>
+            `<div class="af-mini-stat"><div class="k">${it.k}</div><div class="v">${it.v}</div></div>`
+          ).join('');
+        }
+      }
+
+      function enterHomeScreen(withLoading, loadingOpts) {
+        clearAllHeldInputs();
+        const doEnter = () => {
+          resetSession(false);
+          renderHomeScreen();
+          showFlowScreen('home');
+        };
+        if (withLoading) {
+          runLoadingTransition(
+            loadingOpts || { title: 'RETURNING TO GARAGE', sub: '正在載入主頁車庫展示中心…', duration: 850 },
+            doEnter
+          );
+        } else {
+          doEnter();
+        }
+      }
+
+      // --- 5. Garage Screen (Car Inspection & Selection) ---
+      function selectCarById(presetId) {
+        const cat = CAR_CATALOG.find(c => c.id === presetId);
+        if (cat && !cat.unlocked) return;
+        const preset = CAR_MODEL_PRESETS.find(p => p.id === presetId);
+        if (preset) {
+          if (!preset.urls) {
+            useProceduralVehicle();
+          } else if (carAssetState.presetId !== preset.id || !carAssetState.template) {
+            loadVehicleFromURLs(preset.urls, preset.label, preset.id);
+          }
+        }
+        renderGarageScreen();
+        renderHomeScreen();
+      }
+
+      function renderGarageScreen() {
+        const meta = getActiveCarMeta();
+        const isRaceSelect = (flowState.garageReturnTo === 'setup');
+
+        const kickerEl = document.getElementById('lbl-garage-kicker');
+        const titleEl = document.getElementById('lbl-garage-title');
+        const stepsEl = document.getElementById('garage-steps');
+        const confirmBtn = document.getElementById('btn-garage-confirm');
+        const backBtn = document.getElementById('btn-garage-back');
+
+        if (isRaceSelect) {
+          if (kickerEl) kickerEl.textContent = 'STEP 4 / 4 · CAR SELECTION';
+          if (titleEl) titleEl.textContent = '選擇出戰賽車';
+          if (stepsEl) stepsEl.innerHTML = '<i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>';
+          if (confirmBtn) confirmBtn.innerHTML = '🏁 確認出戰・進入賽道 ➔';
+          if (backBtn) backBtn.textContent = '◀ 上一步 (選賽道)';
+        } else {
+          if (kickerEl) kickerEl.textContent = 'GARAGE & PERFORMANCE';
+          if (titleEl) titleEl.textContent = '車庫與性能檢視';
+          if (stepsEl) stepsEl.innerHTML = '';
+          if (confirmBtn) confirmBtn.innerHTML = '✔ 確認座駕・返回主頁';
+          if (backBtn) backBtn.textContent = '◀ 返回主頁';
+        }
+
+        const clsEl = document.getElementById('lbl-gar-class');
+        const nameEl = document.getElementById('lbl-gar-name');
+        const origEl = document.getElementById('lbl-gar-origin');
+        const descEl = document.getElementById('lbl-gar-desc');
+        const specGrid = document.getElementById('gar-spec-grid');
+        const statBars = document.getElementById('gar-stat-bars');
+        const stripEl = document.getElementById('gar-car-strip');
+
+        if (clsEl) clsEl.textContent = meta.classLabel;
+        if (nameEl) nameEl.textContent = meta.name;
+        if (origEl) origEl.textContent = meta.origin;
+        if (descEl) descEl.textContent = meta.desc;
+
+        if (specGrid) {
+          const specs = [
+            { k: '最高極速 TOP SPEED', v: meta.specs.topSpeed },
+            { k: '0–100 KM/H 加速', v: meta.specs.accel },
+            { k: '最大馬力 POWER', v: meta.specs.power },
+            { k: '空車重量 WEIGHT', v: meta.specs.weight }
+          ];
+          specGrid.innerHTML = specs.map(s =>
+            `<div class="af-spec"><div class="k">${s.k}</div><div class="v">${s.v}</div></div>`
+          ).join('');
+        }
+
+        if (statBars) {
+          const rows = [
+            { label: '極速表現', val: meta.bars.speed },
+            { label: '加速爆發', val: meta.bars.accel },
+            { label: '過彎操控', val: meta.bars.handling },
+            { label: '煞車制動', val: meta.bars.braking }
+          ];
+          statBars.innerHTML = rows.map(r =>
+            `<div class="af-stat-row">
+              <span>${r.label}</span>
+              <div class="af-stat-track"><div class="af-stat-fill" style="width:${r.val}%"></div></div>
+              <b>${r.val}</b>
+            </div>`
+          ).join('');
+        }
+
+        if (stripEl) {
+          const cards = CAR_CATALOG.map(c => {
+            const active = (c.id === carAssetState.presetId);
+            const cls = ['af-car-card', active ? 'is-active' : '', !c.unlocked ? 'is-locked' : ''].filter(Boolean).join(' ');
+            return `<button type="button" class="${cls}" data-car-id="${c.id}">
+              <div class="c">${c.classLabel}</div>
+              <div class="n">${c.name}</div>
+              <div class="t">${active && c.unlocked ? '✔ 目前座駕 · ' : ''}${c.shortTag}</div>
+            </button>`;
+          });
+          if (carAssetState.presetId === 'custom-file' || carAssetState.presetId === 'custom-url') {
+            cards.push(`<button type="button" class="af-car-card is-active" data-car-id="${carAssetState.presetId}">
+              <div class="c">GT3 · CUSTOM</div>
+              <div class="n">${carAssetState.label}</div>
+              <div class="t">✔ 自訂 3D 模型使用中</div>
+            </button>`);
+          }
+          stripEl.innerHTML = cards.join('');
+        }
+      }
+
+      window.__apexFlowOnGarageRefresh = function () {
+        if (flowState.screen === 'garage') renderGarageScreen();
+        if (flowState.screen === 'home') renderHomeScreen();
+      };
+
+      function openGarageScreen(fromWhere) {
+        flowState.garageReturnTo = fromWhere || 'home';
+        renderGarageScreen();
+        showFlowScreen('garage');
+      }
+
+      // --- 6. Step-by-Step Race Setup Wizard (Step 1: Edition -> Step 2: Mode -> Step 3: Track -> Step 4: Garage Car) ---
+      function openSetupStep(step) {
+        flowState.setupStep = step;
+        if (step === 4) {
+          openGarageScreen('setup');
+          return;
+        }
+        renderSetupStep(step);
+        showFlowScreen('setup');
+      }
+
+      function renderSetupStep(step) {
+        const kickerEl = document.getElementById('lbl-setup-kicker');
+        const titleEl = document.getElementById('lbl-setup-title');
+        const stepsEl = document.getElementById('setup-steps');
+        const bodyEl = document.getElementById('setup-body');
+        const backBtn = document.getElementById('btn-setup-back');
+
+        if (stepsEl) {
+          stepsEl.innerHTML = [1, 2, 3, 4].map(i => `<i class="${i <= step ? 'on' : ''}"></i>`).join('');
+        }
+        if (backBtn) {
+          backBtn.textContent = step === 1 ? '◀ 返回主頁' : '◀ 上一步';
+        }
+
+        if (step === 1) {
+          if (kickerEl) kickerEl.textContent = 'STEP 1 / 4 · DRIVING EXPERIENCE';
+          if (titleEl) titleEl.textContent = '選擇駕駛模式';
+          const isArcade = (simState.edition === 'arcade');
+          bodyEl.innerHTML = `
+            <div class="af-choice-grid" style="max-width:860px;">
+              <div class="af-choice ${isArcade ? 'is-active' : ''}" style="--accent:#06b6d4;" data-pick-edition="arcade">
+                <div class="ico">🔥</div>
+                <div class="tag">ARCADE NITROUS EDITION</div>
+                <div class="ttl">娛樂氮氣模式</div>
+                <div class="dsc">
+                  狂野飆車風格爽快調校！彎中按住甩尾鍵即可滑入彎心並自動充能氮氣（NOS），直線噴射極速突破 <strong>345 km/h</strong>，輪胎抓地力容錯更高、上手即享極速快感。
+                </div>
+                <div class="meta">
+                  <span>💨 甩尾充能氮氣</span>
+                  <span>🔥 NOS 極速 345 km/h</span>
+                  <span>🛡 高抓地力防失控</span>
+                </div>
+                <div class="go">選擇娛樂模式 ➔</div>
+              </div>
+
+              <div class="af-choice ${!isArcade ? 'is-active' : ''}" style="--accent:#f59e0b;" data-pick-edition="realistic">
+                <div class="ico">🏁</div>
+                <div class="tag">REALISTIC GT3 SIMULATION</div>
+                <div class="ttl">真實沉浸模式</div>
+                <div class="dsc">
+                  嚴格遵循真實 GT3 物理動力學（0–100 km/h 3.5 秒、0–300 km/h 40 秒）。體驗真實四輪荷重轉移、循跡煞車（Trail Braking）與超速入彎慣性推頭外拋，挑戰純粹賽道極限。
+                </div>
+                <div class="meta">
+                  <span>⚖ 真實四輪荷重轉移</span>
+                  <span>🛑 擬真煞車距離</span>
+                  <span>📐 純粹抓地力極限</span>
+                </div>
+                <div class="go">選擇真實沉浸模式 ➔</div>
+              </div>
+            </div>`;
+        } else if (step === 2) {
+          if (kickerEl) kickerEl.textContent = 'STEP 2 / 4 · RACE FORMAT';
+          if (titleEl) titleEl.textContent = '選擇賽事類型';
+          const isTA = (simState.mode === 'time_attack');
+          const diff = simState.aiDifficulty || 1.0;
+          const ghost = simState.ghostTarget || 'both';
+          bodyEl.innerHTML = `
+            <div class="af-choice-grid" style="max-width:860px;">
+              <div class="af-choice ${isTA ? 'is-active' : ''}" style="--accent:#ef4444;" data-pick-mode="time_attack">
+                <div class="ico">⏱️</div>
+                <div class="tag">SOLO CHRONO CHALLENGE</div>
+                <div class="ttl">計時挑戰賽 (Time Attack)</div>
+                <div class="dsc">
+                  單圈極限刷圈模式！賽道上同時投射 <strong>PRO 官方基準幽靈車</strong>與您的<strong>個人最佳 PB 幽靈車</strong>，專注磨練最佳走線、煞車點與出彎時機。
+                </div>
+                <div class="af-diff-row" data-stop-prop="1">
+                  <button type="button" class="af-diff ${ghost === 'both' ? 'is-active' : ''}" data-ghost="both">PRO + PB 雙幽靈</button>
+                  <button type="button" class="af-diff ${ghost === 'pro' ? 'is-active' : ''}" data-ghost="pro">僅 PRO 幽靈</button>
+                  <button type="button" class="af-diff ${ghost === 'pb' ? 'is-active' : ''}" data-ghost="pb">僅個人 PB</button>
+                </div>
+                <div class="go">進入賽道選擇 ➔</div>
+              </div>
+
+              <div class="af-choice ${!isTA ? 'is-active' : ''}" style="--accent:#f59e0b;" data-pick-mode="ai_race">
+                <div class="ico">🏆</div>
+                <div class="tag">2-LAP GT3 GRID CHAMPIONSHIP</div>
+                <div class="ttl">與電腦競賽 (AI Race)</div>
+                <div class="dsc">
+                  與 3 位具備尾流超車與心理壓力失誤機制的 AI 車手進行 <strong>2 圈爭先錦標賽</strong>！逼近對手車尾可觸發尾流加速並施壓迫使對手鎖死外拋。
+                </div>
+                <div class="af-diff-row" data-stop-prop="1">
+                  <button type="button" class="af-diff ${diff < 0.97 ? 'is-active' : ''}" data-aidiff="0.94">俱樂部級 (入門)</button>
+                  <button type="button" class="af-diff ${diff >= 0.97 && diff <= 1.02 ? 'is-active' : ''}" data-aidiff="1.0">PRO 職業級</button>
+                  <button type="button" class="af-diff ${diff > 1.02 ? 'is-active' : ''}" data-aidiff="1.05">Alien 外星人</button>
+                </div>
+                <div class="go">進入賽道選擇 ➔</div>
+              </div>
+            </div>`;
+        } else if (step === 3) {
+          if (kickerEl) kickerEl.textContent = 'STEP 3 / 4 · CIRCUIT SELECTION';
+          if (titleEl) titleEl.textContent = '選擇比賽賽道';
+          const tracks = [
+            {
+              idx: 0,
+              accent: '#10b981',
+              ico: '🌲',
+              tag: '★☆☆ 入門高速 · 晴空正午',
+              ttl: '蒙札森林高速環道',
+              sub: 'MONZA HIGH-SPEED RING',
+              dsc: '全長 5.25 km，24m 超寬路面與超長全油門直道。最適合體驗 300+ km/h 高速離心慣性與尾流攻防，新手也能穩定完賽刷圈。',
+              meta: ['📏 路面寬 24m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[0].proLapTime), '☀ 晴空高抓地']
+            },
+            {
+              idx: 1,
+              accent: '#6366f1',
+              ico: '🗻',
+              tag: '★★★ 中階技術 · 黃金夕陽',
+              ttl: '富士山國際大獎賽道',
+              sub: 'MOUNT FUJI TECHNICAL GP',
+              dsc: '全長 5.18 km，結合 1.1km 大直線、2 座重煞髮夾彎（極限 74 km/h）與連續高速 S 彎重心轉移區，夕陽斜射下極富競技張力。',
+              meta: ['📏 路面寬 16m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[1].proLapTime), '🌅 夕陽眩光']
+            },
+            {
+              idx: 2,
+              accent: '#f43f5e',
+              ico: '🌙',
+              tag: '★★★★★ 魔鬼山道 · 午夜霓虹',
+              ttl: '箱根午夜山道大獎賽',
+              sub: 'HAKONE MIDNIGHT TOUGE GP',
+              dsc: '全長 5.42 km，高低落差劇烈（±16m），遍布急促五連髮夾彎與盲彎。夜間開啟遠光頭燈束與霓虹拱門，極度考驗精準重煞控制！',
+              meta: ['📏 路面寬 13m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[2].proLapTime), '🌃 午夜頭燈']
+            }
+          ];
+          bodyEl.innerHTML = `
+            <div class="af-choice-grid">
+              ${tracks.map(t => {
+                const pbKey = `${t.idx}_${simState.edition}`;
+                const pbVal = personalRecords[pbKey];
+                return `
+                  <div class="af-choice ${currentCircuitIndex === t.idx ? 'is-active' : ''}" style="--accent:${t.accent};" data-pick-track="${t.idx}">
+                    <div class="ico">${t.ico}</div>
+                    <div class="tag">${t.tag}</div>
+                    <div class="ttl">${t.ttl}</div>
+                    <div class="dsc">${t.dsc}</div>
+                    <div class="meta">
+                      ${t.meta.map(m => `<span>${m}</span>`).join('')}
+                      ${pbVal ? `<span style="color:#fbbf24;">🏆 個人最佳 ${formatLapTime(pbVal)}</span>` : ''}
+                    </div>
+                    <div class="go">選擇此賽道・前往選車 ➔</div>
+                  </div>`;
+              }).join('')}
+            </div>`;
+        }
+      }
+
+      // --- 7. Launch Race & In-Game Pause ---
+      function startConfiguredRace(withLoading) {
+        soundEngine.init();
+        clearAllHeldInputs();
+        const carMeta = getActiveCarMeta();
+        const modeTitle = simState.mode === 'ai_race' ? '2 圈電腦錦標賽' : '單圈計時挑戰賽';
+        const edTitle = simState.edition === 'arcade' ? '娛樂氮氣模式' : '真實沉浸模式';
+
+        const beginSession = () => {
+          showFlowScreen('racing');
+          resetSession(true);
+        };
+
+        if (withLoading) {
+          runLoadingTransition(
+            {
+              title: currentCircuit.name,
+              sub: `${edTitle} · ${modeTitle} · 座駕：${carMeta.name}`,
+              duration: 1150
+            },
+            beginSession
+          );
+        } else {
+          beginSession();
+        }
+      }
+
+      function openPauseMenu() {
+        if (flowState.screen !== 'racing') return;
+        clearAllHeldInputs();
+        const carMeta = getActiveCarMeta();
+        const edTitle = simState.edition === 'arcade' ? '🔥 娛樂氮氣模式' : '🏁 真實沉浸模式';
+        const modeTitle = simState.mode === 'ai_race' ? `🏆 電腦錦標賽 (第 ${simState.lap}/${simState.totalRaceLaps} 圈)` : '⏱️ 計時挑戰賽';
+        const infoEl = document.getElementById('lbl-pause-info');
+        if (infoEl) {
+          infoEl.innerHTML = `<div><strong>${currentCircuit.name}</strong> (${currentCircuit.difficultyStars})</div>
+            <div>${edTitle} · ${modeTitle}</div>
+            <div>座駕：${carMeta.name}</div>`;
+        }
+        showFlowScreen('pause');
+      }
+
+      function resumeFromPause() {
+        if (flowState.screen !== 'pause') return;
+        soundEngine.init();
+        showFlowScreen('racing');
+      }
+
+      // Override legacy toggleMenuModal so ESC works seamlessly with our new flow
+      toggleMenuModal = function () {
+        if (flowState.loadingActive) return;
+        const modalTel = document.getElementById('modal-telemetry');
+        if (modalTel && !modalTel.classList.contains('hidden')) {
+          modalTel.classList.add('hidden');
+          if (flowState.screen === 'racing') simState.paused = false;
+          return;
+        }
+        const modalGar = document.getElementById('modal-garage');
+        if (modalGar && !modalGar.classList.contains('hidden')) {
+          modalGar.classList.add('hidden');
+          if (flowState.screen === 'racing') simState.paused = false;
+          return;
+        }
+        const modalSpec = document.getElementById('modal-spec');
+        if (modalSpec && !modalSpec.classList.contains('hidden')) {
+          modalSpec.classList.add('hidden');
+          if (flowState.screen === 'racing') simState.paused = false;
+          return;
+        }
+
+        if (flowState.screen === 'splash') {
+          dismissSplashScreen();
+        } else if (flowState.screen === 'racing') {
+          openPauseMenu();
+        } else if (flowState.screen === 'pause') {
+          resumeFromPause();
+        } else if (flowState.screen === 'garage') {
+          if (flowState.garageReturnTo === 'setup') openSetupStep(3);
+          else enterHomeScreen(false);
+        } else if (flowState.screen === 'setup') {
+          if (flowState.setupStep > 1) openSetupStep(flowState.setupStep - 1);
+          else enterHomeScreen(false);
+        }
+      };
+
+      window.__apexFlowRestart = function () {
+        startConfiguredRace(false);
+      };
+
+      // --- 8. Multi-Page Sequential Post-Race Results (3 Pages + Skip) ---
+      window.__apexFlowFinish = function (finalLapTime) {
+        clearAllHeldInputs();
+        simState.paused = true;
+
+        const lapTimes = (simState.sessionLapTimes && simState.sessionLapTimes.length)
+          ? simState.sessionLapTimes.slice()
+          : [finalLapTime];
+        const bestSessionLap = Math.min.apply(null, lapTimes);
+        const totalSessionTime = lapTimes.reduce((a, b) => a + b, 0);
+
+        const pbKey = `${currentCircuitIndex}_${simState.edition}`;
+        const prevPB = personalRecords[pbKey] || null;
+        const isNewPB = savePersonalRecord(pbKey, bestSessionLap);
+
+        let maxV = simState.sessionTopSpeed || 0;
+        simState.currentLapSamples.forEach(s => { if (s.speed > maxV) maxV = s.speed; });
+        const avgV = (totalTrackLength / Math.max(1, bestSessionLap)) * 3.6;
+
+        // Compute AI standings snapshot
+        const playerProgress = simState.totalRaceLaps * totalTrackLength;
+        const standings = [{
+          name: 'YOU (' + getActiveCarMeta().name + ')',
+          progress: playerProgress,
+          isPlayer: true,
+          timeStr: formatLapTime(totalSessionTime)
+        }];
+        if (simState.mode === 'ai_race') {
+          aiCars.forEach(ai => {
+            const p = (ai.lap - 1) * totalTrackLength + ai.s;
+            const gapM = playerProgress - p;
+            const estGapSec = gapM / Math.max(45, ai.speedMs || 55);
+            standings.push({
+              name: ai.name,
+              progress: p,
+              isPlayer: false,
+              gapSec: estGapSec,
+              timeStr: estGapSec >= 0 ? `+${estGapSec.toFixed(2)}s` : `${estGapSec.toFixed(2)}s`
+            });
+          });
+          standings.sort((a, b) => b.progress - a.progress);
+        }
+        const playerRank = standings.findIndex(s => s.isPlayer) + 1;
+
+        const s1 = simState.sector1Time || (bestSessionLap * 0.33);
+        const s2 = simState.sector2Time || (bestSessionLap * 0.35);
+        const s3 = simState.sector3Time || Math.max(0.1, bestSessionLap - s1 - s2);
+        const proLap = currentCircuit.proLapTime;
+        const proS1 = proLap * 0.338;
+        const proS2 = proLap * 0.342;
+        const proS3 = proLap - proS1 - proS2;
+
+        // Driver Grade Calculation
+        const deltaPro = bestSessionLap - proLap;
+        const penalty = simState.lockupCount * 1.2 + simState.understeerCount * 1.0;
+        const scoreMetric = deltaPro + penalty * 0.4;
+        let grade = 'A', gradeColor = '#38bdf8', gradeTitle = 'PRO LEVEL 職業車手水準';
+        if (scoreMetric <= 0.5) {
+          grade = 'S+'; gradeColor = '#fbbf24'; gradeTitle = 'ALIEN PACE 賽道傳奇紀錄！';
+        } else if (scoreMetric <= 3.5) {
+          grade = 'S'; gradeColor = '#f97316'; gradeTitle = 'PODIUM MASTER 頒獎台統治級表現';
+        } else if (scoreMetric <= 8.0) {
+          grade = 'A'; gradeColor = '#34d399'; gradeTitle = 'SMOOTH RACER 穩定流暢的賽道駕馭';
+        } else if (scoreMetric <= 15.0) {
+          grade = 'B'; gradeColor = '#60a5fa'; gradeTitle = 'CLUBMAN 具潛力的進階車手';
+        } else {
+          grade = 'C'; gradeColor = '#94a3b8'; gradeTitle = 'ROOKIE 建議多參考煞車提示線練習';
+        }
+
+        flowState.lastResult = {
+          mode: simState.mode,
+          edition: simState.edition,
+          circuitName: currentCircuit.name,
+          difficultyStars: currentCircuit.difficultyStars,
+          carName: getActiveCarMeta().name,
+          bestLap: bestSessionLap,
+          totalTime: totalSessionTime,
+          lapTimes,
+          proLap,
+          deltaPro,
+          isNewPB,
+          prevPB,
+          playerRank,
+          standings,
+          s1, s2, s3,
+          proS1, proS2, proS3,
+          maxV: Math.round(maxV),
+          avgV: Math.round(avgV),
+          b100: simState.bench0to100,
+          b200: simState.bench0to200,
+          lockups: simState.lockupCount,
+          understeers: simState.understeerCount,
+          grade, gradeColor, gradeTitle
+        };
+
+        // Flash "FINISH" banner then open Page 1 of Results
+        soundEngine.playCountdownBeep(true);
+        const flash = document.getElementById('af-finish-flash');
+        if (flash) flash.classList.remove('hidden');
+
+        setTimeout(() => {
+          if (flash) flash.classList.add('hidden');
+          flowState.resultPage = 0;
+          renderResultPage(0);
+          showFlowScreen('results');
+        }, 1150);
+      };
+
+      function fmtDelta(d) {
+        const sign = d >= 0 ? '+' : '';
+        const cls = d <= 0 ? 'af-pos' : 'af-neg';
+        return `<span class="${cls}">${sign}${d.toFixed(3)}s</span>`;
+      }
+
+      function renderResultPage(pageIdx) {
+        const r = flowState.lastResult;
+        if (!r) return;
+        flowState.resultPage = pageIdx;
+
+        const kickerEl = document.getElementById('lbl-res-kicker');
+        const titleEl = document.getElementById('lbl-res-title');
+        const dotsEl = document.getElementById('res-dots');
+        const bodyEl = document.getElementById('res-body');
+        const nextBtn = document.getElementById('btn-res-next');
+        const retryBtn = document.getElementById('btn-res-retry');
+
+        if (dotsEl) {
+          dotsEl.innerHTML = [0, 1, 2].map(i => `<i class="${i <= pageIdx ? 'on' : ''}"></i>`).join('');
+        }
+        if (retryBtn) {
+          retryBtn.classList.toggle('hidden', pageIdx < 2);
+        }
+        if (nextBtn) {
+          nextBtn.innerHTML = pageIdx < 2 ? '下一頁 NEXT ➔' : '返回主頁 HOME ➔';
+        }
+
+        if (pageIdx === 0) {
+          if (kickerEl) kickerEl.textContent = `RESULT 1 / 3 · ${r.circuitName}`;
+          if (titleEl) titleEl.textContent = r.mode === 'ai_race' ? '錦標賽完賽名次榜' : '單圈計時挑戰結算';
+
+          if (r.mode === 'ai_race') {
+            const rankLabels = ['🏆 冠軍 WINNER', '🥈 亞軍 P2 PODIUM', '🥉 季軍 P3 PODIUM', '完賽 FINISHED'];
+            bodyEl.innerHTML = `
+              <div class="af-res-page af-res-hero">
+                <div class="af-kicker">${rankLabels[r.playerRank - 1] || 'FINISHED'}</div>
+                <div class="af-res-pos">P${r.playerRank}<small> / 4</small></div>
+                <div class="af-res-sub">
+                  總完賽時間 <strong>${formatLapTime(r.totalTime)}</strong> · 最佳單圈 <strong>${formatLapTime(r.bestLap)}</strong> · 座駕 ${r.carName}
+                </div>
+                ${r.isNewPB ? '<div class="af-res-badge">★ NEW PERSONAL BEST 刷新個人最佳單圈！</div>' : ''}
+                <div class="af-standings">
+                  ${r.standings.map((s, idx) => `
+                    <div class="af-standing ${s.isPlayer ? 'me' : ''}" style="animation-delay:${idx * 0.08}s">
+                      <div class="p">P${idx + 1}</div>
+                      <div><strong>${s.name}</strong></div>
+                      <div class="g">${s.isPlayer ? formatLapTime(r.totalTime) : s.timeStr}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>`;
+          } else {
+            bodyEl.innerHTML = `
+              <div class="af-res-page af-res-hero">
+                <div class="af-kicker">OFFICIAL LAP TIME · ${r.edition === 'arcade' ? 'ARCADE EDITION' : 'REALISTIC SIM'}</div>
+                <div class="af-res-time">${formatLapTime(r.bestLap)}</div>
+                ${r.isNewPB ? '<div class="af-res-badge">★ NEW PERSONAL BEST 刷新個人最佳紀錄！</div>' : ''}
+                <div class="af-res-sub">
+                  與 PRO 官方基準圈 (${formatLapTime(r.proLap)}) 差距：${fmtDelta(r.deltaPro)}
+                </div>
+                <div class="af-standings">
+                  <div class="af-standing me">
+                    <div class="p">YOU</div>
+                    <div><strong>本次完賽單圈 (${r.carName})</strong></div>
+                    <div class="g">${formatLapTime(r.bestLap)}</div>
+                  </div>
+                  <div class="af-standing">
+                    <div class="p">PRO</div>
+                    <div><strong>賽道官方 PRO 基準幽靈車</strong></div>
+                    <div class="g">${formatLapTime(r.proLap)} (${fmtDelta(r.deltaPro)})</div>
+                  </div>
+                  ${r.prevPB ? `
+                  <div class="af-standing">
+                    <div class="p">PB</div>
+                    <div><strong>原先個人最佳紀錄</strong></div>
+                    <div class="g">${formatLapTime(r.prevPB)} (${fmtDelta(r.bestLap - r.prevPB)})</div>
+                  </div>` : ''}
+                </div>
+              </div>`;
+          }
+        } else if (pageIdx === 1) {
+          if (kickerEl) kickerEl.textContent = `RESULT 2 / 3 · SECTOR & SPEED TELEMETRY`;
+          if (titleEl) titleEl.textContent = '分段計時與極速表現';
+
+          const sectors = [
+            { lbl: 'S1', cur: r.s1, pro: r.proS1 },
+            { lbl: 'S2', cur: r.s2, pro: r.proS2 },
+            { lbl: 'S3', cur: r.s3, pro: r.proS3 }
+          ];
+
+          bodyEl.innerHTML = `
+            <div class="af-res-page">
+              <div class="af-panel" style="padding:18px 22px;">
+                <div class="af-kicker">SECTOR SPLITS VS PRO BENCHMARK</div>
+                ${sectors.map(s => {
+                  const d = s.cur - s.pro;
+                  const pct = Math.max(25, Math.min(100, Math.round((s.pro / Math.max(0.1, s.cur)) * 88)));
+                  const col = d <= 0 ? '#10b981' : '#f97316';
+                  return `
+                    <div class="af-sector-row">
+                      <span class="lbl">${s.lbl}</span>
+                      <div class="af-stat-track"><div class="af-stat-fill" style="width:${pct}%;background:${col};"></div></div>
+                      <strong>${s.cur.toFixed(3)}s</strong>
+                      <span>${fmtDelta(d)}</span>
+                    </div>`;
+                }).join('')}
+              </div>
+
+              <div class="af-res-grid">
+                <div class="af-panel af-res-card">
+                  <div class="k">TOP SPEED 最高尾速</div>
+                  <div class="v">${r.maxV} <small style="font-size:13px;">km/h</small></div>
+                  <div class="d">賽道直線極速紀錄</div>
+                </div>
+                <div class="af-panel af-res-card">
+                  <div class="k">AVG SPEED 平均時速</div>
+                  <div class="v">${r.avgV} <small style="font-size:13px;">km/h</small></div>
+                  <div class="d">全場綜合巡航節奏</div>
+                </div>
+                <div class="af-panel af-res-card">
+                  <div class="k">0–100 KM/H 加速</div>
+                  <div class="v">${r.b100 ? r.b100.toFixed(2) + 's' : '3.50s'}</div>
+                  <div class="d">起跑彈射測試</div>
+                </div>
+                <div class="af-panel af-res-card">
+                  <div class="k">0–200 KM/H 加速</div>
+                  <div class="v">${r.b200 ? r.b200.toFixed(2) + 's' : '--.--s'}</div>
+                  <div class="d">中高速域推進表現</div>
+                </div>
+              </div>
+            </div>`;
+        } else {
+          if (kickerEl) kickerEl.textContent = `RESULT 3 / 3 · DRIVER RATING & ENGINEER DEBRIEF`;
+          if (titleEl) titleEl.textContent = '駕駛技術評級與總評';
+
+          const tips = [];
+          tips.push(`<div>🏎️ <strong>完賽座駕：</strong>${r.carName} · <strong>賽道：</strong>${r.circuitName} (${r.difficultyStars})</div>`);
+          if (r.lockups === 0) {
+            tips.push('<div class="af-pos">✔ <strong>煞車控制完美：</strong>全程未發生重煞車輪鎖死，前輪循跡抓地力發揮極佳！</div>');
+          } else {
+            tips.push(`<div class="af-neg">⚠ <strong>重煞鎖死提醒：</strong>本場共發生 ${r.lockups} 次輪胎鎖死，入彎前可稍微提早收放煞車。</div>`);
+          }
+          if (r.understeers === 0) {
+            tips.push('<div class="af-pos">✔ <strong>精準入彎速度：</strong>每個彎道均控制在抓地力極限內通過，零推頭外拋失誤！</div>');
+          } else {
+            tips.push(`<div style="color:#fbbf24;">⚠ <strong>入彎超速推頭：</strong>出現 ${r.understeers} 次慣性推頭外拋，請盯緊上方「彎道極限」數字減速。</div>`);
+          }
+
+          bodyEl.innerHTML = `
+            <div class="af-res-page">
+              <div class="af-grade-wrap">
+                <div style="text-align:center;">
+                  <div class="af-kicker">OVERALL RATING</div>
+                  <div class="af-grade" style="color:${r.gradeColor};text-shadow:0 0 40px ${r.gradeColor}66;">${r.grade}</div>
+                  <div style="font-weight:800;font-size:14px;color:${r.gradeColor};">${r.gradeTitle}</div>
+                </div>
+                <div class="af-panel af-tips">
+                  <div class="af-kicker" style="margin-bottom:8px;">RACE ENGINEER DEBRIEF 賽道工程師總評</div>
+                  ${tips.join('')}
+                  <div style="margin-top:14px;">
+                    <button type="button" id="btn-res-open-motec" class="af-btn af-btn-ghost af-btn-sm">
+                      📊 檢視完整 MoTeC 遙測曲線圖 (選用)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+
+          const motecBtn = document.getElementById('btn-res-open-motec');
+          if (motecBtn) {
+            motecBtn.addEventListener('click', () => {
+              openTelemetryModal('current', r.bestLap);
+            });
+          }
+        }
+      }
+
+      // --- 9. Interactive 3D Car Click (Raycaster) & Orbit Drag on Home / Garage ---
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+      let orbitDrag = { active: false, startX: 0, startY: 0, moved: false, baseOffset: 0 };
+
+      window.addEventListener('pointerdown', (e) => {
+        if (flowState.screen !== 'home' && flowState.screen !== 'garage') return;
+        // Ignore clicks on UI buttons / panels
+        if (e.target.closest('button, a, aside, .af-topbar, .af-home-bottom, .af-garage-bottom')) return;
+        orbitDrag.active = true;
+        orbitDrag.startX = e.clientX;
+        orbitDrag.startY = e.clientY;
+        orbitDrag.moved = false;
+        orbitDrag.baseOffset = simState.showcaseAngleOffset || 0;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!orbitDrag.active) return;
+        const dx = e.clientX - orbitDrag.startX;
+        const dy = e.clientY - orbitDrag.startY;
+        if (Math.hypot(dx, dy) > 6) orbitDrag.moved = true;
+        if (orbitDrag.moved) {
+          simState.showcaseAngleOffset = orbitDrag.baseOffset - dx * 0.0075;
+        }
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!orbitDrag.active) return;
+        const wasMoved = orbitDrag.moved;
+        orbitDrag.active = false;
+        if (wasMoved || flowState.screen !== 'home') return;
+
+        // Check if user clicked on or near the 3D car in Home screen -> open Garage!
+        pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+        pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(pointerNDC, camera);
+        const hits = raycaster.intersectObjects(playerCarGroup.children, true);
+        const nearCenter = Math.abs(pointerNDC.x) < 0.45 && Math.abs(pointerNDC.y) < 0.45;
+        if (hits.length > 0 || nearCenter) {
+          soundEngine.init();
+          openGarageScreen('home');
+        }
+      });
+
+      // --- 10. Wire All New Screen Buttons ---
+      function dismissSplashScreen() {
+        if (flowState.screen !== 'splash' || flowState.loadingActive) return;
+        soundEngine.init();
+        soundEngine.playCountdownBeep(false);
+        enterHomeScreen(true, {
+          title: 'ENTERING GARAGE HUB',
+          sub: '正在啟動 3D 展示車庫與物理引擎…',
+          duration: 950
+        });
+      }
+
+      const scrSplash = document.getElementById('scr-splash');
+      if (scrSplash) {
+        scrSplash.addEventListener('click', (e) => {
+          if (e.target.closest('#lnk-splash-github')) return;
+          dismissSplashScreen();
+        });
+      }
+      window.addEventListener('keydown', (e) => {
+        if (flowState.screen === 'splash' && !flowState.loadingActive) {
+          if (e.code === 'Enter' || e.code === 'Space') {
+            e.preventDefault();
+            dismissSplashScreen();
+          }
+        }
+      });
+
+      // Home screen buttons
+      const homeDeviceChip = document.getElementById('lbl-home-device');
+      if (homeDeviceChip) {
+        homeDeviceChip.addEventListener('click', () => {
+          applyDeviceProfile(!clientDevice.isMobile);
+        });
+      }
+      const btnHomeHint = document.getElementById('btn-home-hint');
+      if (btnHomeHint) btnHomeHint.addEventListener('click', () => openGarageScreen('home'));
+      const btnHomeGarage = document.getElementById('btn-home-garage');
+      if (btnHomeGarage) btnHomeGarage.addEventListener('click', () => openGarageScreen('home'));
+      const btnHomePlay = document.getElementById('btn-home-play');
+      if (btnHomePlay) btnHomePlay.addEventListener('click', () => openSetupStep(1));
+
+      // Garage screen buttons
+      const btnGarBack = document.getElementById('btn-garage-back');
+      if (btnGarBack) {
+        btnGarBack.addEventListener('click', () => {
+          if (flowState.garageReturnTo === 'setup') openSetupStep(3);
+          else enterHomeScreen(false);
+        });
+      }
+      const btnGarConfirm = document.getElementById('btn-garage-confirm');
+      if (btnGarConfirm) {
+        btnGarConfirm.addEventListener('click', () => {
+          if (flowState.garageReturnTo === 'setup') {
+            startConfiguredRace(true);
+          } else {
+            enterHomeScreen(false);
+          }
+        });
+      }
+      const garStrip = document.getElementById('gar-car-strip');
+      if (garStrip) {
+        garStrip.addEventListener('click', (e) => {
+          const card = e.target.closest('[data-car-id]');
+          if (!card) return;
+          selectCarById(card.dataset.carId);
+        });
+      }
+      const btnGarAdv = document.getElementById('btn-garage-advanced');
+      if (btnGarAdv) {
+        btnGarAdv.addEventListener('click', () => {
+          garageUI.refresh();
+          document.getElementById('modal-garage').classList.remove('hidden');
+        });
+      }
+
+      // Setup wizard buttons & delegation
+      const btnSetupBack = document.getElementById('btn-setup-back');
+      if (btnSetupBack) {
+        btnSetupBack.addEventListener('click', () => {
+          if (flowState.setupStep > 1) openSetupStep(flowState.setupStep - 1);
+          else enterHomeScreen(false);
+        });
+      }
+      const setupBody = document.getElementById('setup-body');
+      if (setupBody) {
+        setupBody.addEventListener('click', (e) => {
+          const ghostBtn = e.target.closest('[data-ghost]');
+          if (ghostBtn) {
+            e.stopPropagation();
+            simState.ghostTarget = ghostBtn.dataset.ghost;
+            const sel = document.getElementById('select-ghost-target');
+            if (sel) sel.value = simState.ghostTarget;
+            renderSetupStep(2);
+            return;
+          }
+          const diffBtn = e.target.closest('[data-aidiff]');
+          if (diffBtn) {
+            e.stopPropagation();
+            simState.aiDifficulty = parseFloat(diffBtn.dataset.aidiff) || 1.0;
+            const sel = document.getElementById('select-ai-diff');
+            if (sel) sel.value = String(simState.aiDifficulty);
+            renderSetupStep(2);
+            return;
+          }
+          const edCard = e.target.closest('[data-pick-edition]');
+          if (edCard) {
+            setPhysicsEdition(edCard.dataset.pickEdition);
+            openSetupStep(2);
+            return;
+          }
+          const modeCard = e.target.closest('[data-pick-mode]');
+          if (modeCard) {
+            setGameMode(modeCard.dataset.pickMode);
+            openSetupStep(3);
+            return;
+          }
+          const trackCard = e.target.closest('[data-pick-track]');
+          if (trackCard) {
+            const idx = parseInt(trackCard.dataset.pickTrack, 10) || 0;
+            selectCircuit(idx);
+            openSetupStep(4);
+          }
+        });
+      }
+
+      // Pause menu buttons
+      const btnPauseRace = document.getElementById('btn-pause-race');
+      if (btnPauseRace) btnPauseRace.addEventListener('click', openPauseMenu);
+      const btnPauseResume = document.getElementById('btn-pause-resume');
+      if (btnPauseResume) btnPauseResume.addEventListener('click', resumeFromPause);
+      const btnPauseRestart = document.getElementById('btn-pause-restart');
+      if (btnPauseRestart) {
+        btnPauseRestart.addEventListener('click', () => {
+          startConfiguredRace(false);
+        });
+      }
+      const btnPauseQuit = document.getElementById('btn-pause-quit');
+      if (btnPauseQuit) {
+        btnPauseQuit.addEventListener('click', () => {
+          enterHomeScreen(true, {
+            title: 'RETURNING TO HOME',
+            sub: '正在退出賽事並載入車庫展示中心…',
+            duration: 900
+          });
+        });
+      }
+
+      // Results screen buttons
+      const btnResSkip = document.getElementById('btn-res-skip');
+      if (btnResSkip) {
+        btnResSkip.addEventListener('click', () => {
+          enterHomeScreen(true, {
+            title: 'LOADING GARAGE SHOWCASE',
+            sub: '正在返回主頁車庫展示中心…',
+            duration: 900
+          });
+        });
+      }
+      const btnResNext = document.getElementById('btn-res-next');
+      if (btnResNext) {
+        btnResNext.addEventListener('click', () => {
+          if (flowState.resultPage < 2) {
+            renderResultPage(flowState.resultPage + 1);
+          } else {
+            enterHomeScreen(true, {
+              title: 'LOADING GARAGE SHOWCASE',
+              sub: '正在返回主頁車庫展示中心…',
+              duration: 900
+            });
+          }
+        });
+      }
+      const btnResRetry = document.getElementById('btn-res-retry');
+      if (btnResRetry) {
+        btnResRetry.addEventListener('click', () => {
+          startConfiguredRace(true);
+        });
+      }
+
+      // Initialize Device Profile & Splash Screen on Boot
+      applyDeviceProfile(clientDevice.isMobile);
+      renderHomeScreen();
+      showFlowScreen('splash');
+
       let lastFrameTime = performance.now();
 
       function animate(now) {

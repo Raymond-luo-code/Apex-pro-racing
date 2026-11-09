@@ -78,6 +78,10 @@ if (window.__apexTrace) window.__apexTrace('input.js', 'START');
         if (nextGear !== simState.gear) {
           if (delta < 0) soundEngine.blipShift();
           simState.gear = nextGear;
+          simState.backfireFlameTimer = 0.13;
+          if (soundEngine && typeof soundEngine.triggerBackfire === 'function') {
+            soundEngine.triggerBackfire();
+          }
           const gearText = simState.gear === -1 ? 'R' : String(simState.gear);
           document.getElementById('hud-gear').textContent = gearText;
           const topGearEl = document.getElementById('hud-top-gear');

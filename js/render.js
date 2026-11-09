@@ -324,13 +324,20 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         );
         sunBox.position.copy(sunDir.multiplyScalar(40));
         envScene.add(sunBox);
-        const stripMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe2e8f0).multiplyScalar(th.isNight ? 0.35 : 0.72), side: THREE.DoubleSide });
+        const stripMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xf8fafc).multiplyScalar(th.isNight ? 0.65 : 1.18), side: THREE.DoubleSide });
         for (let k = -1; k <= 1; k++) {
-          const strip = new THREE.Mesh(new THREE.PlaneGeometry(54, 2.6), stripMat);
+          const strip = new THREE.Mesh(new THREE.PlaneGeometry(56, 3.2), stripMat);
           strip.rotation.x = Math.PI / 2;
-          strip.position.set(0, 30, k * 12);
+          strip.position.set(0, 30, k * 11);
           envScene.add(strip);
         }
+        // Lateral showroom rim-light panels for crisp GT3 bodyline & fender reflections
+        const sideStripMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe0f2fe).multiplyScalar(th.isNight ? 0.45 : 0.85), side: THREE.DoubleSide });
+        [-28, 28].forEach(zSide => {
+          const sideStrip = new THREE.Mesh(new THREE.PlaneGeometry(48, 4.5), sideStripMat);
+          sideStrip.position.set(0, 10, zSide);
+          envScene.add(sideStrip);
+        });
 
         currentEnvRT = pmremGenerator.fromScene(envScene, 0.04);
         scene.environment = currentEnvRT.texture;
@@ -954,29 +961,60 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       const CAR_MODEL_PRESETS = [
         {
           id: 'procedural',
-          label: '內建程序化 GT3 原型車',
-          desc: '零下載・離線可用・最高效能',
-          urls: null
+          label: 'BMW M4 GT3 EVO // APEX Works',
+          desc: '巴伐利亞廠隊 3.0L 雙渦輪直六 GT3・高精度 GLB 5 節點賽車模型',
+          defaultPaint: '#ef4444',
+          urls: [
+            'https://raw.githubusercontent.com/KhazP/librecorsa/7b009d905790e277cd6bc926a549b862907e49f3/public/cars/bmw-m4-gt3/model/bmw-m4-gt3.glb',
+            'https://cdn.statically.io/gh/KhazP/librecorsa/7b009d905790e277cd6bc926a549b862907e49f3/public/cars/bmw-m4-gt3/model/bmw-m4-gt3.glb'
+          ]
         },
         {
           id: 'ferrari458',
-          label: 'Ferrari 458 Italia',
-          desc: 'three.js 官方範例 GLB・Draco 壓縮約 2MB・需網路',
+          label: 'Ferrari 458 Italia GT3',
+          desc: '躍馬 MR 4.5L V8 超跑・Three.js 官方 GLB 模型 + GT3 鵝頸尾翼空力套件',
+          defaultPaint: '#dc2626',
           urls: [
             'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/models/gltf/ferrari.glb',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/ferrari.glb',
             'https://threejs.org/examples/models/gltf/ferrari.glb'
+          ]
+        },
+        {
+          id: 'porsche911',
+          label: 'Porsche 911 GT3 R (992)',
+          desc: '斯圖加特 RR 後置水平對臥六缸・2024 992 GT3 R 4K 高擬真 GLB 賽車模型',
+          defaultPaint: '#10b981',
+          urls: [
+            'https://raw.githubusercontent.com/pissang/mutracer-assets/main/assets/porsche-992-gt3-r/model.glb',
+            'https://cdn.jsdelivr.net/gh/pissang/mutracer-assets@main/assets/porsche-992-gt3-r/model.glb',
+            'https://raw.githubusercontent.com/Thimira-Hansana/Downtown-Driving-3D/main/public/assets/car/free_porsche_911_carrera_4s.glb'
+          ]
+        },
+        {
+          id: 'amggt3',
+          label: 'Mercedes-AMG GT3 EVO',
+          desc: '阿法爾特巴赫 FMR 前中置 6.2L V8・AMG GT3 EVO 廠隊 GLB 賽車模型',
+          defaultPaint: '#eab308',
+          urls: [
+            'https://raw.githubusercontent.com/KhazP/librecorsa/7b009d905790e277cd6bc926a549b862907e49f3/public/cars/amg-gt3-evo/model/amg-gt3-evo.glb',
+            'https://raw.githubusercontent.com/KhazP/librecorsa/7b009d905790e277cd6bc926a549b862907e49f3/public/gt3/model/amg_gt3.glb'
           ]
         }
       ];
 
       const carAssetState = {
-        presetId: 'procedural',
-        label: '內建程序化 GT3',
+        presetId: 'ferrari458',
+        loadedPresetId: null,
+        loadSeq: 0,
+        label: 'Ferrari 458 Italia GT3',
+        paintHex: '#dc2626',
+        rimHex: '#94a3b8',
         rawScene: null,        // untouched gltf.scene (re-used when re-orienting)
         template: null,        // normalized + rigged template, cloned per slot
         yawSteps: 0,           // extra 90° rotation steps (manual fix for odd exports)
         flip: false,           // extra 180° (front/back swap)
-        livery: 'team',        // 'team' = per-car clear-coat colour, 'original' = keep model textures
+        livery: 'original',    // 'original' = preserve factory GT3 livery textures if present, 'team' = custom metallic clearcoat paint
         scope: { player: true, ai: true, ghost: true },
         loading: false,
         stats: null,
@@ -984,16 +1022,18 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       };
       try {
         const savedCar = JSON.parse(localStorage.getItem('apexpro.vehicle') || 'null');
-        if (savedCar && savedCar.v === 2) {
-          ['presetId', 'yawSteps', 'flip', 'livery'].forEach(k => { if (k in savedCar) carAssetState[k] = savedCar[k]; });
+        if (savedCar && savedCar.v === 3) {
+          ['presetId', 'yawSteps', 'flip', 'livery', 'paintHex', 'rimHex'].forEach(k => { if (k in savedCar && savedCar[k]) carAssetState[k] = savedCar[k]; });
           if (savedCar.scope) Object.assign(carAssetState.scope, savedCar.scope);
         }
       } catch (e) { /* ignore */ }
       function saveCarAssetSettings() {
         try {
           localStorage.setItem('apexpro.vehicle', JSON.stringify({
-            v: 2,
+            v: 3,
             presetId: carAssetState.presetId,
+            paintHex: carAssetState.paintHex,
+            rimHex: carAssetState.rimHex,
             yawSteps: carAssetState.yawSteps,
             flip: carAssetState.flip,
             livery: carAssetState.livery,
@@ -1033,8 +1073,8 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         return rig.steers.length ? rig : null;
       }
 
-      // ---- Procedural fallback body (sculpted aero GT3 body, real wheels, splitter, swan-neck wing) ----
-      function buildProceduralBody(bodyColor, isGhost, opacity) {
+      // ---- Procedural chassis builder (supports distinct silhouettes for APEX GT3, Porsche 911 GT3 R, and AMG GT3 EVO) ----
+      function buildProceduralBody(bodyColor, isGhost, opacity, chassisStyle = 'procedural', rimColorHex = 0x94a3b8) {
         const body = new THREE.Group();
         body.name = 'apex_procedural_body';
         const ghostProps = { transparent: true, opacity, depthWrite: false };
@@ -1043,91 +1083,241 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         if (!isGhost) paintCol.multiplyScalar(0.84);
         const bodyMat = isGhost
           ? new THREE.MeshLambertMaterial(Object.assign({ color: bodyColor }, ghostProps))
-          : new THREE.MeshPhysicalMaterial({ color: paintCol, metalness: 0.18, roughness: 0.28, clearcoat: 0.85, clearcoatRoughness: 0.08, envMapIntensity: 0.55 });
+          : new THREE.MeshPhysicalMaterial({ color: paintCol, metalness: 0.22, roughness: 0.25, clearcoat: 0.88, clearcoatRoughness: 0.08, envMapIntensity: 0.60 });
+        bodyMat.userData = { apexRole: 'body' };
+
         const darkMat = isGhost
           ? new THREE.MeshLambertMaterial(Object.assign({ color: 0x0f172a }, ghostProps, { opacity: opacity * 0.7 }))
-          : new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.15, roughness: 0.65, envMapIntensity: 0.4 });
+          : new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.18, roughness: 0.62, envMapIntensity: 0.4 });
         const glassMat = isGhost
           ? darkMat
           : new THREE.MeshPhysicalMaterial({ color: 0x090d16, metalness: 0.1, roughness: 0.06, clearcoat: 0.9, transparent: true, opacity: 0.76, envMapIntensity: 0.75 });
 
         // Lower carbon floor & side skirts
-        const floorPan = new THREE.Mesh(new THREE.BoxGeometry(4.42, 0.14, 1.98), darkMat);
+        const floorPan = new THREE.Mesh(new THREE.BoxGeometry(4.46, 0.14, 2.00), darkMat);
         floorPan.position.set(0.0, 0.21, 0);
         body.add(floorPan);
 
-        // Main waist body
-        const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.15, 0.44, 1.94), bodyMat);
-        chassis.position.set(-0.08, 0.48, 0);
-        body.add(chassis);
+        if (chassisStyle === 'porsche911') {
+          // --- PORSCHE 911 GT3 R (992): Teardrop fastback, wide rear haunches, oval sloped headlights ---
+          const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.08, 0.45, 1.92), bodyMat);
+          chassis.position.set(-0.06, 0.48, 0);
+          body.add(chassis);
 
-        // Sloped aero front nose
-        const nose = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.34, 1.86), bodyMat);
-        nose.position.set(1.72, 0.41, 0);
-        nose.rotation.z = -0.14;
-        body.add(nose);
+          const nose = new THREE.Mesh(new THREE.BoxGeometry(1.10, 0.30, 1.82), bodyMat);
+          nose.position.set(1.68, 0.39, 0);
+          nose.rotation.z = -0.18;
+          body.add(nose);
 
-        // Flared front & rear GT3 fender arches
-        [[1.36, 0.54, 1.05], [-1.36, 0.57, 1.12]].forEach(([fx, fy, flen]) => {
-          [-0.86, 0.86].forEach(fz => {
-            const fender = new THREE.Mesh(new THREE.BoxGeometry(flen, 0.36, 0.32), bodyMat);
-            fender.position.set(fx, fy, fz);
-            body.add(fender);
+          // Wide 911 Turbo-style rear haunches
+          [[1.36, 0.54, 1.02, 0.30], [-1.34, 0.60, 1.26, 0.38]].forEach(([fx, fy, flen, fw]) => {
+            [-0.86, 0.86].forEach(fz => {
+              const fender = new THREE.Mesh(new THREE.BoxGeometry(flen, 0.38, fw), bodyMat);
+              fender.position.set(fx, fy, fz);
+              body.add(fender);
+            });
           });
-        });
 
-        // Tapered GT3 greenhouse canopy + sloped windshield
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.44, 1.44), glassMat);
-        cabin.position.set(-0.18, 0.88, 0);
-        body.add(cabin);
-        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.08, 1.28), bodyMat);
-        roof.position.set(-0.24, 1.11, 0);
-        body.add(roof);
-        const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.40, 1.38), glassMat);
-        windshield.position.set(0.54, 0.84, 0);
-        windshield.rotation.z = -0.45;
-        body.add(windshield);
+          // Iconic 911 rounded teardrop cabin + sloped rear fastback engine decklid
+          const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.46, 1.42), glassMat);
+          cabin.position.set(-0.10, 0.90, 0);
+          body.add(cabin);
+          const roof = new THREE.Mesh(new THREE.BoxGeometry(1.10, 0.09, 1.26), bodyMat);
+          roof.position.set(-0.12, 1.13, 0);
+          body.add(roof);
+          const fastback = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.34, 1.46), bodyMat);
+          fastback.position.set(-1.22, 0.82, 0);
+          fastback.rotation.z = 0.28;
+          body.add(fastback);
+          const louvers = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.06, 1.12), darkMat);
+          louvers.position.set(-1.62, 0.69, 0);
+          louvers.rotation.z = 0.18;
+          body.add(louvers);
+          const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.42, 1.36), glassMat);
+          windshield.position.set(0.58, 0.85, 0);
+          windshield.rotation.z = -0.48;
+          body.add(windshield);
 
-        // Front carbon splitter + rear diffuser
+          // High-mounted 992 GT3 R swan-neck wing
+          const wingBlade = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.05, 1.98), darkMat);
+          wingBlade.position.set(-2.08, 1.30, 0);
+          wingBlade.rotation.z = 0.11;
+          body.add(wingBlade);
+          for (const z of [-0.46, 0.46]) {
+            const stand = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.52, 0.04), darkMat);
+            stand.position.set(-1.96, 1.04, z);
+            stand.rotation.z = -0.22;
+            body.add(stand);
+          }
+          for (const z of [-0.99, 0.99]) {
+            const endplate = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.32, 0.03), bodyMat);
+            endplate.position.set(-2.08, 1.24, z);
+            body.add(endplate);
+          }
+
+          if (!isGhost) {
+            const hlMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe });
+            const hlGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.06, 16);
+            hlGeo.rotateZ(Math.PI / 2);
+            for (const z of [-0.70, 0.70]) {
+              const hl = new THREE.Mesh(hlGeo, hlMat);
+              hl.position.set(2.05, 0.52, z);
+              hl.rotation.z = -0.32;
+              body.add(hl);
+            }
+          }
+        } else if (chassisStyle === 'amggt3') {
+          // --- MERCEDES-AMG GT3 EVO: Long front-mid V8 hood, rearward cabin, Panamericana vertical grille ---
+          const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.28, 0.46, 1.98), bodyMat);
+          chassis.position.set(-0.04, 0.48, 0);
+          body.add(chassis);
+
+          // Long muscular V8 front hood
+          const nose = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.38, 1.90), bodyMat);
+          nose.position.set(1.55, 0.47, 0);
+          nose.rotation.z = -0.07;
+          body.add(nose);
+
+          // Central hood carbon aero extractor vent
+          const hoodVent = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.05, 0.86), darkMat);
+          hoodVent.position.set(1.35, 0.67, 0);
+          hoodVent.rotation.z = -0.07;
+          body.add(hoodVent);
+
+          // Panamericana shark-nose front grille with vertical chrome bars
+          const grille = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.26, 1.24), darkMat);
+          grille.position.set(2.26, 0.36, 0);
+          body.add(grille);
+
+          [[1.38, 0.55, 1.12], [-1.38, 0.58, 1.16]].forEach(([fx, fy, flen]) => {
+            [-0.88, 0.88].forEach(fz => {
+              const fender = new THREE.Mesh(new THREE.BoxGeometry(flen, 0.38, 0.34), bodyMat);
+              fender.position.set(fx, fy, fz);
+              body.add(fender);
+            });
+          });
+
+          // Rearward-set GT3 cabin
+          const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.42, 1.40), glassMat);
+          cabin.position.set(-0.42, 0.88, 0);
+          body.add(cabin);
+          const roof = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.08, 1.24), bodyMat);
+          roof.position.set(-0.46, 1.10, 0);
+          body.add(roof);
+          const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.38, 1.34), glassMat);
+          windshield.position.set(0.26, 0.84, 0);
+          windshield.rotation.z = -0.46;
+          body.add(windshield);
+
+          // Wide AMG GT3 rear wing
+          const wingBlade = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.05, 2.02), darkMat);
+          wingBlade.position.set(-2.08, 1.22, 0);
+          wingBlade.rotation.z = 0.08;
+          body.add(wingBlade);
+          for (const z of [-0.58, 0.58]) {
+            const stand = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.42, 0.04), darkMat);
+            stand.position.set(-2.00, 0.99, z);
+            stand.rotation.z = -0.15;
+            body.add(stand);
+          }
+          for (const z of [-1.01, 1.01]) {
+            const endplate = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.28, 0.03), bodyMat);
+            endplate.position.set(-2.08, 1.18, z);
+            body.add(endplate);
+          }
+
+          if (!isGhost) {
+            const hlMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+            for (const z of [-0.72, 0.72]) {
+              const hl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.07, 0.32), hlMat);
+              hl.position.set(2.18, 0.52, z);
+              hl.rotation.z = -0.10;
+              body.add(hl);
+            }
+          }
+        } else {
+          // --- APEX GT3 PROTOTYPE: Sleek mid-engine wedge supercar ---
+          const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.15, 0.44, 1.94), bodyMat);
+          chassis.position.set(-0.08, 0.48, 0);
+          body.add(chassis);
+
+          const nose = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.34, 1.86), bodyMat);
+          nose.position.set(1.72, 0.41, 0);
+          nose.rotation.z = -0.14;
+          body.add(nose);
+
+          [[1.36, 0.54, 1.05], [-1.36, 0.57, 1.12]].forEach(([fx, fy, flen]) => {
+            [-0.86, 0.86].forEach(fz => {
+              const fender = new THREE.Mesh(new THREE.BoxGeometry(flen, 0.36, 0.32), bodyMat);
+              fender.position.set(fx, fy, fz);
+              body.add(fender);
+            });
+          });
+
+          const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.44, 1.44), glassMat);
+          cabin.position.set(-0.18, 0.88, 0);
+          body.add(cabin);
+          const roof = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.08, 1.28), bodyMat);
+          roof.position.set(-0.24, 1.11, 0);
+          body.add(roof);
+          const roofScoop = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.10, 0.28), darkMat);
+          roofScoop.position.set(-0.32, 1.18, 0);
+          body.add(roofScoop);
+          const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.40, 1.38), glassMat);
+          windshield.position.set(0.54, 0.84, 0);
+          windshield.rotation.z = -0.45;
+          body.add(windshield);
+
+          const wingBlade = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 1.94), darkMat);
+          wingBlade.position.set(-2.06, 1.24, 0);
+          wingBlade.rotation.z = 0.09;
+          body.add(wingBlade);
+          for (const z of [-0.52, 0.52]) {
+            const stand = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.44, 0.04), darkMat);
+            stand.position.set(-1.98, 1.00, z);
+            stand.rotation.z = -0.18;
+            body.add(stand);
+          }
+          for (const z of [-0.97, 0.97]) {
+            const endplate = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.28, 0.03), bodyMat);
+            endplate.position.set(-2.06, 1.20, z);
+            body.add(endplate);
+          }
+
+          if (!isGhost) {
+            const hlMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe });
+            for (const z of [-0.68, 0.68]) {
+              const hl = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.07, 0.34), hlMat);
+              hl.position.set(2.14, 0.48, z);
+              hl.rotation.z = -0.14;
+              body.add(hl);
+            }
+          }
+        }
+
+        // Front carbon splitter + rear diffuser + dual exhaust tailpipes
         const splitter = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.05, 2.04), darkMat);
         splitter.position.set(2.18, 0.16, 0);
         body.add(splitter);
         const diffuser = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 1.88), darkMat);
         diffuser.position.set(-2.12, 0.25, 0);
         body.add(diffuser);
-
-        // Swan-neck GT3 rear wing + endplates
-        const wingBlade = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 1.94), darkMat);
-        wingBlade.position.set(-2.06, 1.24, 0);
-        wingBlade.rotation.z = 0.09;
-        body.add(wingBlade);
-        for (const z of [-0.52, 0.52]) {
-          const stand = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.44, 0.04), darkMat);
-          stand.position.set(-1.98, 1.00, z);
-          stand.rotation.z = -0.18;
-          body.add(stand);
-        }
-        for (const z of [-0.97, 0.97]) {
-          const endplate = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.28, 0.03), bodyMat);
-          endplate.position.set(-2.06, 1.20, z);
-          body.add(endplate);
-        }
-
-        // Front LED headlights
         if (!isGhost) {
-          const hlMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe });
-          for (const z of [-0.68, 0.68]) {
-            const hl = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.07, 0.34), hlMat);
-            hl.position.set(2.14, 0.48, z);
-            hl.rotation.z = -0.14;
-            body.add(hl);
+          const pipeGeo = new THREE.CylinderGeometry(0.055, 0.055, 0.18, 12);
+          pipeGeo.rotateZ(Math.PI / 2);
+          const pipeMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.2 });
+          for (const z of [-0.36, 0.36]) {
+            const pipe = new THREE.Mesh(pipeGeo, pipeMat);
+            pipe.position.set(-2.22, 0.31, z);
+            body.add(pipe);
           }
         }
 
         // Four real wheels inside steer/spin pivots (same rig format as GLB models)
         const R = 0.34;
         const tireMat = isGhost ? darkMat : new THREE.MeshStandardMaterial({ color: 0x0d1017, roughness: 0.85, metalness: 0.05, envMapIntensity: 0.3 });
-        const rimMat = isGhost ? darkMat : new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.28, metalness: 0.82, envMapIntensity: 0.6 });
+        const rimMat = isGhost ? darkMat : new THREE.MeshStandardMaterial({ color: new THREE.Color(rimColorHex), roughness: 0.25, metalness: 0.85, envMapIntensity: 0.65 });
+        rimMat.userData = { apexRole: 'rim' };
         const tireGeo = new THREE.CylinderGeometry(R, R, 0.30, 24);
         tireGeo.rotateX(Math.PI / 2);                     // axle along Z (lateral)
         const hubGeo = new THREE.CylinderGeometry(R * 0.68, R * 0.68, 0.31, 16);
@@ -1149,9 +1339,9 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         return body;
       }
 
-      function createGT3CarMesh(bodyColor, isGhost = false, opacity = 1.0, kind = null) {
+      function createGT3CarMesh(bodyColor, isGhost = false, opacity = 1.0, kind = null, chassisStyle = 'procedural') {
         const group = new THREE.Group();
-        const procedural = buildProceduralBody(bodyColor, isGhost, opacity);
+        const procedural = buildProceduralBody(bodyColor, isGhost, opacity, chassisStyle, carAssetState.rimHex || 0x94a3b8);
         group.add(procedural);
 
         // Soft ground contact shadow under every non-ghost car (prevents "floating sticker" look)
@@ -1216,7 +1406,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         return group;
       }
 
-      // ---- GLB normalisation: strip floor planes, orient (-Z -> +X forward), GT3 scale, ground contact ----
+      // ---- GLB normalisation: strip floor planes, auto-detect forward (+X), GT3 scale, ground contact ----
       function normalizeVehicleScene(srcScene) {
         const root = new THREE.Group();
         root.name = 'apex_hifi_root';
@@ -1224,15 +1414,19 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         orient.add(srcScene);
         root.add(orient);
 
-        // Strip studio floor / shadow / backdrop planes commonly bundled inside GLB car files
+        // Strip studio floor / shadow / worldgrid / rim_blur planes commonly bundled inside GLB car files
         srcScene.updateMatrixWorld(true);
         const fullBox = new THREE.Box3().setFromObject(srcScene);
         const fullSize = fullBox.getSize(new THREE.Vector3());
         srcScene.traverse(o => {
+          if (/geo_rim_blur/i.test(o.name || '')) {
+            o.visible = false;
+            return;
+          }
           if (!o.isMesh) return;
           const nm = ((o.name || '') + ' ' + (o.parent ? o.parent.name || '' : '')).toLowerCase();
           const mName = (Array.isArray(o.material) ? o.material.map(m => m && m.name).join(' ') : (o.material && o.material.name) || '').toLowerCase();
-          if (/shadow|floor|ground|backdrop|stage|studio|podium|base_plate|ao_plane|road|plane0/i.test(nm + ' ' + mName)) {
+          if (/shadow|floor|ground|backdrop|stage|studio|podium|base_plate|ao_plane|road|plane0|worldgrid|rim_blur/i.test(nm + ' ' + mName)) {
             o.visible = false;
             return;
           }
@@ -1250,10 +1444,33 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         if (box.isEmpty()) throw new Error('模型沒有任何可見幾何 (empty bounding box)');
         const rawSize = box.getSize(new THREE.Vector3());
 
-        // Standard glTF cars (including Three.js ferrari.glb & Blender exports) face -Z.
-        // Rotating -Z by -PI/2 around Y maps (0,0,-1) -> (+1,0,0) (+X forward in this sim).
+        // Align long axis with X (+X forward in this sim).
         const longIsZ = rawSize.z > rawSize.x;
-        orient.rotation.y = (longIsZ ? -Math.PI / 2 : 0) +
+        let baseRotY = longIsZ ? -Math.PI / 2 : 0;
+        orient.rotation.y = baseRotY;
+        root.updateMatrixWorld(true);
+
+        // Auto-detect whether front wheels point toward +X or -X (some GLBs face -Z, others face +Z)
+        let frontSumX = 0, frontCnt = 0, rearSumX = 0, rearCnt = 0;
+        srcScene.traverse(o => {
+          if (!o.visible) return;
+          const nm = (o.name || '');
+          const isFront = /\b(wheel_?f[lr]|wheel_?[lr]f|rim_?f[lr]|rim_?[lr]f|tire_?f[lr]|tyre_?f[lr]|disc_?[lr]f|wheelf)/i.test(nm);
+          const isRear = /\b(wheel_?r[lr]|wheel_?[lr]r|rim_?r[lr]|rim_?[lr]r|tire_?r[lr]|tyre_?r[lr]|disc_?[lr]r|wheelb)/i.test(nm);
+          if (isFront || isRear) {
+            const wb = new THREE.Box3().setFromObject(o);
+            if (!wb.isEmpty()) {
+              const wc = wb.getCenter(new THREE.Vector3());
+              if (isFront) { frontSumX += wc.x; frontCnt++; }
+              if (isRear) { rearSumX += wc.x; rearCnt++; }
+            }
+          }
+        });
+        if (frontCnt > 0 && rearCnt > 0 && (frontSumX / frontCnt) < (rearSumX / rearCnt)) {
+          baseRotY += Math.PI;
+        }
+
+        orient.rotation.y = baseRotY +
           (carAssetState.flip ? Math.PI : 0) +
           carAssetState.yawSteps * (Math.PI / 2);
         root.updateMatrixWorld(true);
@@ -1275,17 +1492,96 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         return { root, rawSize, size, scale: s };
       }
 
-      // ---- Wheel auto-detection & rigging (re-parent into steer/spin pivots) ----
+      // ---- Attach GT3 Aero Kit (Swan-Neck Carbon Wing + Splitter + Diffuser) for road-car GLBs like ferrari.glb ----
+      function attachGT3AeroKit(root, presetId) {
+        if (presetId !== 'ferrari458') return;
+        const aero = new THREE.Group();
+        aero.name = 'apex_gt3_aero_kit';
+        const carbonMat = new THREE.MeshStandardMaterial({
+          name: 'Carbon_Fiber_GT3_Aero',
+          color: 0x111827,
+          metalness: 0.35,
+          roughness: 0.38,
+          envMapIntensity: 0.75
+        });
+        carbonMat.userData.apexRole = 'trim';
+        const paintEndplateMat = new THREE.MeshPhysicalMaterial({
+          name: 'Body_Color_GT3_Endplate',
+          color: 0xdc2626,
+          metalness: 0.80,
+          roughness: 0.20,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.03,
+          envMapIntensity: 0.95
+        });
+        paintEndplateMat.userData.apexRole = 'body';
+
+        // Main GT3 Carbon Rear Wing Airfoil + Gurney Flap
+        const wingBlade = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.038, 1.88), carbonMat);
+        wingBlade.position.set(-2.06, 1.18, 0);
+        wingBlade.rotation.z = 0.09;
+        aero.add(wingBlade);
+
+        const gurneyFlap = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.032, 1.86), carbonMat);
+        gurneyFlap.position.set(-2.22, 1.21, 0);
+        aero.add(gurneyFlap);
+
+        // Twin Swan-Neck Pylons mounted to rear decklid
+        [-0.44, 0.44].forEach(z => {
+          const pylon = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.36, 0.032), carbonMat);
+          pylon.position.set(-1.92, 1.01, z);
+          pylon.rotation.z = -0.22;
+          aero.add(pylon);
+          const neck = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.04, 0.036), carbonMat);
+          neck.position.set(-1.98, 1.20, z);
+          aero.add(neck);
+        });
+
+        // Body-colored GT3 Wing Endplates
+        [-0.95, 0.95].forEach(z => {
+          const endplate = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.26, 0.024), paintEndplateMat);
+          endplate.position.set(-2.06, 1.14, z);
+          aero.add(endplate);
+        });
+
+        // Front GT3 Carbon Splitter Lip & Dive Planes (Canards)
+        const splitter = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.028, 1.92), carbonMat);
+        splitter.position.set(2.14, 0.11, 0);
+        aero.add(splitter);
+        [-0.92, 0.92].forEach(z => {
+          const canard = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.02, 0.14), carbonMat);
+          canard.position.set(2.02, 0.34, z);
+          canard.rotation.z = -0.18;
+          aero.add(canard);
+        });
+
+        // Rear GT3 Carbon Underbody Diffuser Fins
+        const diffuserBase = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.03, 1.62), carbonMat);
+        diffuserBase.position.set(-2.12, 0.16, 0);
+        diffuserBase.rotation.z = 0.12;
+        aero.add(diffuserBase);
+        [-0.54, -0.18, 0.18, 0.54].forEach(z => {
+          const fin = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.14, 0.018), carbonMat);
+          fin.position.set(-2.12, 0.20, z);
+          aero.add(fin);
+        });
+
+        root.add(aero);
+        root.updateMatrixWorld(true);
+      }
+
+      // ---- Wheel auto-detection & 5-Node Rigging (Body + FL/FR/RL/RR steer/spin pivots + discs/calipers) ----
       function rigHiFiWheels(root) {
         root.updateMatrixWorld(true);
         const all = [];
         root.traverse(o => { if (o !== root && o.visible !== false) all.push(o); });
-        const byName = re => all.filter(o => re.test(o.name || '') && !/steer|steering|lug|bolt|nut|well|arch|fender|house/i.test(o.name || ''));
+        const byName = re => all.filter(o => re.test(o.name || '') && !/steer|steering|lug|bolt|nut|well|arch|fender|house|blur/i.test(o.name || ''));
         let cands = byName(/wheel|whl/i);
         if (cands.length < 4) cands = cands.concat(byName(/tire|tyre/i));
         if (cands.length < 4) cands = cands.concat(byName(/rim/i));
+        if (cands.length < 4) cands = cands.concat(byName(/^cylinder\.00[0-3]$/i));
 
-        // keep top-most nodes only (avoid rigging a rim AND its parent wheel)
+        // keep top-most wheel nodes only (avoid rigging a rim AND its parent wheel)
         const set = new Set(cands);
         cands = cands.filter(o => {
           for (let p = o.parent; p; p = p.parent) if (set.has(p)) return false;
@@ -1295,7 +1591,18 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         const infos = cands.map(o => {
           const b = new THREE.Box3().setFromObject(o);
           return { o, b, c: b.getCenter(new THREE.Vector3()), size: b.getSize(new THREE.Vector3()) };
-        }).filter(i => !i.b.isEmpty() && i.size.y > 0.2 && i.size.y < 1.2 && i.c.y < CAR_TARGET_DIMS.height * 0.7);
+        }).filter(i => !i.b.isEmpty() && i.size.y > 0.18 && i.size.y < 1.25 && i.c.y < CAR_TARGET_DIMS.height * 0.75);
+
+        // Also locate top-most brake disc nodes (spin with wheel) and brake caliper/knuckle nodes (steer with wheel hub)
+        const filterTopMost = list => {
+          const s = new Set(list);
+          return list.filter(o => {
+            for (let p = o.parent; p; p = p.parent) if (s.has(p) || set.has(p)) return false;
+            return true;
+          });
+        };
+        const discNodes = filterTopMost(byName(/\b(disc|disk)_[lrf]{2}|sm_disk_[lr]/i));
+        const caliperNodes = filterTopMost(byName(/\b(caliper|susp)_[lrf]{2}|sm_brake_[flr]{2}/i));
 
         const quads = { FL: [], FR: [], RL: [], RR: [] };
         infos.forEach(i => {
@@ -1315,6 +1622,20 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           root.add(steer);
           steer.updateMatrixWorld(true);
           list.forEach(i => spin.attach(i.o));   // preserves world transform
+
+          // Attach matching brake discs to spin, and brake calipers to steer
+          discNodes.forEach(dn => {
+            const db = new THREE.Box3().setFromObject(dn);
+            if (!db.isEmpty() && db.getCenter(new THREE.Vector3()).distanceTo(c) < 0.48) {
+              spin.attach(dn);
+            }
+          });
+          caliperNodes.forEach(cn => {
+            const cb = new THREE.Box3().setFromObject(cn);
+            if (!cb.isEmpty() && cb.getCenter(new THREE.Vector3()).distanceTo(c) < 0.48) {
+              steer.attach(cn);
+            }
+          });
           rigged++;
         });
         return { rigged, names: infos.map(i => i.o.name) };
@@ -1341,24 +1662,25 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         });
 
         areaByMat.forEach((area, mat) => {
+          if (mat.userData && mat.userData.apexRole) return;
           const mName = (mat.name || '').toLowerCase().trim();
           const meshStr = (meshNamesByMat.get(mat) || '').toLowerCase();
           let role = 'other';
 
-          if (/glass|window|windshield|windscreen|visor/.test(mName) || (mat.transparent && mat.opacity < 0.75 && !/light|lamp|red/.test(mName))) {
+          if (/glass|window|windshield|windscreen|visor/.test(mName) && !/emissive|light|sticker/.test(mName)) {
             role = 'glass';
-          } else if (/tail|brake.?light|rear.?light|stop.?lamp|lights?_red|red_glass|red_light|lamp_r/.test(mName + ' ' + meshStr)) {
+          } else if (/tail|brake.?light|rear.?light|stop.?lamp|lights?_red|red_glass|red_light|lamp_r|emissive.*rear/.test(mName + ' ' + meshStr)) {
             role = 'taillight';
-          } else if (/head.?light|front.?light|lamp_f|led_front/.test(mName + ' ' + meshStr)) {
+          } else if (/head.?light|front.?light|lamp_f|led_front|emissive.*front|aux_light/.test(mName + ' ' + meshStr)) {
             role = 'light';
-          } else if (/tire|tyre|rubber|tread/.test(mName)) {
+          } else if (/tire|tyre|rubber|tread/.test(mName) && !/brake|disk|disc|hub/.test(mName)) {
             role = 'tire';
-          } else if (/rim|wheel|Alloy|caliper|disc|rotor/.test(mName)) {
+          } else if (/rim|alloy|^ext_rim/i.test(mName) || (/metal_gray/.test(mName) && /rim/.test(meshStr))) {
             role = 'rim';
-          } else if (/detail|trim|interior|leather|seat|dash|carbon|plastic|chrome|metal|steel|iron|exhaust|grill|grille|mesh|badge|logo|emblem|yellow|black|dark|shadow|int_|underbody|chassis|carpet|mirror/.test(mName)) {
-            role = 'trim';
-          } else if (/^(body|paint|car_?paint|carpaint|livery|shell|carroserie|lack|ext_paint|body_paint|main_paint|car_body_mat)$/i.test(mName) || /car_?paint|body_?paint|ext_?paint|livery_?paint/.test(mName)) {
+          } else if (/^(body|paint|car_?paint|carpaint|livery|shell|carroserie|lack|ext_paint|body_paint|body_color|main_paint|car_body_mat)$/i.test(mName) || /car_?paint|body_?paint|body_?color|ext_?paint|livery|carpaint/.test(mName)) {
             role = 'body';
+          } else if (/detail|trim|interior|leather|seat|dash|carbon|plastic|chrome|metal|steel|iron|exhaust|grill|grille|mesh|badge|logo|emblem|yellow|black|dark|shadow|int_|underbody|chassis|carpet|mirror|caliper|disc|disk|brake/.test(mName)) {
+            role = 'trim';
           }
           mat.userData.apexRole = role;
         });
@@ -1382,6 +1704,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         return { materialCount: areaByMat.size, roleCounts, hasBody };
       }
 
+      // ---- Official Three.js webgl_materials_car.html MeshPhysicalMaterial Pipeline ----
       function convertMaterialForSlot(src, slot, cache) {
         if (cache.has(src)) return cache.get(src);
         let out;
@@ -1394,33 +1717,38 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             depthWrite: false
           });
         } else if (role === 'body') {
-          const keepOriginal = carAssetState.livery === 'original';
-          const baseCol = keepOriginal
-            ? (src.color ? src.color.clone() : new THREE.Color(0xdc2626))
-            : new THREE.Color(slot.color);
-          // Scale diffuse albedo so under bright hemisphere + sun lighting it doesn't blow out
-          baseCol.multiplyScalar(0.80);
+          const hasLiveryTex = !!src.map;
+          const useOriginalTex = (carAssetState.livery === 'original') && hasLiveryTex && slot.kind === 'player';
+          const baseCol = useOriginalTex
+            ? new THREE.Color(0xffffff)
+            : new THREE.Color(slot.color).multiplyScalar(0.95);
+          // Official Three.js webgl_materials_car.html automotive clearcoat specification:
+          // metalness: 0.80, roughness: 0.20, clearcoat: 1.0, clearcoatRoughness: 0.03
           out = new THREE.MeshPhysicalMaterial({
             color: baseCol,
-            map: keepOriginal ? (src.map || null) : null,
+            map: useOriginalTex ? src.map : null,
             normalMap: src.normalMap || null,
-            metalness: 0.18,
-            roughness: 0.28,
-            clearcoat: 0.85,
-            clearcoatRoughness: 0.09,
-            envMapIntensity: 0.55
+            metalness: useOriginalTex ? 0.35 : 0.80,
+            roughness: 0.20,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.03,
+            envMapIntensity: 0.95
           });
+          out.userData.origMap = src.map || null;
         } else if (role === 'glass') {
+          const hasGlassTex = !!src.map;
           out = new THREE.MeshPhysicalMaterial({
-            color: 0x090d16,
-            metalness: 0.10,
-            roughness: 0.06,
-            clearcoat: 0.90,
+            color: hasGlassTex ? 0xffffff : 0x090d16,
+            map: src.map || null,
+            metalness: 0.12,
+            roughness: 0.05,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.03,
             transparent: true,
-            opacity: 0.68,
+            opacity: hasGlassTex ? 0.86 : 0.68,
             depthWrite: false,
             side: THREE.DoubleSide,
-            envMapIntensity: 0.75
+            envMapIntensity: 0.90
           });
         } else if (role === 'taillight') {
           out = src.clone();
@@ -1428,18 +1756,33 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           out.emissive = new THREE.Color(0xff1a1a);
           out.emissiveIntensity = 0.35;
           out.userData.apexTailLight = true;
+        } else if (role === 'rim') {
+          out = new THREE.MeshPhysicalMaterial({
+            color: slot.kind === 'player'
+              ? new THREE.Color(carAssetState.rimHex || '#94a3b8')
+              : (src.color ? src.color.clone() : new THREE.Color(0x94a3b8)),
+            map: src.map || null,
+            normalMap: src.normalMap || null,
+            metalness: 0.85,
+            roughness: 0.22,
+            clearcoat: 0.65,
+            clearcoatRoughness: 0.05,
+            transparent: false,
+            opacity: 1.0,
+            envMapIntensity: 0.85
+          });
         } else {
           out = src.clone();
           if (out.color && !out.map) {
             const lum = (out.color.r + out.color.g + out.color.b) / 3;
             if (lum < 0.025) out.color.setRGB(0.05, 0.055, 0.065); // prevent pitch-black silhouette voids
-            else out.color.multiplyScalar(0.84);
+            else out.color.multiplyScalar(0.90);
           }
           if (role === 'tire' && 'roughness' in out) {
             out.roughness = Math.max(0.78, out.roughness || 0.85);
             out.metalness = Math.min(0.1, out.metalness || 0.0);
           }
-          if ('envMapIntensity' in out) out.envMapIntensity = 0.45;
+          if ('envMapIntensity' in out) out.envMapIntensity = 0.60;
         }
         out.userData.apexRole = role;
         cache.set(src, out);
@@ -1505,7 +1848,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         vehicleSlots.forEach(applyHiFiTemplateToSlot);
       }
 
-      function buildHiFiTemplate() {
+      function buildHiFiTemplate(targetPresetId) {
         if (!carAssetState.rawScene) { carAssetState.template = null; return; }
         const src = carAssetState.rawScene.clone(true);
         src.traverse(o => {
@@ -1514,6 +1857,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           }
         });
         const norm = normalizeVehicleScene(src);
+        attachGT3AeroKit(norm.root, targetPresetId || carAssetState.presetId);
         const matInfo = classifyHiFiMaterials(norm.root);
         const wheelInfo = rigHiFiWheels(norm.root);
 
@@ -1553,7 +1897,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         });
       }
 
-      // ---- Loaders ----
+      // ---- Loaders (with Draco & Meshopt support) ----
       let dracoLoaderInstance = null;
       function createGLTFLoader(manager) {
         if (typeof THREE.GLTFLoader !== 'function') {
@@ -1567,6 +1911,49 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           }
           loader.setDRACOLoader(dracoLoaderInstance);
         }
+        if (typeof MeshoptDecoder !== 'undefined' && typeof loader.setMeshoptDecoder === 'function') {
+          loader.setMeshoptDecoder(MeshoptDecoder);
+        }
+        // Fix Three.js r128 GLTFTextureWebPExtension & make texture loading fault-tolerant:
+        // 1. r128's built-in GLTFTextureWebPExtension.detectSupport() sets image.src before image.onload, which can hang.
+        // 2. r128's parser.loadTextureImage(textureIndex, source, loader) expects `source` to be the image object `json.images[i]`.
+        if (typeof loader.register === 'function') {
+          loader.register(function (parser) {
+            if (parser && typeof parser.loadTextureImage === 'function') {
+              const origLoadTextureImage = parser.loadTextureImage.bind(parser);
+              parser.loadTextureImage = function (textureIndex, sourceOrIndex, texLoader) {
+                let srcObj = sourceOrIndex;
+                if (typeof sourceOrIndex === 'number' && parser.json && Array.isArray(parser.json.images)) {
+                  srcObj = parser.json.images[sourceOrIndex];
+                }
+                if (!srcObj || (srcObj.bufferView === undefined && srcObj.uri === undefined)) {
+                  return Promise.resolve(new THREE.Texture());
+                }
+                try {
+                  return Promise.resolve(origLoadTextureImage(textureIndex, srcObj, texLoader)).catch(function () {
+                    return new THREE.Texture();
+                  });
+                } catch (e) {
+                  return Promise.resolve(new THREE.Texture());
+                }
+              };
+            }
+            return {
+              name: 'EXT_texture_webp',
+              loadTexture: function (textureIndex) {
+                const json = parser.json;
+                const texDef = json && json.textures && json.textures[textureIndex];
+                if (!texDef || !texDef.extensions || !texDef.extensions.EXT_texture_webp) return null;
+                const sourceIndex = texDef.extensions.EXT_texture_webp.source;
+                const source = json.images && json.images[sourceIndex];
+                if (!source) return Promise.resolve(new THREE.Texture());
+                return Promise.resolve(parser.loadTextureImage(textureIndex, source, parser.textureLoader)).catch(function () {
+                  return new THREE.Texture();
+                });
+              }
+            };
+          });
+        }
         return loader;
       }
 
@@ -1576,16 +1963,18 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         const prevRaw = carAssetState.rawScene;
         carAssetState.rawScene = srcScene;
         try {
-          buildHiFiTemplate();
+          buildHiFiTemplate(presetId);
         } catch (err) {
           carAssetState.rawScene = prevRaw;
-          buildHiFiTemplate();
+          buildHiFiTemplate(carAssetState.loadedPresetId);
           throw err;
         }
         if (prevRaw && prevRaw !== srcScene) disposeObjectDeep(prevRaw);
         carAssetState.presetId = presetId;
+        carAssetState.loadedPresetId = presetId;
         carAssetState.label = label;
         rebuildAllVehicleSlots();
+        applyCustomLiveryColors(null, null);
         saveCarAssetSettings();
         // If user actively picked a 3D model in the garage while in Cockpit view, switch to Chase view so they see it
         const garageModal = document.getElementById('modal-garage');
@@ -1595,41 +1984,110 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           if (camLbl) camLbl.textContent = '追尾視角';
         }
         garageUI.refresh();
-        garageUI.setStatus(`✔ 已載入「${label}」・${carAssetState.stats.tris.toLocaleString()} 面・車輪綁定 ${carAssetState.stats.wheels}/4（已切換追尾視角）`, 'ok');
+        garageUI.setStatus(`✔ 已載入真實 3D 模型「${label}」・${carAssetState.stats.tris.toLocaleString()} 面・車輪獨立綁定 ${carAssetState.stats.wheels}/4`, 'ok');
         garageUI.setProgress(100);
       }
 
-      function useProceduralVehicle() {
+      function applyCustomLiveryColors(paintHex, rimHex) {
+        if (paintHex === 'original') {
+          carAssetState.livery = 'original';
+        } else if (paintHex) {
+          carAssetState.paintHex = paintHex;
+          carAssetState.livery = 'team';
+        }
+        if (rimHex) carAssetState.rimHex = rimHex;
+
+        const pColHex = new THREE.Color(carAssetState.paintHex || '#ef4444').getHex();
+        const rCol = new THREE.Color(carAssetState.rimHex || '#94a3b8');
+        const pColScaled = new THREE.Color(pColHex).multiplyScalar(0.95);
+
+        const playerSlot = playerExteriorMesh && playerExteriorMesh.userData ? playerExteriorMesh.userData.vehicleSlot : null;
+        if (playerSlot) {
+          playerSlot.color = pColHex;
+          [playerSlot.procedural, playerSlot.hifi].forEach(root => {
+            if (!root) return;
+            root.traverse(o => {
+              if (!o.isMesh || !o.material) return;
+              const mats = Array.isArray(o.material) ? o.material : [o.material];
+              mats.forEach(m => {
+                if (!m || !m.userData) return;
+                if (m.userData.apexRole === 'body' && m.color) {
+                  const useOrig = (carAssetState.livery === 'original') && !!m.userData.origMap;
+                  m.map = useOrig ? m.userData.origMap : null;
+                  m.color.copy(useOrig ? new THREE.Color(0xffffff) : pColScaled);
+                  if ('metalness' in m) m.metalness = useOrig ? 0.35 : 0.80;
+                  if ('roughness' in m) m.roughness = 0.20;
+                  if ('clearcoat' in m) m.clearcoat = 1.0;
+                  if ('clearcoatRoughness' in m) m.clearcoatRoughness = 0.03;
+                  m.needsUpdate = true;
+                } else if (m.userData.apexRole === 'rim' && m.color) {
+                  m.color.copy(rCol);
+                }
+              });
+            });
+          });
+        }
+        if (typeof hoodMesh !== 'undefined' && hoodMesh && hoodMesh.material && hoodMesh.material.color) {
+          hoodMesh.material.color.setHex(pColHex);
+        }
+        saveCarAssetSettings();
+      }
+
+      function useProceduralVehicle(presetId = 'procedural', label = null, defaultPaintHex = null) {
         if (carAssetState.rawScene) disposeObjectDeep(carAssetState.rawScene);
         carAssetState.rawScene = null;
         carAssetState.template = null;
+        carAssetState.loadedPresetId = null;
         carAssetState.stats = null;
-        carAssetState.presetId = 'procedural';
-        carAssetState.label = '內建程序化 GT3';
+        carAssetState.presetId = presetId || 'procedural';
+        const presetObj = CAR_MODEL_PRESETS.find(p => p.id === carAssetState.presetId);
+        carAssetState.label = label || (presetObj ? presetObj.label : 'BMW M4 GT3 EVO // APEX Works');
+        if (defaultPaintHex) {
+          carAssetState.paintHex = defaultPaintHex;
+        }
+
+        const playerSlot = playerExteriorMesh && playerExteriorMesh.userData ? playerExteriorMesh.userData.vehicleSlot : null;
+        if (playerSlot) {
+          if (playerSlot.procedural) {
+            playerSlot.group.remove(playerSlot.procedural);
+            disposeObjectDeep(playerSlot.procedural);
+          }
+          const pHex = new THREE.Color(carAssetState.paintHex || '#ef4444').getHex();
+          const newProc = buildProceduralBody(pHex, false, 1.0, carAssetState.presetId, carAssetState.rimHex || '#94a3b8');
+          playerSlot.group.add(newProc);
+          playerSlot.procedural = newProc;
+          playerSlot.proceduralRig = collectWheelRig(newProc);
+          playerSlot.rig = playerSlot.proceduralRig;
+        }
+
         rebuildAllVehicleSlots();
+        applyCustomLiveryColors(carAssetState.paintHex, carAssetState.rimHex);
         saveCarAssetSettings();
         garageUI.refresh();
-        garageUI.setStatus('✔ 已切換為內建程序化 GT3 車體', 'ok');
+        garageUI.setStatus(`✔ 已切換為「${carAssetState.label}」離線備援車體`, 'ok');
         garageUI.setProgress(0);
       }
 
       function loadVehicleFromURLs(urls, label, presetId) {
-        if (carAssetState.loading) return;
+        if (!urls || !urls.length) return;
         let loader;
         try { loader = createGLTFLoader(); } catch (e) { garageUI.setStatus('✖ ' + e.message, 'err'); return; }
+        const seq = ++carAssetState.loadSeq;
         carAssetState.loading = true;
-        garageUI.setProgress(2);
+        garageUI.setProgress(5);
         let attempt = 0;
         const tryNext = (lastErr) => {
+          if (seq !== carAssetState.loadSeq) return;
           if (attempt >= urls.length) {
             carAssetState.loading = false;
             garageUI.setProgress(0);
-            garageUI.setStatus(`✖ 載入失敗，已保留目前車輛（${lastErr && lastErr.message ? lastErr.message : '網路或 CORS 錯誤'}）`, 'err');
+            garageUI.setStatus(`✖ 3D 模型下載失敗，已保留目前車輛（${lastErr && lastErr.message ? lastErr.message : '網路或 CORS 錯誤'}）`, 'err');
             return;
           }
           const url = urls[attempt++];
-          garageUI.setStatus(`下載中… ${url.replace(/^https?:\/\//, '').slice(0, 60)}`);
+          garageUI.setStatus(`正在載入高擬真 3D 賽車模型「${label}」…`);
           loader.load(url, (gltf) => {
+            if (seq !== carAssetState.loadSeq) return;
             try {
               onVehicleGLTFReady(gltf, label, presetId);
               carAssetState.loading = false;
@@ -1638,6 +2096,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
               tryNext(err);
             }
           }, (xhr) => {
+            if (seq !== carAssetState.loadSeq) return;
             if (xhr && xhr.total) garageUI.setProgress(Math.min(95, (xhr.loaded / xhr.total) * 95));
           }, (err) => {
             console.warn('[APEX GLB] load failed:', url, err);
@@ -1823,8 +2282,46 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       };
 
       const playerCarGroup = new THREE.Group();
-      const playerExteriorMesh = createGT3CarMesh(0xef4444, false, 1.0, 'player');
+      const playerExteriorMesh = createGT3CarMesh(
+        new THREE.Color(carAssetState.paintHex || '#ef4444').getHex(),
+        false,
+        1.0,
+        'player',
+        carAssetState.presetId || 'procedural'
+      );
       playerCarGroup.add(playerExteriorMesh);
+
+      // 3D Twin Exhaust Backfire & Nitrous Afterburner Flame Cones (Directly visible in Chase Cam!)
+      const exhaustFlameGroup = new THREE.Group();
+      const flameOuterGeo = new THREE.ConeGeometry(0.095, 0.72, 10);
+      flameOuterGeo.rotateZ(Math.PI / 2); // Point cone tip toward -X (rearward)
+      const flameInnerGeo = new THREE.ConeGeometry(0.052, 0.44, 10);
+      flameInnerGeo.rotateZ(Math.PI / 2);
+      const flameOuterMat = new THREE.MeshBasicMaterial({
+        color: 0xf97316,
+        transparent: true,
+        opacity: 0.90,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const flameInnerMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.96,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      [-0.36, 0.36].forEach(zPos => {
+        const nozzle = new THREE.Group();
+        nozzle.position.set(-2.52, 0.31, zPos);
+        const outerMesh = new THREE.Mesh(flameOuterGeo, flameOuterMat);
+        const innerMesh = new THREE.Mesh(flameInnerGeo, flameInnerMat);
+        innerMesh.position.x = 0.12;
+        nozzle.add(outerMesh, innerMesh);
+        exhaustFlameGroup.add(nozzle);
+      });
+      exhaustFlameGroup.visible = false;
+      playerCarGroup.add(exhaustFlameGroup);
 
       const headlightGroup = new THREE.Group();
       const beamGeo = new THREE.ConeGeometry(4.2, 42, 16, 1, true);
@@ -2007,6 +2504,20 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           setSlotBrakeLight(playerExteriorMesh, simState.brakeInput > 10, 0xff2222, 0x660000);
         }
 
+        // Animate 3D Twin Exhaust Backfire & NOS Flame Cones
+        const isBackfiring = !simState.inShowcaseMode && ((simState.backfireFlameTimer || 0) > 0 || simState.isNosActive);
+        exhaustFlameGroup.visible = isBackfiring;
+        if (isBackfiring) {
+          flameOuterMat.color.setHex(simState.isNosActive ? 0x06b6d4 : 0xf97316);
+          flameInnerMat.color.setHex(simState.isNosActive ? 0xe0f2fe : 0x38bdf8);
+          exhaustFlameGroup.children.forEach((nozzle, idx) => {
+            const flicker = simState.isNosActive
+              ? (1.15 + Math.sin(nowSec * 90 + idx * 2.1) * 0.30)
+              : (0.65 + Math.random() * 0.75);
+            nozzle.scale.set(flicker, 0.85 + Math.random() * 0.35, 0.85 + Math.random() * 0.35);
+          });
+        }
+
         if (showPro) {
           const gState = sampleGhostAtTime(proTelemetrySamples, simState.lapElapsed);
           if (gState) {
@@ -2140,11 +2651,13 @@ window.spawnTireSmoke = spawnTireSmoke;
 window.updateSmokeParticles = updateSmokeParticles;
 window.setSlotBrakeLight = setSlotBrakeLight;
 window.useProceduralVehicle = useProceduralVehicle;
+window.applyCustomLiveryColors = applyCustomLiveryColors;
 window.loadVehicleFromURLs = loadVehicleFromURLs;
 window.loadVehicleFromFiles = loadVehicleFromFiles;
 window.rebuildAllVehicleSlots = rebuildAllVehicleSlots;
 window.createGLTFLoader = createGLTFLoader;
 window.garageUI = garageUI;
+window.CAR_MODEL_PRESETS = CAR_MODEL_PRESETS;
 window.carAssetState = carAssetState;
 window.saveCarAssetSettings = saveCarAssetSettings;
 window.saveGfxSettings = saveGfxSettings;

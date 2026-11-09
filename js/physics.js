@@ -15,45 +15,59 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           highSpeedLockFactor: 0.35,    // lock limit at 260+ km/h
           steerRampRate: 2.80,          // steering wheel deflection speed (rad/s)
           autoCenterDamping: 0.005,     // self-centering strength
+          accelFactor: 1.00,
+          aeroDragFactor: 1.00,
+          brakeFactor: 1.00,
           weightKg: 1245
         },
         ferrari458: {
           name: 'FERRARI 458 ITALIA GT3',
           wheelbase: 2.65,              // mid-engine balanced wheelbase
           maxSteerDeg: 22.0,            // GT3 homologated mechanical lock
-          baseMuLat: 1.44,              // progressive mechanical grip
-          understeerCoeff: 0.00115,     // slightly more stable understeer gradient
-          turnInAgility: 1.05,          // smooth mid-engine turn-in
-          highSpeedLockFactor: 0.30,    // higher high-speed stability
-          steerRampRate: 2.55,
+          baseMuLat: 1.46,              // progressive mechanical grip
+          understeerCoeff: 0.00110,     // balanced mid-engine understeer gradient
+          turnInAgility: 1.10,          // smooth mid-engine turn-in
+          highSpeedLockFactor: 0.31,    // higher high-speed stability
+          steerRampRate: 2.60,
           autoCenterDamping: 0.006,
+          accelFactor: 1.03,
+          aeroDragFactor: 0.985,
+          brakeFactor: 1.00,
           weightKg: 1215
         },
-        porsche911_locked: {
-          name: 'PORSCHE 911 GT3 R',
+        porsche911: {
+          name: 'PORSCHE 911 GT3 R (992)',
           wheelbase: 2.50,              // short rear-engine wheelbase
           maxSteerDeg: 24.0,            // agile steering lock
-          baseMuLat: 1.50,
-          understeerCoeff: 0.00085,     // sharp front bite on trail braking
-          turnInAgility: 1.25,
-          highSpeedLockFactor: 0.32,
+          baseMuLat: 1.52,
+          understeerCoeff: 0.00082,     // sharp front bite on trail braking
+          turnInAgility: 1.24,
+          highSpeedLockFactor: 0.33,
           steerRampRate: 2.85,
           autoCenterDamping: 0.005,
+          accelFactor: 1.055,           // RR traction advantage out of corners
+          aeroDragFactor: 0.995,
+          brakeFactor: 1.045,           // rear engine weight distribution aids four-wheel braking
           weightKg: 1250
         },
-        amggt3_locked: {
+        amggt3: {
           name: 'MERCEDES-AMG GT3 EVO',
-          wheelbase: 2.63,              // front-mid engine stable tourer
+          wheelbase: 2.66,              // front-mid engine long wheelbase tourer
           maxSteerDeg: 21.5,
-          baseMuLat: 1.40,
-          understeerCoeff: 0.00130,     // highly stable tourer
-          turnInAgility: 0.98,
-          highSpeedLockFactor: 0.28,    // extremely stable at high speed
-          steerRampRate: 2.35,
-          autoCenterDamping: 0.007,
+          baseMuLat: 1.43,
+          understeerCoeff: 0.00122,     // rock-solid high-speed stability
+          turnInAgility: 1.02,
+          highSpeedLockFactor: 0.29,    // extremely stable at high speed
+          steerRampRate: 2.45,
+          autoCenterDamping: 0.0065,
+          accelFactor: 1.04,            // 6.2L V8 torque
+          aeroDragFactor: 0.955,        // highest straight-line top speed
+          brakeFactor: 1.015,
           weightKg: 1285
         }
       };
+      CAR_HANDLING_PROFILES.porsche911_locked = CAR_HANDLING_PROFILES.porsche911;
+      CAR_HANDLING_PROFILES.amggt3_locked = CAR_HANDLING_PROFILES.amggt3;
 
       function getCurrentCarHandling() {
         const id = (typeof carAssetState !== 'undefined' && carAssetState && carAssetState.presetId) ? carAssetState.presetId : 'procedural';
@@ -339,6 +353,8 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
       function stepPhysics(dt) {
         if (simState.paused || simState.inShowcaseMode) return;
         const isReal = (simState.edition === 'realistic');
+        simState.backfireFlameTimer = Math.max(0, (simState.backfireFlameTimer || 0) - dt);
+        const prevThr = simState.throttleInput;
 
         if (!manualThrottleDrag) {
           if (inputs.throttle || (!isReal && inputs.nos)) {
@@ -480,6 +496,10 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
                   if (simState.gear !== g) {
                     simState.gear = g;
                     document.getElementById('hud-gear').textContent = String(g);
+                    simState.backfireFlameTimer = 0.13;
+                    if (soundEngine && typeof soundEngine.triggerBackfire === 'function') {
+                      soundEngine.triggerBackfire();
+                    }
                     const wPos = sdToWorld(simState.s, simState.d);
                     spawnTireSmoke(
                       wPos.x - Math.cos(simState.heading) * 2.3,
@@ -526,13 +546,16 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           simState.rpm = Math.round(1150 + normRpm * 7650);
           const revLimiterCut = (!simState.autoTransmission && simState.rpm > 8780) ? 0.10 : 1.0;
 
-          // Calibrated 0-100 km/h (3.48s) and 0-300 km/h (~40s) Power & Drag Model
+          // Calibrated 0-100 km/h (3.48s) and 0-300 km/h (~40s) Power & Drag Model + Per-Chassis Multipliers
           const vEff = Math.max(vMs, 12.5);
-          const maxMechanicalGripAccel = 8.25;
-          const specificPower = 338.0;
+          const accelMult = carProfile.accelFactor || 1.0;
+          const dragMult = carProfile.aeroDragFactor || 1.0;
+          const brakeMult = carProfile.brakeFactor || 1.0;
+          const maxMechanicalGripAccel = 8.25 * accelMult;
+          const specificPower = 338.0 * accelMult;
           const rawEngineAccel = Math.min(maxMechanicalGripAccel, specificPower / vEff);
 
-          const aeroDragCoeff = simState.inSlipstream ? 0.00046 : 0.000557;
+          const aeroDragCoeff = (simState.inSlipstream ? 0.00046 : 0.000557) * dragMult;
           const rollingResistance = simState.offTrack ? (1.15 + 0.025 * vMs) : 0.14;
           const corneringInducedDrag = Math.abs(simState.latG) * 0.38;
           const dragAccel = aeroDragCoeff * vMs * vMs + rollingResistance + corneringInducedDrag;
@@ -541,9 +564,17 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           simState.isBrakeLockup = (brk > lockupThreshold && simState.speedKmh > 45);
           if (simState.isBrakeLockup && Math.random() < 0.08) simState.lockupCount++;
 
-          const effectiveBrakeDecel = simState.isBrakeLockup
+          const effectiveBrakeDecel = (simState.isBrakeLockup
             ? 12.8 * simState.surfaceGrip
-            : brk * 19.2 * simState.surfaceGrip;
+            : brk * 19.2 * simState.surfaceGrip) * brakeMult;
+
+          // High-RPM throttle lift-off exhaust pop & flame
+          if (prevThr > 65 && simState.throttleInput <= 25 && simState.speedKmh > 115 && (simState.backfireFlameTimer || 0) <= 0) {
+            simState.backfireFlameTimer = 0.11;
+            if (soundEngine && typeof soundEngine.triggerBackfire === 'function') {
+              soundEngine.triggerBackfire();
+            }
+          }
 
           const driveAccel = thr * rawEngineAccel * revLimiterCut * simState.surfaceGrip;
           const nosBoostAccel = simState.isNosActive ? 4.8 : 0;
@@ -650,6 +681,12 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             simState.driftAngle *= Math.pow(0.01, dt);
           }
         }
+        // Asymmetric off-track grass pull yaw torque: running wheels onto grass tugs the car slightly toward the runoff when under load
+        const offTrackPullYaw = (simState.offTrack && vMs > 10)
+          ? Math.sign(simState.d) * (0.06 + Math.abs(simState.longG) * 0.08) * (isReal ? 1.0 : 0.45)
+          : 0;
+        targetYawRate += offTrackPullYaw;
+
         // Vehicle rotational moment of inertia (smooth transition, removes jerky yaw jumps)
         simState.yawRate += (targetYawRate - simState.yawRate) * Math.min(1.0, 22.0 * dt);
 
@@ -661,18 +698,43 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.brakeNowWarning = (simState.speedKmh > cornerMaxKmh + 28 && brk < 0.2);
 
         const wPos = sdToWorld(simState.s, simState.d);
+        const carYaw = simState.heading + simState.driftAngle;
+        const fwdX = Math.cos(carYaw);
+        const fwdZ = Math.sin(carYaw);
+        const rightX = -Math.sin(carYaw);
+        const rightZ = Math.cos(carYaw);
+
+        // Dual rear-wheel & front-wheel independent ground smoke and twin tire skid marks!
         if (simState.isBrakeLockup || simState.isDrifting || simState.isUndersteer || simState.tireSlipRatio > 0.96) {
-          if (Math.random() < 0.55) {
-            spawnSkidMark(wPos.x, wPos.y, wPos.z, simState.heading + simState.driftAngle);
+          const rlX = wPos.x - fwdX * 1.36 - rightX * 0.84;
+          const rlZ = wPos.z - fwdZ * 1.36 - rightZ * 0.84;
+          const rrX = wPos.x - fwdX * 1.36 + rightX * 0.84;
+          const rrZ = wPos.z - fwdZ * 1.36 + rightZ * 0.84;
+
+          if (Math.random() < 0.65) {
+            spawnSkidMark(rlX, wPos.y, rlZ, carYaw);
+            spawnSkidMark(rrX, wPos.y, rrZ, carYaw);
           }
-          if (simState.isBrakeLockup || simState.isDrifting || simState.isUndersteer) {
-            spawnTireSmoke(wPos.x, wPos.y, wPos.z, 'smoke');
+          if (simState.isDrifting || simState.tireSlipRatio > 0.98) {
+            spawnTireSmoke(rlX, wPos.y, rlZ, 'smoke');
+            spawnTireSmoke(rrX, wPos.y, rrZ, 'smoke');
+          }
+          if (simState.isBrakeLockup || simState.isUndersteer) {
+            const flX = wPos.x + fwdX * 1.38 - rightX * 0.84;
+            const flZ = wPos.z + fwdZ * 1.38 - rightZ * 0.84;
+            const frX = wPos.x + fwdX * 1.38 + rightX * 0.84;
+            const frZ = wPos.z + fwdZ * 1.38 + rightZ * 0.84;
+            spawnTireSmoke(flX, wPos.y, flZ, 'smoke');
+            spawnTireSmoke(frX, wPos.y, frZ, 'smoke');
           }
         }
         if (simState.isNosActive) {
-          const backX = wPos.x - Math.cos(simState.heading) * 2.3;
-          const backZ = wPos.z - Math.sin(simState.heading) * 2.3;
-          spawnTireSmoke(backX, wPos.y, backZ, 'nos');
+          const backL_X = wPos.x - fwdX * 2.35 - rightX * 0.36;
+          const backL_Z = wPos.z - fwdZ * 2.35 - rightZ * 0.36;
+          const backR_X = wPos.x - fwdX * 2.35 + rightX * 0.36;
+          const backR_Z = wPos.z - fwdZ * 2.35 + rightZ * 0.36;
+          spawnTireSmoke(backL_X, wPos.y, backL_Z, 'nos');
+          spawnTireSmoke(backR_X, wPos.y, backR_Z, 'nos');
         }
         updateSmokeParticles(dt);
 
@@ -864,6 +926,15 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           if (Math.abs(gapMeters) < 6.5 && Math.abs(ai.d - simState.d) < 2.8) {
             targetD += (ai.d >= simState.d ? 2.8 : -2.8);
           }
+
+          // AI-to-AI lateral spacing so AI rivals overtake cleanly without overlapping each other
+          aiCars.forEach(other => {
+            if (other === ai) return;
+            const otherTotalS = (other.lap - 1) * totalTrackLength + other.s;
+            if (Math.abs(aiTotalS - otherTotalS) < 6.5 && Math.abs(ai.d - other.d) < 2.5) {
+              targetD += (ai.d >= other.d ? 1.8 : -1.8);
+            }
+          });
 
           // Apply authentic GT3 acceleration and braking rates so AI launches and brakes realistically
           const targetMs = targetV / 3.6;

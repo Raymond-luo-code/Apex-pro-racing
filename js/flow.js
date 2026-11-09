@@ -7,48 +7,68 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
       const CAR_CATALOG = [
         {
           id: 'procedural',
-          classLabel: 'GT3 · CLASS A',
-          name: 'APEX GT3 PROTOTYPE',
-          shortTag: '廠隊輕量化原型車 · 離線秒開',
-          origin: '🇩🇪 紐柏林廠隊研發 · 4.0L V8 自然進氣 · 後輪驅動 (RWD)',
-          desc: '專為極限彎道下壓力與精準荷重轉移打造的 GT3 原型賽車。搭載高轉速自然進氣 V8 引擎與六速序列式變速箱，碳纖維單體殼結構帶來極致靈敏的入彎指向性。',
-          specs: { topSpeed: '305 km/h', accel: '3.5 s', power: '620 HP', weight: '1,245 kg' },
-          bars: { speed: 88, accel: 90, handling: 95, braking: 94 },
+          classLabel: 'GT3 · CLASS S',
+          name: 'BMW M4 GT3 EVO // APEX WORKS',
+          shortTag: '高精度 3D 模型 · 3.0L 雙渦輪直六',
+          origin: '🇩🇪 慕尼黑廠隊研發 · 3.0L P58 雙渦輪直列六缸 · 前中置後驅 (FMR)',
+          desc: '巴伐利亞廠隊頂級 GT3 賽道武器！搭載 3.0L 雙渦輪增壓直列六缸引擎與六速序列式變速箱，寬體碳纖維空力套件與大尺寸天鵝頸尾翼帶來均衡的高速下壓力與精準入彎指向。',
+          specs: { topSpeed: '307 km/h', accel: '3.4 s', power: '590 HP', weight: '1,250 kg' },
+          bars: { speed: 91, accel: 92, handling: 95, braking: 95 },
+          defaultPaint: '#ef4444',
           unlocked: true
         },
         {
           id: 'ferrari458',
           classLabel: 'GT3 · CLASS S',
           name: 'FERRARI 458 ITALIA GT3',
-          shortTag: '高精度 3D 模型 · V8 超跑',
+          shortTag: '高精度 3D 模型 · 4.5L V8 超跑',
           origin: '🇮🇹 義大利馬拉內羅 · 4.5L V8 自然進氣 · 中置後驅 (MR)',
-          desc: '源自義大利傳奇躍馬血統的 GT3 統規賽車。中置 9,000 rpm 高轉速 V8 引擎兼顧迷人聲浪與出彎爆發力，低重心流線車體在高速長彎具備極佳穩定度。',
+          desc: '源自義大利傳奇躍馬血統的 GT3 統規賽車。中置 9,000 rpm 高轉速 V8 引擎兼顧迷人聲浪與出彎爆發力，搭配專屬碳纖維 GT3 天鵝頸大尾翼、前定風翼與後擴散器。',
           specs: { topSpeed: '308 km/h', accel: '3.4 s', power: '570 HP', weight: '1,215 kg' },
           bars: { speed: 92, accel: 93, handling: 94, braking: 92 },
+          defaultPaint: '#dc2626',
           unlocked: true
         },
         {
-          id: 'porsche911_locked',
+          id: 'porsche911',
           classLabel: 'GT3 · CLASS S',
-          name: 'PORSCHE 911 GT3 R',
-          shortTag: '🔒 敬請期待 (COMING SOON)',
+          name: 'PORSCHE 911 GT3 R (992)',
+          shortTag: '高精度 3D 模型 · 斯圖加特 RR 六缸',
           origin: '🇩🇪 斯圖加特 · 4.2L 水平對臥六缸 · 後置後驅 (RR)',
-          desc: '經典後置引擎賽道機器，後續版本將開放解鎖。',
-          specs: { topSpeed: '306 km/h', accel: '3.4 s', power: '565 HP', weight: '1,250 kg' },
-          bars: { speed: 90, accel: 92, handling: 96, braking: 95 },
-          unlocked: false
+          desc: '經典 RR 後置引擎賽道機器（2024 992 GT3 R 廠隊式樣）！短軸距搭配後軸配重帶來無可比擬的入彎指向性與出彎縱向抓地力，重煞循跡入彎（Trail Braking）極限極高。',
+          specs: { topSpeed: '306 km/h', accel: '3.3 s', power: '565 HP', weight: '1,250 kg' },
+          bars: { speed: 90, accel: 95, handling: 98, braking: 96 },
+          defaultPaint: '#10b981',
+          unlocked: true
         },
         {
-          id: 'amggt3_locked',
-          classLabel: 'GT3 · CLASS A',
+          id: 'amggt3',
+          classLabel: 'GT3 · CLASS S',
           name: 'MERCEDES-AMG GT3 EVO',
-          shortTag: '🔒 敬請期待 (COMING SOON)',
+          shortTag: '高精度 3D 模型 · 前中置 6.2L V8',
           origin: '🇩🇪 阿法爾特巴赫 · 6.2L V8 自然進氣 · 前中置後驅 (FMR)',
-          desc: '大排量 V8 重裝猛獸，後續版本將開放解鎖。',
-          specs: { topSpeed: '310 km/h', accel: '3.5 s', power: '600 HP', weight: '1,285 kg' },
-          bars: { speed: 94, accel: 89, handling: 91, braking: 93 },
-          unlocked: false
+          desc: '大排量 6.2L 自然進氣 V8 重裝猛獸！超長車頭與寬體底盤賦予極為穩定的高速巡航表現與全場最高直線尾速，最適合蒙札與富士長直線超車。',
+          specs: { topSpeed: '312 km/h', accel: '3.4 s', power: '600 HP', weight: '1,285 kg' },
+          bars: { speed: 97, accel: 92, handling: 91, braking: 94 },
+          defaultPaint: '#eab308',
+          unlocked: true
         }
+      ];
+
+      const PAINT_SWATCHES = [
+        { hex: '#ef4444', name: '競速緋紅' },
+        { hex: '#0284c7', name: '海灣湛藍' },
+        { hex: '#10b981', name: '曼巴毒綠' },
+        { hex: '#eab308', name: '烈日耀黃' },
+        { hex: '#cbd5e1', name: '極光鈦銀' },
+        { hex: '#1e293b', name: '暗夜消光黑' }
+      ];
+
+      const RIM_SWATCHES = [
+        { hex: '#94a3b8', name: '機械鈦銀' },
+        { hex: '#d97706', name: '曜石香檳金' },
+        { hex: '#18181b', name: '鍛造消光黑' },
+        { hex: '#06b6d4', name: '電光賽道青' }
       ];
 
       function getActiveCarMeta() {
@@ -292,10 +312,17 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         if (cat && !cat.unlocked) return;
         const preset = CAR_MODEL_PRESETS.find(p => p.id === presetId);
         if (preset) {
+          const needsLoad = (carAssetState.loadedPresetId !== preset.id) || !carAssetState.template;
+          carAssetState.presetId = preset.id;
+          carAssetState.label = preset.label;
+          if (preset.defaultPaint) carAssetState.paintHex = preset.defaultPaint;
+          carAssetState.livery = 'original';
           if (!preset.urls) {
-            useProceduralVehicle();
-          } else if (carAssetState.presetId !== preset.id || !carAssetState.template) {
+            useProceduralVehicle(preset.id, preset.label, preset.defaultPaint || (cat && cat.defaultPaint) || null);
+          } else if (needsLoad) {
             loadVehicleFromURLs(preset.urls, preset.label, preset.id);
+          } else if (typeof applyCustomLiveryColors === 'function') {
+            applyCustomLiveryColors(null, null);
           }
         }
         renderGarageScreen();
@@ -365,6 +392,65 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
               <b>${r.val}</b>
             </div>`
           ).join('');
+        }
+
+        const paintCustEl = document.getElementById('gar-paint-customizer');
+        if (paintCustEl) {
+          const isOrigLivery = (carAssetState.livery === 'original');
+          const curPaint = (carAssetState.paintHex || '#ef4444').toLowerCase();
+          const curRim = (carAssetState.rimHex || '#94a3b8').toLowerCase();
+          paintCustEl.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;">
+              <span style="font-size:11px;color:#cbd5e1;font-weight:700;">🎨 車身烤漆 (Clearcoat)</span>
+              <div style="display:flex;align-items:center;gap:5px;">
+                <button type="button" data-pick-paint="original" title="保留賽車原廠彩繪貼圖 / 出廠配色"
+                  style="padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;background:${isOrigLivery ? 'rgba(56,189,248,0.22)' : 'rgba(15,23,42,0.85)'};color:${isOrigLivery ? '#38bdf8' : '#cbd5e1'};border:1px solid ${isOrigLivery ? '#38bdf8' : 'rgba(148,163,184,0.3)'};cursor:pointer;">
+                  🏁 原廠
+                </button>
+                ${PAINT_SWATCHES.map(s => {
+                  const active = !isOrigLivery && (s.hex.toLowerCase() === curPaint);
+                  return `<button type="button" data-pick-paint="${s.hex}" title="${s.name} (MeshPhysical 清漆烤漆)"
+                    style="width:21px;height:21px;border-radius:999px;background:${s.hex};border:${active ? '2.5px solid #fff' : '1.5px solid rgba(255,255,255,0.25)'};box-shadow:${active ? '0 0 10px ' + s.hex : 'none'};cursor:pointer;transition:transform 0.15s;transform:${active ? 'scale(1.14)' : 'scale(1)'};"></button>`;
+                }).join('')}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="font-size:11px;color:#cbd5e1;font-weight:700;">⚙️ 輪框塗裝</span>
+              <div style="display:flex;gap:6px;">
+                ${RIM_SWATCHES.map(s => {
+                  const active = s.hex.toLowerCase() === curRim;
+                  return `<button type="button" data-pick-rim="${s.hex}" title="${s.name}"
+                    style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:${active ? 'rgba(56,189,248,0.2)' : 'rgba(15,23,42,0.85)'};color:${active ? '#38bdf8' : '#cbd5e1'};border:1px solid ${active ? '#38bdf8' : 'rgba(148,163,184,0.3)'};cursor:pointer;display:flex;align-items:center;gap:4px;">
+                    <i style="display:inline-block;width:8px;height:8px;border-radius:999px;background:${s.hex};"></i>${s.name}
+                  </button>`;
+                }).join('')}
+              </div>
+            </div>
+          `;
+          paintCustEl.querySelectorAll('[data-pick-paint]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const hex = btn.getAttribute('data-pick-paint');
+              if (typeof applyCustomLiveryColors === 'function') {
+                applyCustomLiveryColors(hex, null);
+              }
+              renderGarageScreen();
+            });
+          });
+          paintCustEl.querySelectorAll('[data-pick-rim]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const hex = btn.getAttribute('data-pick-rim');
+              if (typeof applyCustomLiveryColors === 'function') {
+                applyCustomLiveryColors(null, hex);
+              }
+              renderGarageScreen();
+            });
+          });
+        }
+
+        const chassisNoteEl = document.getElementById('lbl-gar-chassis-note');
+        if (chassisNoteEl && typeof getCurrentCarHandling === 'function') {
+          const hp = getCurrentCarHandling();
+          chassisNoteEl.textContent = `✔ 專屬底盤參數：軸距 ${hp.wheelbase.toFixed(2)}m · 機械轉角 ${hp.maxSteerDeg}° · 基準側向抓地力 ${hp.baseMuLat.toFixed(2)}G · 車重 ${hp.weightKg}kg`;
         }
 
         if (stripEl) {
@@ -1188,6 +1274,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
       }
 
 window.CAR_CATALOG = CAR_CATALOG;
+window.selectCarById = selectCarById;
 window.personalRecords = personalRecords;
 window.savePersonalRecord = savePersonalRecord;
 window.flowState = flowState;

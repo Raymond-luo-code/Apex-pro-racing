@@ -233,11 +233,24 @@ simState.bestLapTime = PRO_LAP_TIME;
 
       function updateAIRaceHUD() {
         const playerProgress = (simState.lap - 1) * totalTrackLength + simState.s;
-        const standings = [{ name: 'YOU', progress: playerProgress, isPlayer: true }];
+        const refSpeedMs = Math.max(38, simState.speedMs || 52);
+        const standings = [{
+          name: 'YOU (PLAYER)',
+          shortName: 'YOU',
+          progress: playerProgress,
+          gapSec: 0,
+          stateLabel: simState.inSlipstream ? 'SLIPSTREAM' : 'RACING',
+          isPlayer: true
+        }];
         aiCars.forEach(ai => {
+          const aiProg = (ai.lap - 1) * totalTrackLength + ai.s;
+          const gapMeters = aiProg - playerProgress;
+          const gapSec = gapMeters / Math.max(38, (ai.speedMs + refSpeedMs) * 0.5);
           standings.push({
             name: ai.name,
-            progress: (ai.lap - 1) * totalTrackLength + ai.s,
+            shortName: ai.name.split(' ')[1] || ai.name,
+            progress: aiProg,
+            gapSec,
             stress: Math.round(ai.stress),
             stateLabel: ai.stateLabel,
             isPlayer: false
@@ -245,16 +258,39 @@ simState.bestLapTime = PRO_LAP_TIME;
         });
         standings.sort((a, b) => b.progress - a.progress);
 
-        const playerRank = standings.findIndex(s => s.isPlayer) + 1;
+        const playerIdx = standings.findIndex(s => s.isPlayer);
+        const playerRank = playerIdx + 1;
         document.getElementById('hud-race-pos').textContent = `P${playerRank} / 4`;
 
+        const gapSummaryEl = document.getElementById('hud-gap-summary');
+        if (gapSummaryEl) {
+          if (playerIdx > 0) {
+            const ahead = standings[playerIdx - 1];
+            gapSummaryEl.textContent = `▲ 前車 -${Math.abs(ahead.gapSec).toFixed(2)}s`;
+            gapSummaryEl.className = 'text-amber-300 font-bold';
+          } else if (standings.length > 1) {
+            const behind = standings[1];
+            gapSummaryEl.textContent = `▼ 領先 +${Math.abs(behind.gapSec).toFixed(2)}s`;
+            gapSummaryEl.className = 'text-emerald-400 font-bold';
+          }
+        }
+
         const listEl = document.getElementById('ai-drivers-list');
-        listEl.innerHTML = aiCars.map(ai => {
-          const stressColor = ai.stress > 75 ? 'text-red-400' : (ai.stress > 45 ? 'text-amber-300' : 'text-emerald-400');
+        listEl.innerHTML = standings.map((entry, idx) => {
+          if (entry.isPlayer) {
+            return `
+          <div class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40">
+            <span class="text-emerald-300 font-extrabold">P${idx + 1} YOU</span>
+            <span class="text-emerald-200 font-bold text-[9px]">${entry.stateLabel}</span>
+          </div>`;
+          }
+          const isAhead = entry.gapSec > 0;
+          const gapStr = isAhead ? `-${Math.abs(entry.gapSec).toFixed(2)}s` : `+${Math.abs(entry.gapSec).toFixed(2)}s`;
+          const gapCol = isAhead ? 'text-amber-300' : 'text-sky-300';
           return `
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-slate-200 truncate">${ai.name.split(' ')[1]}</span>
-          <span class="${stressColor} font-bold">${Math.round(ai.stress)}% ${ai.stateLabel.slice(0, 9)}</span>
+        <div class="flex items-center justify-between gap-1.5 px-1">
+          <span class="text-slate-200 truncate">P${idx + 1} ${entry.shortName}</span>
+          <span class="${gapCol} font-bold">${gapStr} <small class="text-[8px] text-slate-400">${entry.stateLabel.slice(0, 7)}</small></span>
         </div>
       `;
         }).join('');
@@ -643,7 +679,7 @@ simState.bestLapTime = PRO_LAP_TIME;
         if (!card) return;
         const preset = CAR_MODEL_PRESETS.find(p => p.id === card.dataset.preset);
         if (!preset) return;
-        if (!preset.urls) useProceduralVehicle();
+        if (!preset.urls) useProceduralVehicle(preset.id, preset.label, preset.defaultPaint);
         else loadVehicleFromURLs(preset.urls, preset.label, preset.id);
       });
       document.getElementById('garage-file-input').addEventListener('change', (e) => {
@@ -800,7 +836,11 @@ simState.bestLapTime = PRO_LAP_TIME;
         : detectClientDevice();
       setInputMode(initialIsMobile);
       applyDeviceProfile(initialIsMobile);
-      renderHomeScreen();
+      if (typeof selectCarById === 'function') {
+        selectCarById(carAssetState.presetId || 'ferrari458');
+      } else {
+        renderHomeScreen();
+      }
 
       // If player already clicked "PRESS START" while heavy 3D assets were loading, immediately proceed!
       if (window.__apexPendingSplashDismiss) {

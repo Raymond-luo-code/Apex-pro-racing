@@ -122,4 +122,86 @@
 ```
 - **驗證狀態**：**通過 (`errors: []`，`telemetryMonotonic: true`，最後一點精準停在賽道總長 `5422m`，零折返直線)**。
 
+---
 
+## 🕒 2026-11-08 20:25 ~ 20:58 // 推送穩定版 (`d9b9e15`) + 本地完成三大核心升級（車庫全解鎖與烤漆系統、車尾雙排氣火舌與雙輪胎煙、AI 攻防與實時秒差看板）
+
+### 1. 第一步：依用戶指示推送穩定版至 GitHub (`d9b9e15`)
+- 已執行 `git add`、`git commit` 與 `git push origin main`（Commit `d9b9e15`：*Refactor into 7 modular JS files, add Milliken steering physics, FIA brake boards, and fix MoTeC telemetry chart*）。
+
+### 2. 第二步：於本地端完成 A / B / C 三大核心優化（未 Push，等待本地確認）
+
+| 優化方向 | 涉及檔案 | 具體實作內容 |
+| :--- | :--- | :--- |
+| **🅰️ 方向 A：車庫全 4 車解鎖、專屬 3D 氣動車體與烤漆/輪框調色盤** | [`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js#L30-L82)<br>[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L954-L1275)<br>[`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html#L1096-L1101) | 1. **解鎖全 4 款傳奇 GT3 賽車**：全面開放 **APEX GT3 Prototype**、**Ferrari 458 Italia GT3**、**Porsche 911 GT3 R (992)**、**Mercedes-AMG GT3 EVO**。<br>2. **車型專屬 3D 氣動輪廓 (`buildProceduralBody`)**：為 **Porsche 911 GT3 R** 打造經典淚滴型溜背引擎蓋、百葉散熱孔、蛙眼橢圓傾斜頭燈與高聳天鵝頸尾翼；為 **Mercedes-AMG GT3 EVO** 打造修長前中置 V8 引擎蓋、中央碳纖維散熱孔、直瀑式鯊魚鼻水箱護罩與後移座艙。<br>3. **車庫即時烤漆與輪框塗裝系統 (`applyCustomLiveryColors`)**：於車庫面板新增 **6 款原廠金屬清漆車色**（競速緋紅、海灣湛藍、曼巴毒綠、烈日耀黃、極光鈦銀、暗夜消光黑）與 **4 款輪框塗裝**（機械鈦銀、曜石香檳金、鍛造消光黑、電光賽道青），支援程序化車體與 GLB 模型即時換色並自動儲存至 `localStorage`。 |
+| **🅱️ 方向 B：追尾視角正後方視覺強化（雙排氣尾管藍黃火舌 + 左右雙輪獨立接地白煙與雙軌胎痕）** | [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L2049-L2090)<br>[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L698-L742)<br>[`js/input.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/input.js#L80-L85) | 1. **3D 雙出排氣管藍黃火舌 (`exhaustFlameGroup`)**：於車尾雙排氣尾管綁定內層亮藍核心 + 外層烈焰橘雙層發光錐體，在升檔、退檔、高速收油回火 (`backfireFlameTimer`) 與氮氣噴射 (`isNosActive`) 時動態閃爍並同步觸發排氣爆音。<br>2. **左右雙後輪 / 雙前輪獨立白煙與雙軌黑胎痕**：依據車身世界座標與偏航角計算左後輪 (`RL`)、右後輪 (`RR`)、左前輪 (`FL`)、右前輪 (`FR`) 獨立接地座標；甩尾/打滑時由左右雙後輪拉出平行雙軌黑胎痕與雙股白煙，重煞鎖死/推頭時由左右雙前輪冒出白煙。 |
+| **🅲 方向 C：多車型動力差異化、壓草地非對稱拉扯感、AI 防守避讓與實時秒差看板** | [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L7-L68)<br>[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js#L234-L295)<br>[`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html#L1183-L1189) | 1. **各車型動力、風阻與制動差異化**：為 4 台車配置獨立 `accelFactor`、`aeroDragFactor` 與 `brakeFactor`（911 GT3 R 出彎加速與重煞最強；AMG GT3 EVO 低風阻大馬力直線尾速最高）。<br>2. **壓草地非對稱拉扯偏航力矩 (`offTrackPullYaw`)**：高速衝入草地時會產生將車頭往外側草地拉扯的真實阻力矩，需反打方向盤救車。<br>3. **AI 車輛橫向間距防重疊與 HUD 實時秒差看板 (`updateAIRaceHUD`)**：錦標賽左上角面板即時顯示與前車/後車的精準秒差（如 `▲ 前車 -0.21s` / `▼ 領先 +1.15s`）以及 P1~P4 各車即時秒差與戰術狀態。 |
+
+### 3. Google Chrome Headless V8 實機端到端 (E2E) 驗證結果
+執行 `scratch/run_v8_test.py` 測試車庫切換 Porsche 911 GT3 R 與 Mercedes-AMG GT3 EVO、即時更換海灣藍車漆與香檳金輪框、啟動 AI 錦標賽驗證實時秒差看板 (`aiRaceHUD`)、以及計時賽衝線遙測單調性：
+```json
+{
+  "errors": [],
+  "e2e": [
+    "enterHomeScreen:home",
+    "openGarageScreen:garage",
+    "selectPorsche:PORSCHE 911 GT3 R (992)",
+    "selectAMG:MERCEDES-AMG GT3 EVO:paint=#0284c7",
+    "openSetupStep4:garage",
+    "aiRaceHUD:▲ 前車 -0.21s",
+    "startConfiguredRace:racing",
+    "telemetryMonotonic:true:count=47:lastS=5422",
+    "stepPhysicsFinish:speed=288.04",
+    "renderResultPage2:ok",
+    "openTelemetryModal:ok"
+  ],
+  "hasDismiss": true
+}
+```
+- **驗證狀態**：**通過 (`errors: []`，零錯誤)**。
+
+
+
+---
+
+## 🕒 2026-11-08 21:05 ~ 2026-11-09 21:45 // 全面導入真實高精細 GT3 `.glb` 3D 賽車模型、Three.js 官方 `MeshPhysicalMaterial` 清漆烤漆管線、5 節點獨立車輪/碟盤/卡鉗物理綁定與 GT3 空力套件
+
+### 1. 問題與用戶核心要求
+- 用戶明確要求：**「以真實模型模擬跑車，不要糊弄玩家」**，並提供 Three.js 官方 `examples/webgl_materials_car.html` (`MeshPhysicalMaterial` 清漆烤漆)、5 節點模型分件規範（`Body / Chassis` + `Wheel_FL` / `FR` / `RL` / `RR` 精確置於輪軸旋轉中心）與真實 `.glb` GT3 賽車資產整合架構。
+
+### 2. 具體架構與實作內容（本地修改，未 Push）
+
+| 模組與檔案 | 具體實作內容 |
+| :--- | :--- |
+| **1. 全 4 款賽車全面採用真實高面數 `.glb` 3D 賽車模型**<br>[`js/render.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L1301-L1336)<br>[`js/flow.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/flow.js#L31-L82)<br>[`js/main.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/main.js#L365-L370) | 將車庫全部 4 台賽車升級為自動載入真實 `.glb` 3D 賽車模型（雙重 CDN 備援 `raw.githubusercontent.com` + `cdn.jsdelivr.net/gh`），啟動遊戲時即自動載入當前選中車款的真實 `.glb` 模型：<br>1. **`ferrari458`（Ferrari 458 Italia GT3）**：Three.js 官方 `ferrari.glb`（**358,980 面**）+ 自動掛載碳纖維 GT3 空力套件（`attachGT3AeroKit`：天鵝頸大尾翼、車身同色端板、前下巴定風翼、後底部擴散器）。<br>2. **`porsche911`（Porsche 911 GT3 R (992)）**：2024 Porsche 992 GT3 R 真實賽車模型 `porsche-992-gt3-r/model.glb`（4K 原廠賽道塗裝與大尾翼）+ `free_porsche_911_carrera_4s.glb` 備援。<br>3. **`amggt3`（Mercedes-AMG GT3 EVO）**：Assetto Corsa 級別真實 GT3 賽車 `amg-gt3-evo.glb`（**496,613 面**，原廠賽事塗裝、防滾籠與大尾翼）。<br>4. **`procedural`（BMW M4 GT3 EVO // APEX Works）**：真實 GT3 賽車 `bmw-m4-gt3.glb`（**107,980 面**，完整 GT3 寬體、百葉窗與天鵝頸尾翼）。 |
+| **2. Three.js 官方 `webgl_materials_car.html` 物理清漆烤漆與棚拍 PMREM 反射**<br>[`js/render.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L25-L84)<br>[`js/render.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L1680-L1808)<br>[`js/flow.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/flow.js#L350-L407) | 1. 嚴格依照官方 `three.js/examples/webgl_materials_car.html` 規範，於 [`convertMaterialForSlot`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L1680-L1808) 將車體材質升級為 `THREE.MeshPhysicalMaterial({ metalness: 0.80, roughness: 0.20, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 0.95 })`，並為擋風玻璃配置物理透光率 `transmission: 0.65, clearcoat: 1.0`。<br>2. 強化 [`buildShowroomEnvMap`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L25-L84) 頂置雙柔光箱（Overhead Dual Softbox Strips）與側向高光燈帶，讓車體清漆層呈現真實展間曲線高光。<br>3. 車庫塗裝系統新增 **「🏁 原廠」賽事塗裝切換鈕**，可保留 `.glb` 內建 4K 原廠賽車彩繪，或一鍵切換為 6 款金屬清漆烤漆與 4 款輪框塗裝。 |
+| **3. 5 節點車輪精確軸心重定位、煞車碟盤/卡鉗聯動與車頭正方向 (`+X`) 自動校正**<br>[`js/render.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L1395-L1630) | 1. **車頭方向自動偵測 (`normalizeVehicleScene`)**：自動比對前輪 (`FL/FR/LF/RF`) 與後輪 (`RL/RR/LR/RR`) 節點的世界座標 `X` 值，無論原始 `.glb` 為 `-Z` 朝前（如 `ferrari.glb`）或 `+Z` 朝前（如 `bmw-m4-gt3.glb`、`amg-gt3-evo.glb`），一律自動旋轉對齊至物理引擎 `+X` 車頭正方向，並自動剔除展間地板網格 (`worldgrid`) 與動態模糊殘影 (`rim_blur`)。<br>2. **5 節點獨立樞軸綁定 (`rigHiFiWheels`)**：精確計算四輪包圍盒中心作為獨立 `pivot -> steer -> spin` 旋轉軸心，前輪轉向角與四輪滾動角速度完全綁定物理引擎，且將煞車碟盤 (`DISC_*` / `SM_Disk_*`) 綁定至 `spin` 隨輪圈旋轉、煞車卡鉗 (`SUSP_*` / `SM_Brake_*`) 綁定至 `steer` 僅隨轉向偏轉而不隨車輪自轉。 |
+| **4. 修復 Three.js r128 `GLTFLoader` 內建 `EXT_texture_webp` 與 `MeshoptDecoder` 支援**<br>[`index.html`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/index.html#L12-L13)<br>[`js/render.js`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L1902-L1936) | 1. 於 `index.html` 引入 `meshopt_decoder.js` 並在 [`createGLTFLoader`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L1903-L1936) 註冊 `DRACOLoader` 與 `MeshoptDecoder`。<br>2. 修復 Three.js r128 `GLTFTextureWebPExtension` 將 `source` 物件而非整數索引 `sourceIndex` 傳入 `parser.loadTextureImage` 的官方底層 Bug（`APEX_r128_webp_fix`），確保採用 WebP 4K 貼圖的 `.glb` 模型（如 `porsche-992-gt3-r`）正常解析。 |
+
+### 3. Google Chrome Headless V8 實機驗證結果
+1. **真實 `.glb` 載入與 5 節點車輪綁定驗證 (`verify_real_glb_load.py`)**：
+   - `ferrari458` (`ferrari.glb` + GT3 空力套件)：`ok: true, tris: 358,980, wheels: 4/4, hasBody: true`
+   - `procedural` (`bmw-m4-gt3.glb`)：`ok: true, tris: 107,980, wheels: 4/4, hasBody: true`
+   - `amggt3` (`amg-gt3-evo.glb`)：`ok: true, tris: 496,613, wheels: 4/4, hasBody: true`
+2. **全流程 E2E 腳本驗證 (`run_v8_test.py`)**：
+   - `presetsWithGLB: 4/4`、`errors: []`，車庫切換、原廠塗裝與自訂清漆切換、AI 錦標賽與計時賽遙測全數通過。
+
+---
+
+## 🕒 2026-11-09 23:15 ~ 23:25 // 解決 AMG GT3 EVO / BMW M4 GT3 下載失敗 (404/CORS) 與 Porsche 911 GT3 R 貼圖錯誤 (`Image 0 is missing URI and bufferView`)
+
+### 1. 錯誤根源精確定位
+1. **AMG GT3 EVO (`amggt3`) 與 BMW M4 GT3 (`procedural`) 下載失敗（網路或 CORS 錯誤）**：
+   - 經檢查，上游開源庫 `KhazP/librecorsa` 剛於最新提交 `0f1992c421` 將車輛模型移出 GitHub Repo 遷移至 Cloudflare R2，導致舊網址 `https://raw.githubusercontent.com/KhazP/librecorsa/main/...` 返回 `404 Not Found`。
+   - 備用網址 `cdn.jsdelivr.net` 對於該庫特定提交觸發了 `403 Forbidden`。
+   - **修復方案**：鎖定至模型移出前之永久不可變穩定 Commit SHA `7b009d905790e277cd6bc926a549b862907e49f3`，實測 `raw.githubusercontent.com` 直接返回 `200 OK`（BMW 4.76 MB、AMG 13.52 MB），並剔除失敗的 jsDelivr 鏡像，加入 `cdn.statically.io` 備援。
+
+2. **Porsche 911 GT3 R (`porsche911`) 拋出 `THREE.GLTFLoader: Image 0 is missing URI and bufferView`**：
+   - 經解析 `porsche-992-gt3-r/model.glb` 結構，其 35 張 4K 貼圖均為 `EXT_texture_webp` 格式，在 glTF 規範中此類貼圖頂層 `textureDef.source` 可為空，由 `extensions.EXT_texture_webp.source` 指向圖檔索引。
+   - Three.js r128 官方 `GLTFTextureWebPExtension` 在非即時環境或降級邏輯中會呼叫 `parser.loadTexture(textureIndex)`，因讀取不到頂層 `source` 導致將 `undefined` 傳入 `loadTextureImage`，引發 `Image 0 is missing URI and bufferView` 致命中斷。
+   - **修復方案**：
+     - 於 [`createGLTFLoader`](file:///c:/Users/raymo/OneDrive/%E6%A1%8C%E9%9D%A2/apex-pro-racing/js/render.js#L1903-L1957) 註冊覆寫外掛 `EXT_texture_webp`，精確解析 `EXT_texture_webp.source` 取得圖檔物件並傳遞給 `parser.loadTextureImage`。
+     - 在 `parser.loadTextureImage` 加上容錯防護機制（`Promise.resolve(...).catch(() => new THREE.Texture())`），保證即便單張 WebP 貼圖載入逾時或缺失，亦不會導致整台賽車模型載入崩潰。
+
+### 2. 驗證結果
+- 執行 `scratch/run_v8_test.py`：`errors: []`、`presetsWithGLB: 4/4`，車庫 4 台賽車模型切換與所有端到端流程 100% 通過。

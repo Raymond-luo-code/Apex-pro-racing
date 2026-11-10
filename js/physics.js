@@ -150,7 +150,27 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         isWrongWay: false,
         reverseHoldTimer: 0,
         finalLapBannerTimer: 0,
-        proximityRadar: { left: false, right: false, behind: false }
+        proximityRadar: { left: false, right: false, behind: false },
+
+        // Module 3: Sequential Checkpoints & Anti-Cheat Validation System
+        lastClearedGate: 0,
+        clearedGates: [0],
+        gateCount: 16,
+        isLapValid: true,
+        lapInvalidReason: null,
+        lapInvalidBannerTimer: 0,
+        lastGateTime: 0,
+        startLineLocked: false,
+
+        // Module 2: Suspension Deflection & Surface Feedback
+        suspensionDispY: 0,
+        suspensionVelY: 0,
+        chassisVibrationAmp: 0,
+        steerResistance: 1.0,
+        kerbTime: 0,
+
+        // Module 1: Inspect Mode
+        inspectMode: false
       };
 
       const aiCars = [
@@ -273,6 +293,18 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.reverseHoldTimer = 0;
         simState.sessionLapTimes = [];
         simState.sessionTopSpeed = 0;
+
+        // Reset Checkpoints & Anti-Cheat Validation
+        simState.lastClearedGate = 0;
+        simState.clearedGates = [0];
+        simState.lastGateTime = 0;
+        simState.isLapValid = true;
+        simState.lapInvalidReason = null;
+        simState.lapInvalidBannerTimer = 0;
+        simState.startLineLocked = false;
+        simState.suspensionDispY = 0;
+        simState.suspensionVelY = 0;
+        simState.kerbTime = 0;
 
         document.getElementById('hud-s1').textContent = '--.---';
         document.getElementById('hud-s2').textContent = '--.---';
@@ -433,12 +465,44 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.onKerb = (absD >= halfW - 0.9 && absD <= halfW + 1.65);
         simState.offTrack = (absD > halfW + 1.65);
 
+        // RFC Module 2: Surface Physics & Drag Penalties
+        // Kerbs: Reduce tire friction to 85%; apply moderate steering resistance.
+        // Grass / Run-off: Reduce grip to 35%–50% (0.42); force wheelspin on excess throttle.
         if (simState.offTrack) {
-          simState.surfaceGrip = 0.68;
+          simState.surfaceGrip = 0.42;
+          simState.steerResistance = 1.0;
         } else if (simState.onKerb) {
-          simState.surfaceGrip = 0.92;
+          simState.surfaceGrip = 0.85;
+          simState.steerResistance = 1.25;
         } else {
           simState.surfaceGrip = 1.00;
+          simState.steerResistance = 1.00;
+        }
+
+        // RFC Module 2: Suspension Deflection via Damped Harmonic Oscillation (y = A * e^(-gamma*t) * cos(omega*t))
+        // Decoupled from camera rig — applied locally to vehicle chassis mesh
+        if (simState.onKerb && simState.speedKmh > 10) {
+          simState.kerbTime = (simState.kerbTime || 0) + dt;
+          const omega = 2 * Math.PI * (28 + (simState.speedKmh / 300) * 20); // 28-48 Hz matching velocity
+          const amp = Math.min(0.034, 0.010 + (simState.speedKmh / 280) * 0.024);
+          const damping = Math.exp(-6.0 * (simState.kerbTime % 0.22));
+          simState.suspensionDispY = amp * damping * Math.cos(omega * simState.kerbTime);
+        } else {
+          simState.kerbTime = 0;
+          simState.suspensionDispY *= Math.max(0, 1 - 20 * dt);
+        }
+
+        // RFC Module 2: Route rumble signals to Gamepad vibration actuators (if connected)
+        if ((simState.onKerb || simState.offTrack) && typeof window.triggerGamepadRumble === 'function') {
+          const nowRumble = performance.now();
+          if (!simState._lastRumbleMs || (nowRumble - simState._lastRumbleMs) > 80) {
+            simState._lastRumbleMs = nowRumble;
+            if (simState.onKerb && simState.speedKmh > 10) {
+              window.triggerGamepadRumble(0.35, 0.45, 75);
+            } else if (simState.offTrack && simState.throttleInput > 15) {
+              window.triggerGamepadRumble(0.20, 0.28, 75);
+            }
+          }
         }
 
         const vMs = simState.speedMs;
@@ -556,7 +620,8 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           const rawEngineAccel = Math.min(maxMechanicalGripAccel, specificPower / vEff);
 
           const aeroDragCoeff = (simState.inSlipstream ? 0.00046 : 0.000557) * dragMult;
-          const rollingResistance = simState.offTrack ? (1.15 + 0.025 * vMs) : 0.14;
+          // RFC Module 2: Grass / Run-off rolling resistance increased by factor of 3
+          const rollingResistance = simState.offTrack ? (3.45 + 0.075 * vMs) : 0.14;
           const corneringInducedDrag = Math.abs(simState.latG) * 0.38;
           const dragAccel = aeroDragCoeff * vMs * vMs + rollingResistance + corneringInducedDrag;
 
@@ -747,16 +812,55 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         while (relAngle > Math.PI) relAngle -= Math.PI * 2;
         while (relAngle < -Math.PI) relAngle += Math.PI * 2;
 
-        // Wrong way alert detection: car heading opposed to track heading (> 110 deg) at speed > 12 km/h
-        simState.isWrongWay = (simState.gear !== -1 && simState.speedKmh > 12 && Math.abs(relAngle) > 1.92);
-
         const motionSign = (simState.gear === -1) ? -1 : 1;
-        const ds = motionSign * vMs * Math.cos(relAngle) * dt;
-        const dd = motionSign * vMs * Math.sin(relAngle) * dt;
+        const vMs_motion = motionSign * vMs;
+
+        // RFC Module 3: Directional Dot Product Validation
+        // Compute normalized track forward vector N at current s
+        const aheadTrackNode = sampleTrackAtS((simState.s + 1.8) % totalTrackLength);
+        let trkNx = aheadTrackNode.x - trackNode.x;
+        let trkNz = aheadTrackNode.z - trackNode.z;
+        const trkNlen = Math.hypot(trkNx, trkNz) || 1;
+        trkNx /= trkNlen;
+        trkNz /= trkNlen;
+
+        // Vehicle velocity vector V_car in world coordinates
+        const vCarX = vMs_motion * Math.cos(simState.heading);
+        const vCarZ = vMs_motion * Math.sin(simState.heading);
+        const forwardDot = (vCarX * trkNx + vCarZ * trkNz);
+
+        // Natural wrong-way detection (only when driving forward in drive gear at speed, not when reversing)
+        simState.isWrongWay = (simState.gear !== -1 && simState.speedKmh > 20 && forwardDot < -0.3);
+
+        const ds = vMs_motion * Math.cos(relAngle) * dt;
+        const dd = vMs_motion * Math.sin(relAngle) * dt;
 
         const prevS = simState.s;
+
+        // Natural track longitudinal progression (no artificial reverse locking or speed penalty)
         simState.s += ds;
-        if (simState.s < 0) simState.s += totalTrackLength;
+        if (simState.s < 0) {
+          simState.s += totalTrackLength;
+        }
+
+        // Sequential Checkpoints & Sector Gate Pipeline (16 Gates)
+        const GATE_COUNT = 16;
+        const gateSpacing = totalTrackLength / GATE_COUNT;
+
+        if (!simState.clearedGates) simState.clearedGates = [0];
+
+        // Evaluate passing gates forward between prevS and simState.s
+        if (simState.s >= prevS) {
+          for (let g = 1; g < GATE_COUNT; g++) {
+            const gateS = g * gateSpacing;
+            if (prevS < gateS && simState.s >= gateS) {
+              if (forwardDot > 0) {
+                if (!simState.clearedGates.includes(g)) simState.clearedGates.push(g);
+                simState.lastClearedGate = g;
+              }
+            }
+          }
+        }
         const maxRunoffD = halfW + 11.0;
         simState.d = Math.max(-maxRunoffD, Math.min(maxRunoffD, simState.d + dd));
 
@@ -823,37 +927,56 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           simState.s -= totalTrackLength;
           simState.lastSampleS = -25;
           const completedLapTime = simState.lapElapsed;
-          simState.sector3Time = Math.max(0.1, completedLapTime - (simState.sector1Time || 0) - (simState.sector2Time || 0));
-          document.getElementById('hud-s3').textContent = simState.sector3Time.toFixed(3) + 's';
 
-          if (completedLapTime < simState.bestLapTime || simState.pbTelemetrySamples.length === 0) {
-            if (completedLapTime < simState.bestLapTime) {
-              simState.bestLapTime = completedLapTime;
-              document.getElementById('hud-best-time').textContent = formatLapTime(simState.bestLapTime);
+          // 衝過終點線時檢查：必須已通過所有中間檢查點 (1..15) 且為正向衝線，才計入圈速與進入完賽畫面
+          const requiredGates = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+          const allGatesCleared = requiredGates.every(g => simState.clearedGates && simState.clearedGates.includes(g));
+          const isForwardFinish = forwardDot > 0;
+          const isLapLegitimate = allGatesCleared && isForwardFinish;
+
+          // 重置檢查點追蹤器
+          simState.clearedGates = [0];
+          simState.lastClearedGate = 0;
+
+          if (isLapLegitimate) {
+            simState.sector3Time = Math.max(0.1, completedLapTime - (simState.sector1Time || 0) - (simState.sector2Time || 0));
+            const s3El = document.getElementById('hud-s3');
+            if (s3El) s3El.textContent = simState.sector3Time.toFixed(3) + 's';
+
+            // 計入合法圈速與更新最佳紀錄
+            if (completedLapTime < simState.bestLapTime || simState.pbTelemetrySamples.length === 0) {
+              if (completedLapTime < simState.bestLapTime) {
+                simState.bestLapTime = completedLapTime;
+                const bestEl = document.getElementById('hud-best-time');
+                if (bestEl) bestEl.textContent = formatLapTime(simState.bestLapTime);
+              }
+              simState.pbTelemetrySamples = simState.lastCompletedLapSamples.slice();
             }
-            simState.pbTelemetrySamples = simState.lastCompletedLapSamples.slice();
-          }
+            if (!simState.sessionLapTimes) simState.sessionLapTimes = [];
+            simState.sessionLapTimes.push(completedLapTime);
 
-          if (!simState.sessionLapTimes) simState.sessionLapTimes = [];
-          simState.sessionLapTimes.push(completedLapTime);
-
-          if (simState.mode === 'time_attack' || simState.lap >= simState.totalRaceLaps) {
-            if (typeof window.__apexFlowFinish === 'function') {
-              window.__apexFlowFinish(completedLapTime);
+            // 只有通過全部檢查點衝線，才進入完賽結算畫面
+            if (simState.mode === 'time_attack' || simState.lap >= simState.totalRaceLaps) {
+              if (typeof window.__apexFlowFinish === 'function') {
+                window.__apexFlowFinish(completedLapTime);
+              } else {
+                openTelemetryModal('current', completedLapTime);
+              }
+              return;
             } else {
-              openTelemetryModal('current', completedLapTime);
+              simState.lap++;
+              simState.lapElapsed = 0;
+              simState.sector1Time = null;
+              simState.sector2Time = null;
+              simState.currentLapSamples = [];
+              const lapCountEl = document.getElementById('hud-lap-count');
+              if (lapCountEl) lapCountEl.textContent = `${simState.lap} / ${simState.totalRaceLaps}`;
+              if (simState.lap === simState.totalRaceLaps) {
+                triggerFinalLapBanner();
+              }
             }
-            return;
           } else {
-            simState.lap++;
-            simState.lapElapsed = 0;
-            simState.sector1Time = null;
-            simState.sector2Time = null;
-            simState.currentLapSamples = [];
-            document.getElementById('hud-lap-count').textContent = `${simState.lap} / ${simState.totalRaceLaps}`;
-            if (simState.lap === simState.totalRaceLaps) {
-              triggerFinalLapBanner();
-            }
+            console.log('[APEX CHECKPOINT] Finish line passed without all checkpoints. Lap not recorded.');
           }
         }
 

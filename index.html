@@ -639,6 +639,18 @@
       opacity: 1;
     }
 
+    /* RFC Module 1: Clean Visual Isolation for Vehicle Inspect Mode */
+    body.inspect-active .af-screen {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transition: opacity .25s ease;
+    }
+
+    body.inspect-active #inspect-mode-overlay {
+      display: flex !important;
+      opacity: 1 !important;
+    }
+
     .af-kicker {
       font-size: 11px;
       letter-spacing: .28em;
@@ -2203,7 +2215,7 @@
         <span class="af-chip">🏆 <b id="lbl-home-records">0</b> 項個人紀錄</span>
       </div>
     </div>
-    <button id="btn-home-hint" class="af-home-hint" type="button">👆 點擊車輛進入車庫</button>
+    <button id="btn-home-hint" class="af-home-hint" type="button">🔍 點擊車輛進入 360° 鑑賞模式</button>
     <div class="af-home-bottom">
       <div class="af-home-car">
         <div class="af-kicker" id="lbl-home-class">GT3 · CLASS A</div>
@@ -2211,6 +2223,7 @@
         <div class="af-mini-stats" id="home-mini-stats"></div>
       </div>
       <div class="af-home-actions">
+        <button id="btn-home-inspect" class="af-btn af-btn-ghost" type="button">🔍 360° 鑑賞</button>
         <button id="btn-home-garage" class="af-btn af-btn-ghost" type="button">🔧 車庫 GARAGE</button>
         <button id="btn-home-play" class="af-btn af-btn-primary af-btn-xl" type="button">
           <span>準備出發<small>READY TO RACE</small></span><span>➔</span>
@@ -2222,7 +2235,10 @@
   <!-- 4. GARAGE (car list + performance) -->
   <div id="scr-garage" class="af-screen af-garage hidden">
     <div class="af-topbar">
-      <button id="btn-garage-back" class="af-btn af-btn-ghost af-btn-sm" type="button">◀ 返回</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="btn-garage-back" class="af-btn af-btn-ghost af-btn-sm" type="button">◀ 返回</button>
+        <button id="btn-garage-inspect" class="af-btn af-btn-ghost af-btn-sm" type="button">🔍 360° 鑑賞</button>
+      </div>
       <div class="af-title-block">
         <div class="af-kicker" id="lbl-garage-kicker">GARAGE</div>
         <div class="af-h1" id="lbl-garage-title">我的車庫</div>
@@ -2294,6 +2310,28 @@
         <button id="btn-res-retry" class="af-btn af-btn-ghost hidden" type="button">↻ 再戰一次</button>
         <button id="btn-res-next" class="af-btn af-btn-primary" type="button">下一頁 ➔</button>
       </div>
+    </div>
+  </div>
+
+  <!-- RFC Module 1: Vehicle Inspect Mode Overlay -->
+  <div id="inspect-mode-overlay"
+    class="hidden fixed inset-0 z-[80] pointer-events-none flex flex-col justify-between p-4 sm:p-6 select-none transition-opacity duration-300">
+    <div class="flex items-center justify-between w-full pointer-events-auto">
+      <div class="bg-slate-900/85 backdrop-blur-md border border-cyan-500/40 px-4 py-2 rounded-xl shadow-2xl flex items-center gap-3">
+        <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        <div>
+          <div class="text-xs font-mono font-bold tracking-widest text-cyan-400">VEHICLE INSPECTION MODE // 360° 車輛鑑賞</div>
+          <div class="text-[11px] text-slate-300 font-sans">無限制 360° 水平環繞 · 俯仰受控 (15° - 85°) · 滾輪推拉縮放 (3.5m - 8.0m)</div>
+        </div>
+      </div>
+      <button id="btn-exit-inspect" type="button"
+        class="bg-slate-800/90 hover:bg-rose-600/90 text-white font-mono text-xs font-bold px-4 py-2.5 rounded-xl border border-white/20 shadow-xl transition-all cursor-pointer flex items-center gap-1.5 hover:scale-105 active:scale-95">
+        <span>✕</span>
+        <span>退出鑑賞模式 [ESC]</span>
+      </button>
+    </div>
+    <div class="self-center bg-slate-900/75 backdrop-blur-sm border border-white/10 px-4 py-1.5 rounded-full text-[11px] text-slate-300 font-mono tracking-wide shadow-lg pointer-events-auto">
+      🖱️ 按住滑鼠/觸控拖曳旋轉鑑賞視角 · 滾輪或雙指平滑推拉距離
     </div>
   </div>
 
@@ -2415,6 +2453,12 @@
       <div id="hud-wrong-way"
         class="hidden px-4 py-1.5 rounded-full bg-red-600 text-white font-mono-tech text-xs sm:text-sm font-black shadow-2xl animate-pulse tracking-widest border-2 border-white mt-1 pointer-events-none">
         ⚠ WRONG WAY // 逆向行駛 · 請立即迴轉！
+      </div>
+
+      <!-- RFC Module 3: Invalid Lap Anti-Cheat Banner -->
+      <div id="hud-lap-invalid"
+        class="hidden px-4 py-1.5 rounded-full bg-rose-700/95 text-white font-mono-tech text-xs sm:text-sm font-black shadow-2xl tracking-wide border-2 border-amber-400 mt-1 pointer-events-none">
+        ⚠ LAP INVALIDATED // 單圈無效 (檢核點未通過 / 逆向 / 違規抄捷徑)
       </div>
 
       <!-- Final Lap Dramatic Floating Banner -->
@@ -3252,13 +3296,13 @@
   <!-- APEX PRO RACING // MODULAR HIGH-PERFORMANCE CLIENT SCRIPTS                 -->
   <!-- 7 Structured Domain Modules (Zero-Build Vanilla Browser Architecture)       -->
   <!-- ========================================================================= -->
-  <script src="js/audio.js?v=20261109"></script>
-  <script src="js/circuits.js?v=20261109"></script>
-  <script src="js/render.js?v=20261109"></script>
-  <script src="js/physics.js?v=20261109"></script>
-  <script src="js/input.js?v=20261109"></script>
-  <script src="js/flow.js?v=20261109"></script>
-  <script src="js/main.js?v=20261109"></script>
+  <script src="js/audio.js?v=20261110_v2"></script>
+  <script src="js/circuits.js?v=20261110_v2"></script>
+  <script src="js/render.js?v=20261110_v2"></script>
+  <script src="js/physics.js?v=20261110_v2"></script>
+  <script src="js/input.js?v=20261110_v2"></script>
+  <script src="js/flow.js?v=20261110_v2"></script>
+  <script src="js/main.js?v=20261110_v2"></script>
 </body>
 
 </html>

@@ -76,6 +76,11 @@ simState.bestLapTime = PRO_LAP_TIME;
           wrongWayEl.classList.toggle('hidden', !simState.isWrongWay);
         }
 
+        const lapInvalidEl = document.getElementById('hud-lap-invalid');
+        if (lapInvalidEl) {
+          lapInvalidEl.classList.add('hidden');
+        }
+
         document.getElementById('hud-speed').textContent = roundedSpeed;
         document.getElementById('hud-rpm').textContent = simState.rpm.toLocaleString();
 
@@ -875,7 +880,8 @@ function animate(now) {
     simState.isUndersteer,
     simState.isNosActive,
     simState.onKerb,
-    simState.paused || simState.inShowcaseMode
+    simState.paused || simState.inShowcaseMode,
+    simState.speedKmh
   );
 
   update3DSceneAndVisualFX(now * 0.001);

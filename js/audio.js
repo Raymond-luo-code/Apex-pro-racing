@@ -66,12 +66,17 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
             this.squealGain.connect(this.ctx.destination);
             this.squealNode.start();
 
+            // RFC Module 2: 35-50 Hz low-frequency kerb rumble synthesizer
             this.kerbOsc = this.ctx.createOscillator();
-            this.kerbOsc.type = 'square';
-            this.kerbOsc.frequency.value = 58;
+            this.kerbOsc.type = 'triangle';
+            this.kerbOsc.frequency.value = 42;
+            const kerbLowpass = this.ctx.createBiquadFilter();
+            kerbLowpass.type = 'lowpass';
+            kerbLowpass.frequency.value = 180;
             this.kerbGain = this.ctx.createGain();
             this.kerbGain.gain.value = 0.0;
-            this.kerbOsc.connect(this.kerbGain);
+            this.kerbOsc.connect(kerbLowpass);
+            kerbLowpass.connect(this.kerbGain);
             this.kerbGain.connect(this.ctx.destination);
             this.kerbOsc.start();
 
@@ -79,7 +84,7 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
           } catch (e) { }
         },
 
-        update(rpm, throttle, tireSlipRatio, isLockup, isDrifting, isUndersteer, isNosActive, onKerb, paused) {
+        update(rpm, throttle, tireSlipRatio, isLockup, isDrifting, isUndersteer, isNosActive, onKerb, paused, speedKmh) {
           if (!this.started || !this.ctx) return;
           if (!this.enabled || paused) {
             this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
@@ -105,8 +110,16 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
           this.squealFilter.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.04);
           this.squealGain.gain.setTargetAtTime(Math.min(0.16, squealIntensity), this.ctx.currentTime, 0.04);
 
-          const kerbVol = onKerb ? 0.065 : 0.0;
-          this.kerbGain.gain.setTargetAtTime(kerbVol, this.ctx.currentTime, 0.02);
+          // RFC Module 2: 35-50 Hz low-frequency kerb rumble matching vehicle ground speed
+          if (onKerb && this.kerbOsc) {
+            const currentSpeed = (speedKmh != null) ? speedKmh : (typeof simState !== 'undefined' ? simState.speedKmh : 60);
+            const kerbFreq = 35 + Math.min(15, (simState.speedKmh / 250) * 15);
+            this.kerbOsc.frequency.setTargetAtTime(kerbFreq, this.ctx.currentTime, 0.04);
+            const kerbVol = (currentSpeed > 6) ? Math.min(0.14, 0.045 + (currentSpeed / 280) * 0.065) : 0;
+            this.kerbGain.gain.setTargetAtTime(kerbVol, this.ctx.currentTime, 0.02);
+          } else if (this.kerbGain) {
+            this.kerbGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.04);
+          }
         },
 
         blipShift() {

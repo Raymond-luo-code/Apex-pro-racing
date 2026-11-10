@@ -544,6 +544,29 @@ if (window.__apexTrace) window.__apexTrace('input.js', 'START');
         }
       }
 
+      // RFC Module 2: HTML5 Gamepad API Dual-Rumble Haptics
+      window.triggerGamepadRumble = function(weak = 0.35, strong = 0.55, duration = 120) {
+        try {
+          if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+            const pads = navigator.getGamepads();
+            if (!pads) return;
+            for (let i = 0; i < pads.length; i++) {
+              const pad = pads[i];
+              if (pad && pad.vibrationActuator && typeof pad.vibrationActuator.playEffect === 'function') {
+                pad.vibrationActuator.playEffect('dual-rumble', {
+                  startDelay: 0,
+                  duration: Math.min(500, Math.max(20, duration)),
+                  weakMagnitude: Math.min(1.0, Math.max(0, weak)),
+                  strongMagnitude: Math.min(1.0, Math.max(0, strong))
+                }).catch(() => {});
+              }
+            }
+          }
+        } catch (e) {
+          // Gamepad rumble API unsupported or blocked by browser permissions
+        }
+      };
+
 window.inputs = inputs;
 window.keyboardKeys = keyboardKeys;
 window.touchKeys = touchKeys;

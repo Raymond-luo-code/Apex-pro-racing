@@ -124,6 +124,9 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
 
       function showFlowScreen(target) {
         if (window.__apexTrace) window.__apexTrace('flow.js', 'showFlowScreen:' + target);
+        if (simState.inspectMode && typeof exitInspectMode === 'function') {
+          exitInspectMode();
+        }
         flowState.screen = target;
         const map = {
           splash: 'scr-splash',
@@ -1028,29 +1031,88 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         }
       }
 
-      // --- 9. Interactive 3D Car Click (Raycaster) & Orbit Drag on Home / Garage ---
+      // --- 9. RFC Module 1: Interactive 3D Car Raycast Click, Inspect Mode & Orbit Controls ---
       const raycaster = new THREE.Raycaster();
       const pointerNDC = new THREE.Vector2();
-      let orbitDrag = { active: false, startX: 0, startY: 0, moved: false, baseOffset: 0 };
+      let orbitDrag = {
+        active: false,
+        startX: 0,
+        startY: 0,
+        moved: false,
+        baseAzimuth: 0,
+        basePolar: 0
+      };
 
+      function enterInspectMode() {
+        if (!simState.inShowcaseMode) return;
+        simState.inspectMode = true;
+        if (window.soundEngine && window.soundEngine.init) {
+          try { window.soundEngine.init(); } catch (e) {}
+        }
+        document.body.classList.add('inspect-active');
+        const overlay = document.getElementById('inspect-mode-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+        if (window.showroomCam) {
+          window.showroomCam.targetDistance = 5.2; // Smooth camera lerp closer to car
+        }
+      }
+
+      function exitInspectMode() {
+        simState.inspectMode = false;
+        document.body.classList.remove('inspect-active');
+        const overlay = document.getElementById('inspect-mode-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        if (window.showroomCam) {
+          const style = simState.showcaseStyle || 'home';
+          window.showroomCam.targetDistance = style === 'garage' ? 5.6 : (style === 'results' ? 8.2 : 6.6);
+          const DEG2RAD = Math.PI / 180;
+          window.showroomCam.polar = Math.max(75 * DEG2RAD, Math.min(85 * DEG2RAD, window.showroomCam.polar));
+        }
+      }
+
+      window.enterInspectMode = enterInspectMode;
+      window.exitInspectMode = exitInspectMode;
+
+      // Escape key to exit inspect mode
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && simState.inspectMode) {
+          exitInspectMode();
+          e.stopPropagation();
+        }
+      });
+
+      // Pointer Orbit Controls (Turntable: 75°-85° clamped pitch; Inspect: 15°-85° clamped pitch, 360° unconstrained azimuth)
       window.addEventListener('pointerdown', (e) => {
-        if (flowState.screen !== 'home' && flowState.screen !== 'garage') return;
-        // Ignore clicks on UI buttons / panels
-        if (e.target.closest('button, a, aside, .af-topbar, .af-home-bottom, .af-garage-bottom')) return;
+        if (!simState.inShowcaseMode) return;
+        // Ignore clicks on UI buttons/links/panels
+        if (e.target.closest('button, a, aside, .af-topbar, .af-home-bottom, .af-garage-bottom, .af-setup-panel, #inspect-mode-overlay button')) return;
         orbitDrag.active = true;
         orbitDrag.startX = e.clientX;
         orbitDrag.startY = e.clientY;
         orbitDrag.moved = false;
-        orbitDrag.baseOffset = simState.showcaseAngleOffset || 0;
+        const cam = window.showroomCam;
+        orbitDrag.baseAzimuth = cam ? cam.azimuth : (simState.showcaseAngleOffset || 0);
+        orbitDrag.basePolar = cam ? cam.polar : (80 * Math.PI / 180);
       });
 
       window.addEventListener('pointermove', (e) => {
-        if (!orbitDrag.active) return;
+        if (!orbitDrag.active || !window.showroomCam) return;
         const dx = e.clientX - orbitDrag.startX;
         const dy = e.clientY - orbitDrag.startY;
-        if (Math.hypot(dx, dy) > 6) orbitDrag.moved = true;
+        if (Math.hypot(dx, dy) > 5) orbitDrag.moved = true;
         if (orbitDrag.moved) {
-          simState.showcaseAngleOffset = orbitDrag.baseOffset - dx * 0.0075;
+          const isInspect = !!simState.inspectMode;
+          const DEG2RAD = Math.PI / 180;
+          // Unconstrained 360° azimuth orbit
+          window.showroomCam.azimuth = orbitDrag.baseAzimuth - dx * 0.0075;
+          simState.showcaseAngleOffset = window.showroomCam.azimuth;
+
+          // Polar angle pitch clamping:
+          // Default turntable: near-horizontal min 75°, max 85° (RFC Module 1.A)
+          // Inspect mode: min 15°, max 85° (RFC Module 1.B)
+          const minP = (isInspect ? 15 : 75) * DEG2RAD;
+          const maxP = 85 * DEG2RAD;
+          window.showroomCam.polar = Math.max(minP, Math.min(maxP, orbitDrag.basePolar + dy * 0.0055));
         }
       });
 
@@ -1058,19 +1120,56 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         if (!orbitDrag.active) return;
         const wasMoved = orbitDrag.moved;
         orbitDrag.active = false;
-        if (wasMoved || flowState.screen !== 'home') return;
+        if (wasMoved || !simState.inShowcaseMode) return;
+        if (e.target.closest('button, a, aside, .af-topbar, .af-home-bottom, .af-garage-bottom, #inspect-mode-overlay button')) return;
 
-        // Check if user clicked on or near the 3D car in Home screen -> open Garage!
-        pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
-        pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        raycaster.setFromCamera(pointerNDC, camera);
-        const hits = raycaster.intersectObjects(playerCarGroup.children, true);
-        const nearCenter = Math.abs(pointerNDC.x) < 0.45 && Math.abs(pointerNDC.y) < 0.45;
-        if (hits.length > 0 || nearCenter) {
-          soundEngine.init();
-          openGarageScreen('home');
+        // Raycasting to enter Focus/Inspect Mode on clicking the car body mesh
+        if (!simState.inspectMode && (flowState.screen === 'home' || flowState.screen === 'garage')) {
+          pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, camera);
+          const hits = (typeof playerCarGroup !== 'undefined' && playerCarGroup.children)
+            ? raycaster.intersectObjects(playerCarGroup.children, true)
+            : [];
+          const nearCenter = Math.abs(pointerNDC.x) < 0.42 && Math.abs(pointerNDC.y) < 0.42;
+          if (hits.length > 0 || nearCenter) {
+            enterInspectMode();
+          }
         }
       });
+
+      // Scroll wheel zoom: clamped between 3.5m and 8.0m in inspect mode; disabled in default turntable
+      window.addEventListener('wheel', (e) => {
+        if (!simState.inShowcaseMode) return;
+        if (!simState.inspectMode) {
+          // RFC Module 1.A: Disable scroll-wheel zooming in default state
+          return;
+        }
+        // RFC Module 1.B: Strict distance clamping [3.5m, 8.0m] in inspect mode
+        e.preventDefault();
+        if (window.showroomCam) {
+          const delta = Math.sign(e.deltaY) * 0.45;
+          window.showroomCam.targetDistance = Math.max(3.5, Math.min(8.0, (window.showroomCam.targetDistance || 5.2) + delta));
+        }
+      }, { passive: false });
+
+      // Touch pinch-to-zoom for mobile/tablets in inspect mode
+      let touchDistanceStart = 0;
+      let touchDistBaseTarget = 5.2;
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2 && simState.inspectMode && window.showroomCam) {
+          touchDistanceStart = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          touchDistBaseTarget = window.showroomCam.targetDistance || 5.2;
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && simState.inspectMode && window.showroomCam && touchDistanceStart > 0) {
+          const distNow = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          const ratio = touchDistanceStart / Math.max(10, distNow);
+          window.showroomCam.targetDistance = Math.max(3.5, Math.min(8.0, touchDistBaseTarget * ratio));
+        }
+      }, { passive: true });
 
       // --- 10. Wire All New Screen Buttons ---
             function dismissSplashScreen() {
@@ -1129,13 +1228,21 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         });
       }
       const btnHomeHint = document.getElementById('btn-home-hint');
-      if (btnHomeHint) btnHomeHint.addEventListener('click', () => openGarageScreen('home'));
+      if (btnHomeHint) btnHomeHint.addEventListener('click', () => enterInspectMode());
+      const btnHomeInspect = document.getElementById('btn-home-inspect');
+      if (btnHomeInspect) btnHomeInspect.addEventListener('click', () => enterInspectMode());
       const btnHomeGarage = document.getElementById('btn-home-garage');
       if (btnHomeGarage) btnHomeGarage.addEventListener('click', () => openGarageScreen('home'));
       const btnHomePlay = document.getElementById('btn-home-play');
       if (btnHomePlay) btnHomePlay.addEventListener('click', () => openSetupStep(1));
 
+      // Inspect overlay exit button
+      const btnExitInspect = document.getElementById('btn-exit-inspect');
+      if (btnExitInspect) btnExitInspect.addEventListener('click', () => exitInspectMode());
+
       // Garage screen buttons
+      const btnGarInspect = document.getElementById('btn-garage-inspect');
+      if (btnGarInspect) btnGarInspect.addEventListener('click', () => enterInspectMode());
       const btnGarBack = document.getElementById('btn-garage-back');
       if (btnGarBack) {
         btnGarBack.addEventListener('click', () => {

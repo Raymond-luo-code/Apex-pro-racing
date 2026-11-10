@@ -23,6 +23,70 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       scene.add(circuitSceneryGroup);
       let tacticalRibbonMesh = null;
 
+      // RFC Module 1: Dedicated Studio Environment for Vehicle Inspect Mode
+      const studioGroup = new THREE.Group();
+      studioGroup.visible = false;
+      scene.add(studioGroup);
+
+      const studioDomeGeo = new THREE.CylinderGeometry(42, 42, 28, 36, 1, true);
+      const studioDomeMat = new THREE.MeshBasicMaterial({
+        color: 0x070b14,
+        side: THREE.BackSide,
+        depthWrite: false
+      });
+      const studioDomeMesh = new THREE.Mesh(studioDomeGeo, studioDomeMat);
+      studioDomeMesh.position.y = 8;
+      studioGroup.add(studioDomeMesh);
+
+      const studioFloorGeo = new THREE.CircleGeometry(26, 36);
+      const studioFloorMat = new THREE.MeshStandardMaterial({
+        color: 0x090e1a,
+        roughness: 0.32,
+        metalness: 0.28
+      });
+      const studioFloorMesh = new THREE.Mesh(studioFloorGeo, studioFloorMat);
+      studioFloorMesh.rotation.x = -Math.PI / 2;
+      studioFloorMesh.position.y = -0.01;
+      studioGroup.add(studioFloorMesh);
+
+      const contactShadowGeo = new THREE.PlaneGeometry(6.6, 3.4);
+      const contactShadowMat = new THREE.MeshBasicMaterial({
+        color: 0x010306,
+        transparent: true,
+        opacity: 0.82,
+        depthWrite: false
+      });
+      const contactShadowMesh = new THREE.Mesh(contactShadowGeo, contactShadowMat);
+      contactShadowMesh.rotation.x = -Math.PI / 2;
+      contactShadowMesh.position.y = 0.005;
+      studioGroup.add(contactShadowMesh);
+
+      const studioKeySpot = new THREE.SpotLight(0xfff8ee, 3.2, 40, Math.PI / 3.6, 0.4, 1.1);
+      studioKeySpot.position.set(5.2, 6.4, 5.5);
+      studioGroup.add(studioKeySpot);
+
+      const studioRimSpot = new THREE.SpotLight(0x38bdf8, 4.0, 35, Math.PI / 3.0, 0.45, 1.0);
+      studioRimSpot.position.set(-4.6, 5.0, -5.2);
+      studioGroup.add(studioRimSpot);
+
+      const studioFillLight = new THREE.DirectionalLight(0xe2e8f0, 1.2);
+      studioFillLight.position.set(-3.5, 6.0, 3.5);
+      studioGroup.add(studioFillLight);
+
+      // RFC Module 1: Showroom & Inspect Mode Spherical Camera Rig
+      const DEG2RAD = Math.PI / 180;
+      const showroomCam = {
+        azimuth: 0.95,
+        polar: 80 * DEG2RAD,     // default pitch ~80° (clamped between 75° and 85°)
+        distance: 6.2,
+        targetDistance: 6.2,
+        currentTarget: new THREE.Vector3(),
+        initialized: false,
+        lastSec: 0
+      };
+      window.showroomCam = showroomCam;
+      window.studioGroup = studioGroup;
+
       function makeSignTexture(distStr, accentHex) {
         const c = document.createElement('canvas');
         c.width = 256;
@@ -2413,6 +2477,11 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         playerCarGroup.rotation.z = simState.pitchRad;
         playerCarGroup.rotation.x = simState.rollRad;
 
+        // RFC Module 2: Apply local chassis vertical oscillation (suspension deflection)
+        const suspY = simState.suspensionDispY || 0;
+        playerExteriorMesh.position.y = suspY;
+        cockpitGroup.position.y = suspY;
+
         steerWheel3D.rotation.x = simState.steerInput * 1.45;
 
         const targetFov = simState.inShowcaseMode
@@ -2422,15 +2491,6 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           camera.fov += (targetFov - camera.fov) * 0.15;
           camera.updateProjectionMatrix();
         }
-
-        const vibeAmp = simState.inShowcaseMode ? 0 : (
-          (simState.isBrakeLockup ? 0.042 : 0) +
-          (simState.onKerb || simState.offTrack ? 0.032 : 0) +
-          (simState.isUndersteer ? 0.018 : 0) +
-          (simState.speedKmh / 320) * 0.006
-        );
-        const jx = Math.sin(nowSec * 65) * vibeAmp;
-        const jy = Math.cos(nowSec * 82) * vibeAmp;
 
         const cosH = Math.cos(simState.heading);
         const sinH = Math.sin(simState.heading);
@@ -2442,55 +2502,128 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         if (simState.inShowcaseMode) {
           playerExteriorMesh.visible = true;
           cockpitGroup.visible = false;
-          // Showcase styles: 'home' (hero orbit), 'garage' (car framed left, closer), 'results' (slow wide orbit)
+
+          const isInspect = !!simState.inspectMode;
+          circuitSceneryGroup.visible = !isInspect;
+          studioGroup.visible = isInspect;
+          if (isInspect) {
+            studioGroup.position.set(pWorld.x, pWorld.y, pWorld.z);
+            studioKeySpot.target.position.set(pWorld.x, pWorld.y + 0.65, pWorld.z);
+            studioRimSpot.target.position.set(pWorld.x, pWorld.y + 0.65, pWorld.z);
+            studioKeySpot.target.updateMatrixWorld();
+            studioRimSpot.target.updateMatrixWorld();
+          }
+
           const style = simState.showcaseStyle || 'home';
-          const orbitSpeed = style === 'garage' ? 0.11 : (style === 'results' ? 0.07 : 0.16);
-          const orbitDist = style === 'garage' ? 5.6 : (style === 'results' ? 8.2 : 6.6);
-          const camH = style === 'garage' ? 1.25 : (style === 'results' ? 2.3 : 1.55);
-          const orbitAngle = nowSec * orbitSpeed + (simState.showcaseAngleOffset || 0);
-          const camX = pWorld.x + Math.sin(orbitAngle) * orbitDist;
-          const camZ = pWorld.z + Math.cos(orbitAngle) * orbitDist;
-          camera.position.set(camX, pWorld.y + camH + Math.sin(nowSec * 0.35) * 0.18, camZ);
-          // Shift the look target sideways so the car sits left/right of the UI panels
-          const lateral = style === 'garage' ? 1.55 : 0;
-          let dX = pWorld.x - camX, dZ = pWorld.z - camZ;
-          const dLen = Math.hypot(dX, dZ) || 1;
-          dX /= dLen; dZ /= dLen;
-          camera.lookAt(pWorld.x - dZ * lateral, pWorld.y + 0.62, pWorld.z + dX * lateral);
-          camera.rotation.z = 0;
-        } else if (simState.cameraMode === 0) {
-          playerExteriorMesh.visible = false;
-          cockpitGroup.visible = true;
-          camera.position.set(
-            pWorld.x + cosH * 0.12 + jx,
-            pWorld.y + 1.16 - simState.pitchRad * 2.1 + jy,
-            pWorld.z + sinH * 0.12
-          );
-          camera.lookAt(
-            lookX,
-            pWorld.y + 0.92 + simState.pitchRad * 15,
-            lookZ
-          );
-          camera.rotation.z = -simState.rollRad * 0.92;
-        } else if (simState.cameraMode === 1) {
-          const hasHiFiPlayer = !!(playerExteriorMesh.userData.vehicleSlot && playerExteriorMesh.userData.vehicleSlot.hifi);
-          playerExteriorMesh.visible = hasHiFiPlayer;
-          cockpitGroup.visible = !hasHiFiPlayer;
-          camera.position.set(
-            pWorld.x + cosH * (hasHiFiPlayer ? 0.24 : 1.15) + jx,
-            pWorld.y + (hasHiFiPlayer ? 1.22 : 1.05) + jy,
-            pWorld.z + sinH * (hasHiFiPlayer ? 0.24 : 1.15)
-          );
-          camera.lookAt(lookX, pWorld.y + 0.85, lookZ);
+          const dtFrame = Math.min(0.05, Math.max(0.001, (nowSec - (showroomCam.lastSec || nowSec))));
+          showroomCam.lastSec = nowSec;
+
+          if (isInspect) {
+            // RFC Module 1.B: Focus / Inspect Mode
+            // Auto-rotate disabled (user manual control)
+            // Clamped pitch: min 15°, max 85° (0.2618 rad to 1.4835 rad)
+            showroomCam.polar = Math.max(15 * DEG2RAD, Math.min(85 * DEG2RAD, showroomCam.polar));
+            // Clamped distance: min 3.5m, max 8.0m
+            showroomCam.targetDistance = Math.max(3.5, Math.min(8.0, showroomCam.targetDistance));
+            showroomCam.distance += (showroomCam.targetDistance - showroomCam.distance) * 0.16;
+          } else {
+            // RFC Module 1.A: Default Turntable Mode
+            // Auto-rotation: 0.8-1.2 RPM (~0.084 to 0.126 rad/s)
+            const autoRpmSpeed = style === 'garage' ? 0.088 : (style === 'results' ? 0.075 : 0.110);
+            showroomCam.azimuth += autoRpmSpeed * dtFrame;
+            // Clamped pitch: near-horizontal min 75°, max 85° (1.309 rad to 1.4835 rad)
+            showroomCam.polar = Math.max(75 * DEG2RAD, Math.min(85 * DEG2RAD, showroomCam.polar));
+            // Fixed distance per style; scroll zoom disabled in turntable
+            const defaultDist = style === 'garage' ? 5.6 : (style === 'results' ? 8.2 : 6.6);
+            showroomCam.targetDistance = defaultDist;
+            showroomCam.distance += (defaultDist - showroomCam.distance) * 0.16;
+          }
+
+          // Target focus point (vehicle center-of-mass)
+          const targetX = pWorld.x;
+          const targetY = pWorld.y + 0.65;
+          const targetZ = pWorld.z;
+
+          // Spherical coordinates to Cartesian
+          const sinP = Math.sin(showroomCam.polar);
+          const cosP = Math.cos(showroomCam.polar);
+          const sinA = Math.sin(showroomCam.azimuth);
+          const cosA = Math.cos(showroomCam.azimuth);
+
+          const desiredCamX = targetX + showroomCam.distance * sinP * sinA;
+          const desiredCamY = targetY + showroomCam.distance * cosP;
+          const desiredCamZ = targetZ + showroomCam.distance * sinP * cosA;
+
+          // Offset lateral framing for garage UI if in default turntable mode
+          const lateral = (!isInspect && style === 'garage') ? 1.55 : 0;
+          let focusTargetX = targetX;
+          let focusTargetZ = targetZ;
+          if (lateral !== 0) {
+            let dX = targetX - desiredCamX;
+            let dZ = targetZ - desiredCamZ;
+            const dLen = Math.hypot(dX, dZ) || 1;
+            dX /= dLen; dZ /= dLen;
+            focusTargetX -= dZ * lateral;
+            focusTargetZ += dX * lateral;
+          }
+
+          if (!showroomCam.initialized) {
+            camera.position.set(desiredCamX, desiredCamY, desiredCamZ);
+            showroomCam.currentTarget.set(focusTargetX, targetY, focusTargetZ);
+            showroomCam.initialized = true;
+          } else {
+            const lerpFactor = isInspect ? 0.14 : 0.18;
+            camera.position.lerp(new THREE.Vector3(desiredCamX, desiredCamY, desiredCamZ), lerpFactor);
+            showroomCam.currentTarget.lerp(new THREE.Vector3(focusTargetX, targetY, focusTargetZ), lerpFactor);
+          }
+          camera.up.set(0, 1, 0);
+          camera.lookAt(showroomCam.currentTarget);
         } else {
-          playerExteriorMesh.visible = true;
-          cockpitGroup.visible = false;
-          camera.position.set(
-            pWorld.x - cosH * 6.8 + jx,
-            pWorld.y + 2.48 + jy,
-            pWorld.z - sinH * 6.8
-          );
-          camera.lookAt(lookX, pWorld.y + 0.9, lookZ);
+          showroomCam.initialized = false;
+          circuitSceneryGroup.visible = true;
+          studioGroup.visible = false;
+        }
+
+        if (!simState.inShowcaseMode) {
+          if (simState.cameraMode === 0) {
+            // Cockpit View: direct noise removed, stable camera rig
+            playerExteriorMesh.visible = false;
+            cockpitGroup.visible = true;
+            camera.position.set(
+              pWorld.x + cosH * 0.12,
+              pWorld.y + 1.16 - simState.pitchRad * 2.1,
+              pWorld.z + sinH * 0.12
+            );
+            camera.lookAt(
+              lookX,
+              pWorld.y + 0.92 + simState.pitchRad * 15,
+              lookZ
+            );
+            camera.rotation.z = -simState.rollRad * 0.92;
+          } else if (simState.cameraMode === 1) {
+            // Hood View: direct noise removed
+            const hasHiFiPlayer = !!(playerExteriorMesh.userData.vehicleSlot && playerExteriorMesh.userData.vehicleSlot.hifi);
+            playerExteriorMesh.visible = hasHiFiPlayer;
+            cockpitGroup.visible = !hasHiFiPlayer;
+            camera.position.set(
+              pWorld.x + cosH * (hasHiFiPlayer ? 0.24 : 1.15),
+              pWorld.y + (hasHiFiPlayer ? 1.22 : 1.05),
+              pWorld.z + sinH * (hasHiFiPlayer ? 0.24 : 1.15)
+            );
+            camera.up.set(0, 1, 0);
+            camera.lookAt(lookX, pWorld.y + 0.85, lookZ);
+          } else {
+            // Chase View: direct noise removed
+            playerExteriorMesh.visible = true;
+            cockpitGroup.visible = false;
+            camera.position.set(
+              pWorld.x - cosH * 6.8,
+              pWorld.y + 2.48,
+              pWorld.z - sinH * 6.8
+            );
+            camera.up.set(0, 1, 0);
+            camera.lookAt(lookX, pWorld.y + 0.9, lookZ);
+          }
         }
 
         const showGhosts = !simState.inShowcaseMode && (simState.mode === 'time_attack');

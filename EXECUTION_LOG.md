@@ -417,3 +417,27 @@ Script error. at module(main.js:START):0:0
 3. **`scratch/test_physics_math.py`**：**26 / 26 通過**（0 失敗）。
 4. **`scratch/test_rfc_improvements.py`**：**38 / 38 通過**（0 失敗）。
 5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；所有遊戲程式碼變更仍保留於本地工作區等待用戶實際測試確認後再行推送。
+
+---
+
+## 🕒 2026-11-13 22:18 ~ 22:20 // 轉向手感調校：移除高速後輪打滑轉向並放寬高速轉向角
+
+### 🎯 用戶回饋與調整目標
+- 取消擬真模式（Realistic）中高速重踩油門轉向時觸發的 `powerOnOversteer` 後輪橫擺旋轉（`oversteerRotation` 與 `driftAngle`），避免懲罰變成「輔助入彎甩尾」。
+- 調高 `getDynamicMaxSteerDeg` 在中高與極高速區間的前輪可用轉向角，提升高速彎與變向靈敏度。
+
+### 🔧 修改明細
+1. **`js/physics.js`**
+   - 移除 `stepPhysics(dt)` 中的 `powerOnOversteer` 判斷與額外 `oversteerRotation` / `driftAngle` 注入，維持純淨擬真抓地過彎與正常橫擺阻尼收斂（`simState.isOversteer` 保持 `false`、`simState.driftAngle *= Math.pow(0.01, dt)`）。
+   - 放寬 `getDynamicMaxSteerDeg(spdKmh, carProfile, isReal)` 高速區間轉向角：
+     - `45–80 km/h`：`32.0°` 平滑過渡至 `18.0°`（原 `16.0°`）
+     - `80–180 km/h`：`18.0° -> 13.8°`（原 `16.0° -> 12.0°`）
+     - `180–235 km/h`：`13.8° -> 9.8°`（原 `12.0° -> 6.8°`）
+     - `> 235 km/h`：`9.8° -> 8.2°`（原 `6.8° -> 5.2°`，實測 `270 km/h` 為 `9.08°`）
+
+### ✅ 驗證結果（編修後重跑全套測試）
+1. **`scratch/check_syntax.py`**：7 / 7 JS 模組語法完整（OK）。
+2. **`scratch/test_proposal.py`**：**25 / 25 全數通過**，確認 `270 km/h` 轉向角開展至 `9.08°`（中速 `17.88° / 13.83°`、低速 `32.00°`）、擬真模式高速過彎不再產生 `isOversteer` 或 `driftAngle` 甩尾偏轉，且 `index.html` 載入零崩潰。
+3. **`scratch/test_physics_math.py`**：**26 / 26 通過**。
+4. **`scratch/test_rfc_improvements.py`**：**38 / 38 通過**。
+5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更仍保留於本地工作區待用戶確認後再推送。

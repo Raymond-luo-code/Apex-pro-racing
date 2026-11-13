@@ -317,4 +317,40 @@ Script error. at module(main.js:START):0:0
 已依用戶指令正式推送至 GitHub 遠端倉庫：
 - **Commit `a8749e0`**：`feat: core simulation RFC improvements (vehicle inspect mode, non-inverting camera, surface physics feedback, decoupled camera rig, and sequential checkpoint finish validation)`
 - **Commit `5a6807a`**：`docs: update project memory dossier with RFC v2.2 commit milestone`
+- **Commit `f47cb84`**：`docs: update detailed execution log for RFC improvements and configure auto-push workflow`
+- **Commit `4f2d83b`**：`docs: clarify push protocol - code requires user confirmation, logs and docs push directly`
 - **遠端分支狀態**：`main -> main`（已同步至 [Raymond-luo-code/Apex-pro-racing](https://github.com/Raymond-luo-code/Apex-pro-racing)）。
+
+---
+
+## 🕒 2026-11-13 21:18 // 彙整優化方案計畫書 (v3.0 推進版) 與工作區文件同步
+
+### 1. 操作目標
+- 應使用者要求檢索歷史專案優化藍圖，彙整目前「已完工之核心物理/真 3D/相機鑑賞架構」與「尚未實作之候選優化清單」，編制高清晰度決策文件 [`OPTIMIZATION_PLAN.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/OPTIMIZATION_PLAN.md)。
+- 遵守推送守則：本階段僅新增/更新專案規格說明文件（`OPTIMIZATION_PLAN.md` 與 `EXECUTION_LOG.md`），不變更遊戲執行代碼，依指令自動推向遠端 GitHub。
+
+### 2. 計畫書核心架構與項目彙整
+- **現階段完工狀態**：
+  - 模組化無打包架構（7 大 JS 檔獨立運行）。
+  - 4 款真 3D GT3 賽車模型、清漆反射、自研 WebP 紋理修復。
+  - 360° 車輛鑑賞模式（無萬向節死鎖、視角不倒置）。
+  - 自然倒車物理與終點線全檢查點（Gates 1~15）衝線防作弊判定。
+- **未實作候選清單（供使用者決策推進）**：
+  1. **類別 A：視覺與微觀細節**
+     - `A1`：煞車碟盤高溫通紅發光（650°C ~ 1000°C 漸變）與迎風對流散熱模型。
+     - `A2`：雨天濕地模式、鏡面水窪倒影與雨霧水煙粒子。
+  2. **類別 B：專業物理與輪胎策略**
+     - `B1`：軟胎（Soft）、中性胎（Medium）、硬胎（Hard）三種抓地/耐磨配方。
+     - `B2`：煞車熱衰竭機制（過熱 > 850°C 時制動力暫態衰退）。
+     - `B3`：四輪胎溫/磨耗即時熱力 HUD。
+  3. **類別 C：賽事競技與 AI 攻防**
+     - `C1`：FIA / F1 標準 5 盞紅燈熄滅起跑程序與偷跑罰則。
+     - `C2`：AI 內線防守走線與直線尾流抽頭超車。
+     - `C3`：賽道旗號系統（黃旗、藍旗、方格旗動態揮舞）。
+  4. **類別 D：高階音效與周邊觸覺**
+     - `D1`：大油門收油渦輪洩壓閥（Blow-off Flutter）與換檔氣動金屬衝擊音。
+     - `D2`：手機端原生 Web Vibration API 震動（ABS 彈腳、路緣石頻率震動）。
+
+### 3. 文件生成與同步
+- 產出 [`OPTIMIZATION_PLAN.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/OPTIMIZATION_PLAN.md) 至專案根目錄。
+- 遵循「文檔日誌直接推送，代碼變更等待確認」專案準則，將日誌與計畫書提交並推送。

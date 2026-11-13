@@ -391,3 +391,29 @@ Script error. at module(main.js:START):0:0
 3. **`scratch/test_physics_math.py`**：26 / 26 通過。
 4. **`scratch/test_rfc_improvements.py`**：38 / 38 通過。
 5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於工作區等待用戶本地測試確認後再行推送。
+
+---
+
+## 🕒 2026-11-13 21:55 ~ 22:11 // Phase 1 實作：競爭力 AI、三級漸進煞車引導與 FIA 五燈起跑 (`OPTIMIZATION_PLAN.md`)
+
+### 🎯 任務核心
+依 [`OPTIMIZATION_PLAN.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/OPTIMIZATION_PLAN.md) 執行 Phase 1 核心駕駛體驗與競技對抗升級，解決 AI 過慢與過度懲罰、單一重煞提示易導致鎖死之問題，並導入真實 FIA 五盞紅燈起跑與偷跑罰秒判罰流程。
+
+### 🔧 主要修改明細
+1. **競爭力 AI 駕駛策略與難度分級 (`js/physics.js`, `js/flow.js`, `index.html`)**
+   - 將 `#select-ai-diff` 與 `js/flow.js` Step 2 對手強度調整為 **Clubman (`0.92`) / PRO (`1.0`) / Alien (`1.10`)**，並提升 `aiCars` 基準節奏 `basePace`（`1.045 / 1.032 / 1.018`）與反應延遲控制 `reactionTimer`。
+   - 於 `stepAIRivals(dt)` 引入彎心抓地加成（`apexGripBonus`）、出彎加速衝刺（`exitSurge`）、真空帶彈弓超車（`SLINGSHOT PASS`）、晚煞車進攻（`LATE BRAKE DIVE`）與基準縱向推力參數調整，並將高壓失誤從過度自毀改為擬真微失誤（`0.85s` / `targetV *= 0.94`）。
+2. **三級漸進式賽道與 HUD 煞車提示 (`js/physics.js`, `js/render.js`, `js/main.js`)**
+   - 於 `js/physics.js` 新增並匯出 `computeDrivingCue(s, currSpeedKmh, brkNorm, thrNorm)`，結合減速度需求 `reqDecel` 與前方 PRO 遙測 `getProProfileAtDistance` 輸出 `'lift'`（Lift & Coast 略收油門滑行）、`'trail'`（輕帶尾煞）、`'heavy'`（重煞點與目標入彎速）三級訊號並同步至 `simState.drivingCue` / `cueTargetKmh`。
+   - 於 `js/render.js` `rebuild3DCircuitScene()` 依 `proTelemetrySamples` 將 3D 賽道動態走線升級為四色漸進引導（綠：全油 / 天藍：略收油門 / 琥珀橙：輕帶尾煞 / 深紅：重煞區）。
+   - 於 `js/main.js` `updateHUD()` 依 `drivingCue` 動態樣式化 `#alert-brake-now`，並於重煞 `brkPct > 84` 時補充 `'漸放煞車防鎖死'` 提示。
+3. **FIA 五紅燈燈架起跑與偷跑 +5.0s 罰秒 (`index.html`, `js/physics.js`, `js/main.js`, `js/flow.js`)**
+   - 更新 `#start-lights-overlay` 與新增 `#alert-jump-start`；於 `simState`、`resetSession`、`updateCountdownUI()` 及 `stepPhysics(dt)` 實作 0.85 秒逐顆點亮 5 盞紅燈、全亮後 `0.25s ~ 2.00s` 隨機駐留與五燈同時熄滅（Lights Out）發車流程。
+   - 若紅燈熄滅前車輛未握持煞車且前移超過 `0.5m`，觸發偷跑違規（`hasJumpStarted` / `jumpStartPenaltySec = 5.0`），並於 `js/flow.js` `__apexFlowFinish` 與 `renderResultPage(0)` 併入完賽成績與懲罰徽章計算；同步將 `index.html` script 版本參數更新為 `?v=20261113_phase1`。
+
+### ✅ 驗證結果（於最後一次程式編修後執行）
+1. **`scratch/check_syntax.py`**：7 / 7 JS 模組語法完整（OK）。
+2. **`scratch/test_proposal.py`**（Headless Chrome V8 實測）：**25 / 25 全數通過**，涵蓋提案類比輸入曲線、FIA 五燈燈架隨機駐留與偷跑 +5.0s 判罰、三級漸進駕駛提示分流（Monza 測得 `'lift'`、髮夾彎高減速區測得 `'heavy'` 目標 `79 km/h` 與降速後歸零）、Alien AI (`220.0 km/h`) 明顯領先 Clubman AI (`203.2 km/h`)，以及完整 `index.html` 載入零崩潰（0 個 `#apex-crash-banner`）。
+3. **`scratch/test_physics_math.py`**：**26 / 26 通過**（0 失敗）。
+4. **`scratch/test_rfc_improvements.py`**：**38 / 38 通過**（0 失敗）。
+5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；所有遊戲程式碼變更仍保留於本地工作區等待用戶實際測試確認後再行推送。

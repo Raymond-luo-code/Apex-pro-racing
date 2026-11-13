@@ -16,6 +16,8 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
         squealGain: null,
         kerbOsc: null,
         kerbGain: null,
+        lockupPulseOsc: null,
+        lockupPulseGain: null,
 
         init() {
           if (this.started) return;
@@ -53,10 +55,11 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
             this.squealNode.buffer = noiseBuf;
             this.squealNode.loop = true;
 
+            // Warm Low-Pass Tire Scrub (350 - 750 Hz textured rubber-on-asphalt sound, eliminating piercing 1800-2300 Hz screech)
             this.squealFilter = this.ctx.createBiquadFilter();
-            this.squealFilter.type = 'bandpass';
-            this.squealFilter.frequency.value = 1850;
-            this.squealFilter.Q.value = 5.5;
+            this.squealFilter.type = 'lowpass';
+            this.squealFilter.frequency.value = 480;
+            this.squealFilter.Q.value = 1.2;
 
             this.squealGain = this.ctx.createGain();
             this.squealGain.gain.value = 0.0;
@@ -80,45 +83,77 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
             this.kerbGain.connect(this.ctx.destination);
             this.kerbOsc.start();
 
+            // Non-fatiguing 80 - 140 Hz Low-Frequency Lockup / ABS Pedal Pulse
+            this.lockupPulseOsc = this.ctx.createOscillator();
+            this.lockupPulseOsc.type = 'triangle';
+            this.lockupPulseOsc.frequency.value = 105;
+            const lockupFilter = this.ctx.createBiquadFilter();
+            lockupFilter.type = 'lowpass';
+            lockupFilter.frequency.value = 210;
+            this.lockupPulseGain = this.ctx.createGain();
+            this.lockupPulseGain.gain.value = 0.0;
+            this.lockupPulseOsc.connect(lockupFilter);
+            lockupFilter.connect(this.lockupPulseGain);
+            this.lockupPulseGain.connect(this.ctx.destination);
+            this.lockupPulseOsc.start();
+
             this.started = true;
           } catch (e) { }
         },
 
-        update(rpm, throttle, tireSlipRatio, isLockup, isDrifting, isUndersteer, isNosActive, onKerb, paused, speedKmh) {
+        update(rpm, throttle, tireSlipRatio, isLockup, isDrifting, isUndersteer, isNosActive, onKerb, paused, speedKmh, brakeInput) {
           if (!this.started || !this.ctx) return;
           if (!this.enabled || paused) {
             this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
             this.squealGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
             this.kerbGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+            if (this.lockupPulseGain) this.lockupPulseGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
             return;
           }
           if (this.ctx.state === 'suspended') {
             this.ctx.resume().catch(() => { });
           }
 
+          const now = this.ctx.currentTime;
           const nosPitchBoost = isNosActive ? 28 : 0;
           const baseFreq = 36 + (rpm / 8800) * 195 + nosPitchBoost;
-          this.rpmOsc1.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.03);
-          this.rpmOsc2.frequency.setTargetAtTime(baseFreq * 1.5, this.ctx.currentTime, 0.03);
+          this.rpmOsc1.frequency.setTargetAtTime(baseFreq, now, 0.03);
+          this.rpmOsc2.frequency.setTargetAtTime(baseFreq * 1.5, now, 0.03);
           const engVol = 0.04 + (throttle / 100) * 0.065 + (rpm / 9000) * 0.035 + (isNosActive ? 0.03 : 0);
-          this.engineGain.gain.setTargetAtTime(engVol, this.ctx.currentTime, 0.04);
+          this.engineGain.gain.setTargetAtTime(engVol, now, 0.04);
 
-          const squealIntensity = (isLockup || isDrifting || isUndersteer)
-            ? 0.14
-            : Math.max(0, (tireSlipRatio - 0.72) * 0.24);
-          const pitch = isLockup ? 2280 : (isDrifting ? 1480 : 1720 + tireSlipRatio * 380);
-          this.squealFilter.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.04);
-          this.squealGain.gain.setTargetAtTime(Math.min(0.16, squealIntensity), this.ctx.currentTime, 0.04);
+          // Warm Low-Pass Tire Scrub strictly within 350 - 750 Hz range
+          const currentSpeed = (speedKmh != null) ? speedKmh : (typeof simState !== 'undefined' ? simState.speedKmh : 60);
+          const brkVal = (brakeInput != null) ? brakeInput : (typeof simState !== 'undefined' ? simState.brakeInput : 0);
+          const scrubIntensity = (isDrifting || isUndersteer)
+            ? 0.12
+            : (isLockup ? 0.09 : Math.max(0, (tireSlipRatio - 0.72) * 0.18));
+          const scrubCutoff = Math.min(750, Math.max(350,
+            isDrifting ? 640 : (isUndersteer ? 580 : 350 + Math.min(1.3, tireSlipRatio) * 300)
+          ));
+          this.squealFilter.frequency.setTargetAtTime(scrubCutoff, now, 0.04);
+          this.squealGain.gain.setTargetAtTime(currentSpeed > 10 ? Math.min(0.14, scrubIntensity) : 0, now, 0.04);
+
+          // Low-Frequency 80 - 140 Hz Rhythmic Lockup Pulse (> 88% brake or active lockup)
+          if (this.lockupPulseGain && this.lockupPulseOsc) {
+            if ((isLockup || brkVal > 88) && currentSpeed > 28) {
+              const pulsePhase = 0.5 + 0.5 * Math.sin(now * Math.PI * 2 * 13.5);
+              const lockFreq = 80 + Math.min(60, Math.max(0, brkVal - 88) * 5 + (isLockup ? 20 : 0));
+              this.lockupPulseOsc.frequency.setTargetAtTime(lockFreq, now, 0.02);
+              this.lockupPulseGain.gain.setTargetAtTime(0.035 + pulsePhase * 0.075, now, 0.015);
+            } else {
+              this.lockupPulseGain.gain.setTargetAtTime(0.0, now, 0.03);
+            }
+          }
 
           // RFC Module 2: 35-50 Hz low-frequency kerb rumble matching vehicle ground speed
           if (onKerb && this.kerbOsc) {
-            const currentSpeed = (speedKmh != null) ? speedKmh : (typeof simState !== 'undefined' ? simState.speedKmh : 60);
-            const kerbFreq = 35 + Math.min(15, (simState.speedKmh / 250) * 15);
-            this.kerbOsc.frequency.setTargetAtTime(kerbFreq, this.ctx.currentTime, 0.04);
+            const kerbFreq = 35 + Math.min(15, (currentSpeed / 250) * 15);
+            this.kerbOsc.frequency.setTargetAtTime(kerbFreq, now, 0.04);
             const kerbVol = (currentSpeed > 6) ? Math.min(0.14, 0.045 + (currentSpeed / 280) * 0.065) : 0;
-            this.kerbGain.gain.setTargetAtTime(kerbVol, this.ctx.currentTime, 0.02);
+            this.kerbGain.gain.setTargetAtTime(kerbVol, now, 0.02);
           } else if (this.kerbGain) {
-            this.kerbGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.04);
+            this.kerbGain.gain.setTargetAtTime(0.0, now, 0.04);
           }
         },
 

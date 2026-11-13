@@ -1984,17 +1984,16 @@
   <div id="start-lights-overlay"
     class="hidden pointer-events-none fixed inset-x-0 top-20 z-30 flex flex-col items-center justify-center">
     <div class="hud-glass px-5 py-3 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center gap-1.5">
-      <div class="text-[10px] font-mono-tech text-slate-400 tracking-widest uppercase">RACE CONTROL // STANDING START
-        SEQUENCE</div>
+      <div class="text-[10px] font-mono-tech text-slate-400 tracking-widest uppercase">FIA RACE CONTROL // 5-LIGHT GANTRY START</div>
       <div id="start-lights-pods" class="flex items-center gap-2.5 my-1">
-        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600"></span>
-        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600"></span>
-        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600"></span>
-        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600"></span>
-        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600"></span>
+        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600 transition-all duration-100"></span>
+        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600 transition-all duration-100"></span>
+        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600 transition-all duration-100"></span>
+        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600 transition-all duration-100"></span>
+        <span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-600 transition-all duration-100"></span>
       </div>
-      <div id="start-countdown-num" class="text-2xl font-mono-tech font-extrabold text-amber-400">3</div>
-      <div class="text-[10px] text-slate-300">可先按住油門拉轉備戰 — 綠燈 GO! 亮起瞬間正式發車計時</div>
+      <div id="start-countdown-num" class="text-2xl font-mono-tech font-extrabold text-amber-400">GRID READY</div>
+      <div id="start-countdown-hint" class="text-[10px] text-slate-300">5 盞紅燈同時熄滅瞬間踩油門起跑！（可按住 S 煞車拉轉；熄燈前前移將判罰 +5.0s）</div>
     </div>
   </div>
 
@@ -2477,9 +2476,13 @@
           class="hidden px-2.5 py-0.5 rounded-full bg-orange-600 text-white font-mono-tech text-[10px] font-bold shadow">
           ⚡ 護欄小角度擦撞 (Wall Scrape)！車體未受致命傷，請反打方向盤脫離護欄
         </span>
+        <span id="alert-jump-start"
+          class="hidden px-3 py-0.5 rounded-full bg-rose-700 border border-rose-300 text-white font-mono-tech text-[11px] font-black shadow-lg">
+          🚨 JUMP START 偷跑違規 // 賽後總成績加罰 +5.000s
+        </span>
         <span id="alert-brake-now"
-          class="hidden px-3 py-0.5 rounded-full bg-red-600 text-white font-mono-tech text-[11px] font-extrabold shadow-lg animate-pulse">
-          🛑 BRAKE NOW！前方急彎超速 — 請立即踩煞車減速，否則將嚴重外拋衝出賽道！
+          class="hidden px-3 py-0.5 rounded-full bg-red-600 text-white font-mono-tech text-[11px] font-extrabold shadow-lg">
+          🛑 BRAKE NOW！前方急彎超速
         </span>
         <span id="alert-understeer"
           class="hidden px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono-tech text-[10px] font-extrabold shadow">
@@ -3006,9 +3009,9 @@
             </div>
             <select id="select-ai-diff"
               class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white text-xs font-mono-tech">
-              <option value="0.94">Clubman 俱樂部級</option>
+              <option value="0.92">Clubman 俱樂部級</option>
               <option value="1.0" selected>PRO GT3 職業級</option>
-              <option value="1.05">Alien 外星人級</option>
+              <option value="1.10">Alien 外星人級</option>
             </select>
           </div>
         </div>
@@ -3296,13 +3299,13 @@
   <!-- APEX PRO RACING // MODULAR HIGH-PERFORMANCE CLIENT SCRIPTS                 -->
   <!-- 7 Structured Domain Modules (Zero-Build Vanilla Browser Architecture)       -->
   <!-- ========================================================================= -->
-  <script src="js/audio.js?v=20261110_v2"></script>
-  <script src="js/circuits.js?v=20261110_v2"></script>
-  <script src="js/render.js?v=20261110_v2"></script>
-  <script src="js/physics.js?v=20261110_v2"></script>
-  <script src="js/input.js?v=20261110_v2"></script>
-  <script src="js/flow.js?v=20261110_v2"></script>
-  <script src="js/main.js?v=20261110_v2"></script>
+  <script src="js/audio.js?v=20261113_phase1"></script>
+  <script src="js/circuits.js?v=20261113_phase1"></script>
+  <script src="js/render.js?v=20261113_phase1"></script>
+  <script src="js/physics.js?v=20261113_phase1"></script>
+  <script src="js/input.js?v=20261113_phase1"></script>
+  <script src="js/flow.js?v=20261113_phase1"></script>
+  <script src="js/main.js?v=20261113_phase1"></script>
 </body>
 
 </html>

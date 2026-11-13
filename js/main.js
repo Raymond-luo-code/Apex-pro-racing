@@ -103,8 +103,25 @@ simState.bestLapTime = PRO_LAP_TIME;
         document.getElementById('val-throttle').textContent = `${thrPct}%`;
         document.getElementById('lbl-thr-slider').textContent = `${thrPct}%`;
 
-        document.getElementById('bar-brake').style.height = `${brkPct}%`;
-        document.getElementById('val-brake').textContent = `${brkPct}%`;
+        const barBrakeEl = document.getElementById('bar-brake');
+        const valBrakeEl = document.getElementById('val-brake');
+        if (barBrakeEl) {
+          barBrakeEl.style.height = `${brkPct}%`;
+          if (brkPct > 88 || simState.isBrakeLockup) {
+            barBrakeEl.className = 'relative z-10 w-full bg-red-600 animate-pulse transition-all duration-75';
+            if (valBrakeEl) valBrakeEl.className = 'text-[9px] font-mono-tech text-red-400 mt-0.5 font-bold';
+          } else if (brkPct > 75) {
+            barBrakeEl.className = 'relative z-10 w-full bg-orange-500 transition-all duration-75';
+            if (valBrakeEl) valBrakeEl.className = 'text-[9px] font-mono-tech text-orange-400 mt-0.5 font-bold';
+          } else if (brkPct > 5) {
+            barBrakeEl.className = 'relative z-10 w-full bg-amber-400 transition-all duration-75';
+            if (valBrakeEl) valBrakeEl.className = 'text-[9px] font-mono-tech text-amber-300 mt-0.5 font-bold';
+          } else {
+            barBrakeEl.className = 'relative z-10 w-full bg-slate-600 transition-all duration-75';
+            if (valBrakeEl) valBrakeEl.className = 'text-[9px] font-mono-tech text-slate-400 mt-0.5 font-bold';
+          }
+        }
+        if (valBrakeEl) valBrakeEl.textContent = `${brkPct}%`;
         document.getElementById('lbl-brk-slider').textContent = `${brkPct}%`;
 
         document.getElementById('lbl-steer-deg').textContent = `${steerDeg}°`;
@@ -117,7 +134,35 @@ simState.bestLapTime = PRO_LAP_TIME;
 
         document.getElementById('btn-recover-banner').classList.toggle('hidden', !simState.offTrack);
         document.getElementById('alert-wall-scrape').classList.toggle('hidden', !simState.wallScrapeWarning);
-        document.getElementById('alert-brake-now').classList.toggle('hidden', !simState.brakeNowWarning);
+        const jumpEl = document.getElementById('alert-jump-start');
+        if (jumpEl) jumpEl.classList.toggle('hidden', !simState.hasJumpStarted);
+
+        // Phase 1: Dynamic Multi-Tier Braking & Lift Guidance
+        const cueEl = document.getElementById('alert-brake-now');
+        if (cueEl) {
+          const cueTier = simState.drivingCue || (simState.brakeNowWarning ? 'heavy' : 'none');
+          const tgtKmh = simState.cueTargetKmh || cornerLimitKmh;
+          if (cueTier === 'heavy') {
+            cueEl.classList.remove('hidden');
+            if (brkPct > 84) {
+              cueEl.className = 'px-3 py-0.5 rounded-full bg-orange-600 text-white font-mono-tech text-[11px] font-extrabold shadow-lg';
+              cueEl.textContent = `⚠ 漸放煞車防鎖死 · 目標彎速 ${tgtKmh} km/h`;
+            } else {
+              cueEl.className = 'px-3 py-0.5 rounded-full bg-red-600 text-white font-mono-tech text-[11px] font-extrabold shadow-lg';
+              cueEl.textContent = `🛑 HEAVY BRAKE · 重煞降至 ${tgtKmh} km/h ➔ 準備放煞開油`;
+            }
+          } else if (cueTier === 'trail') {
+            cueEl.classList.remove('hidden');
+            cueEl.className = 'px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono-tech text-[11px] font-extrabold shadow-lg';
+            cueEl.textContent = `🟡 TRAIL BRAKE · 輕含煞車 (25%~40%) 目標 ${tgtKmh} km/h — 嚴禁踩死`;
+          } else if (cueTier === 'lift') {
+            cueEl.classList.remove('hidden');
+            cueEl.className = 'px-3 py-0.5 rounded-full bg-sky-500 text-slate-950 font-mono-tech text-[11px] font-extrabold shadow-lg';
+            cueEl.textContent = `⚡ LIFT & COAST · 略收油門滑行入彎（約 ${tgtKmh} km/h）`;
+          } else {
+            cueEl.classList.add('hidden');
+          }
+        }
         document.getElementById('alert-nos').classList.toggle('hidden', !simState.isNosActive);
         document.getElementById('alert-drift').classList.toggle('hidden', !simState.isDrifting);
         document.getElementById('alert-lockup').classList.toggle('hidden', !simState.isBrakeLockup);
@@ -126,8 +171,20 @@ simState.bestLapTime = PRO_LAP_TIME;
         document.getElementById('alert-slipstream').classList.toggle('hidden', !simState.inSlipstream);
         document.getElementById('alert-kerb').classList.toggle('hidden', !simState.offTrack);
 
-        const edgeAlertActive = simState.isBrakeLockup || simState.isOversteer || simState.isUndersteer || simState.brakeNowWarning;
-        document.getElementById('edge-feedback').style.opacity = edgeAlertActive ? '1' : '0';
+        const edgeEl = document.getElementById('edge-feedback');
+        if (edgeEl) {
+          const highAlert = simState.isBrakeLockup || simState.isOversteer || simState.isUndersteer || simState.brakeNowWarning;
+          const nearGripEdge = (simState.tireSlipRatio > 0.85 || brkPct > 84);
+          if (highAlert) {
+            edgeEl.style.boxShadow = 'inset 0 0 120px rgba(239, 68, 68, 0.65)';
+            edgeEl.style.opacity = '1';
+          } else if (nearGripEdge) {
+            edgeEl.style.boxShadow = 'inset 0 0 95px rgba(245, 158, 11, 0.38)';
+            edgeEl.style.opacity = '0.85';
+          } else {
+            edgeEl.style.opacity = '0';
+          }
+        }
 
         if (!simState.isMobileGamepadActive) {
           ['fl', 'fr', 'rl', 'rr'].forEach(k => {
@@ -881,7 +938,8 @@ function animate(now) {
     simState.isNosActive,
     simState.onKerb,
     simState.paused || simState.inShowcaseMode,
-    simState.speedKmh
+    simState.speedKmh,
+    simState.brakeInput
   );
 
   update3DSceneAndVisualFX(now * 0.001);

@@ -580,9 +580,9 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                   與 3 位具備尾流超車與心理壓力失誤機制的 AI 車手進行 <strong>2 圈爭先錦標賽</strong>！逼近對手車尾可觸發尾流加速並施壓迫使對手鎖死外拋。
                 </div>
                 <div class="af-diff-row" data-stop-prop="1">
-                  <button type="button" class="af-diff ${diff < 0.97 ? 'is-active' : ''}" data-aidiff="0.94">俱樂部級 (入門)</button>
-                  <button type="button" class="af-diff ${diff >= 0.97 && diff <= 1.02 ? 'is-active' : ''}" data-aidiff="1.0">PRO 職業級</button>
-                  <button type="button" class="af-diff ${diff > 1.02 ? 'is-active' : ''}" data-aidiff="1.05">Alien 外星人</button>
+                  <button type="button" class="af-diff ${diff < 0.96 ? 'is-active' : ''}" data-aidiff="0.92">俱樂部級 (入門)</button>
+                  <button type="button" class="af-diff ${diff >= 0.96 && diff <= 1.04 ? 'is-active' : ''}" data-aidiff="1.0">PRO 職業級</button>
+                  <button type="button" class="af-diff ${diff > 1.04 ? 'is-active' : ''}" data-aidiff="1.10">Alien 外星人</button>
                 </div>
                 <div class="go">進入賽道選擇 ➔</div>
               </div>
@@ -738,11 +738,13 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         clearAllHeldInputs();
         simState.paused = true;
 
+        const jumpPenaltySec = simState.jumpStartPenaltySec || 0;
         const lapTimes = (simState.sessionLapTimes && simState.sessionLapTimes.length)
           ? simState.sessionLapTimes.slice()
           : [finalLapTime];
-        const bestSessionLap = Math.min.apply(null, lapTimes);
-        const totalSessionTime = lapTimes.reduce((a, b) => a + b, 0);
+        const rawBestLap = Math.min.apply(null, lapTimes);
+        const bestSessionLap = (simState.mode === 'time_attack') ? (rawBestLap + jumpPenaltySec) : rawBestLap;
+        const totalSessionTime = lapTimes.reduce((a, b) => a + b, 0) + jumpPenaltySec;
 
         const pbKey = `${currentCircuitIndex}_${simState.edition}`;
         const prevPB = personalRecords[pbKey] || null;
@@ -752,8 +754,8 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         simState.currentLapSamples.forEach(s => { if (s.speed > maxV) maxV = s.speed; });
         const avgV = (totalTrackLength / Math.max(1, bestSessionLap)) * 3.6;
 
-        // Compute AI standings snapshot
-        const playerProgress = simState.totalRaceLaps * totalTrackLength;
+        // Compute AI standings snapshot (accounting for Jump Start +5.0s time penalty if any)
+        const playerProgress = simState.totalRaceLaps * totalTrackLength - (jumpPenaltySec * 65);
         const standings = [{
           name: 'YOU (' + getActiveCarMeta().name + ')',
           progress: playerProgress,
@@ -825,6 +827,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           b200: simState.bench0to200,
           lockups: simState.lockupCount,
           understeers: simState.understeerCount,
+          jumpPenaltySec,
           grade, gradeColor, gradeTitle
         };
 
@@ -882,6 +885,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                 <div class="af-res-sub">
                   總完賽時間 <strong>${formatLapTime(r.totalTime)}</strong> · 最佳單圈 <strong>${formatLapTime(r.bestLap)}</strong> · 座駕 ${r.carName}
                 </div>
+                ${r.jumpPenaltySec > 0 ? `<div class="af-res-badge" style="background:rgba(225,29,72,0.22);border-color:#fb7185;color:#fecdd3;">🚨 JUMP START 偷跑罰時 +${r.jumpPenaltySec.toFixed(1)}s 已計入總成績</div>` : ''}
                 ${r.isNewPB ? '<div class="af-res-badge">★ NEW PERSONAL BEST 刷新個人最佳單圈！</div>' : ''}
                 <div class="af-standings">
                   ${r.standings.map((s, idx) => `
@@ -898,6 +902,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
               <div class="af-res-page af-res-hero">
                 <div class="af-kicker">OFFICIAL LAP TIME · ${r.edition === 'arcade' ? 'ARCADE EDITION' : 'REALISTIC SIM'}</div>
                 <div class="af-res-time">${formatLapTime(r.bestLap)}</div>
+                ${r.jumpPenaltySec > 0 ? `<div class="af-res-badge" style="background:rgba(225,29,72,0.22);border-color:#fb7185;color:#fecdd3;">🚨 JUMP START 偷跑罰時 +${r.jumpPenaltySec.toFixed(1)}s 已計入圈速</div>` : ''}
                 ${r.isNewPB ? '<div class="af-res-badge">★ NEW PERSONAL BEST 刷新個人最佳紀錄！</div>' : ''}
                 <div class="af-res-sub">
                   與 PRO 官方基準圈 (${formatLapTime(r.proLap)}) 差距：${fmtDelta(r.deltaPro)}

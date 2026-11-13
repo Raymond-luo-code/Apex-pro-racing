@@ -580,11 +580,29 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
           const curvNow = Math.abs(node.curvature);
           const curvAhead = Math.abs(nextLook.curvature);
-          let rr = 0.06, rg = 0.82, rb = 0.50;
-          if (curvAhead > 0.0052 && curvAhead > curvNow * 1.1) {
-            rr = 0.96; rg = 0.18; rb = 0.22;
-          } else if (curvNow > 0.0035) {
-            rr = 0.98; rg = 0.65; rb = 0.08;
+          let rr = 0.06, rg = 0.82, rb = 0.50; // Default: Full Throttle (Emerald Green)
+          if (typeof proTelemetrySamples !== 'undefined' && proTelemetrySamples.length > 2) {
+            const pNow = getProProfileAtDistance(node.s);
+            const pAhead = getProProfileAtDistance(node.s + 22);
+            const brkHint = Math.max(pNow.brake, pAhead.brake * 0.85);
+            if (brkHint > 60) {
+              // Tier 3: Heavy Threshold Braking (Crimson Red)
+              rr = 0.95; rg = 0.16; rb = 0.22;
+            } else if (brkHint >= 26) {
+              // Tier 2: Light Trail Braking (Amber Orange)
+              rr = 0.96; rg = 0.62; rb = 0.04;
+            } else if (brkHint >= 10 || pNow.throttle < 88 || (curvAhead > 0.0028 && curvAhead > curvNow * 1.12)) {
+              // Tier 1: Lift & Coast / Feathering (Sky Cyan)
+              rr = 0.22; rg = 0.74; rb = 0.97;
+            }
+          } else {
+            if (curvAhead > 0.0052 && curvAhead > curvNow * 1.1) {
+              rr = 0.95; rg = 0.16; rb = 0.22;
+            } else if (curvNow > 0.0035) {
+              rr = 0.96; rg = 0.62; rb = 0.04;
+            } else if (curvAhead > 0.0028) {
+              rr = 0.22; rg = 0.74; rb = 0.97;
+            }
           }
           ribbonColors.push(rr, rg, rb, rr, rg, rb);
 

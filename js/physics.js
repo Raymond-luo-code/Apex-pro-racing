@@ -170,7 +170,19 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         kerbTime: 0,
 
         // Module 1: Inspect Mode
-        inspectMode: false
+        inspectMode: false,
+
+        // Phase 1: FIA 5-Red-Light Gantry Start & Jump Start Penalty
+        gantryHoldDuration: 1.0,
+        gantryElapsed: 0,
+        gantryStage: 0,
+        gantryGoBannerTimer: 0,
+        hasJumpStarted: false,
+        jumpStartPenaltySec: 0,
+
+        // Phase 1: Progressive 3-Tier Track & HUD Driving Guidance
+        drivingCue: 'none', // 'none' | 'lift' | 'trail' | 'heavy'
+        cueTargetKmh: 300
       };
 
       const aiCars = [
@@ -182,11 +194,15 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           d: -2.0,
           speedMs: 28,
           lap: 1,
-          basePace: 1.015,
+          basePace: 1.045,
           stress: 12,
           stateLabel: 'OPTIMAL LINE',
           mistakeTimer: 0,
           mistakeType: null,
+          reactionTimer: 0,
+          throttleInput: 0,
+          brakeInput: 0,
+          steerInput: 0,
           mesh: null
         },
         {
@@ -197,11 +213,15 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           d: 2.2,
           speedMs: 27,
           lap: 1,
-          basePace: 1.002,
+          basePace: 1.032,
           stress: 18,
           stateLabel: 'OPTIMAL LINE',
           mistakeTimer: 0,
           mistakeType: null,
+          reactionTimer: 0,
+          throttleInput: 0,
+          brakeInput: 0,
+          steerInput: 0,
           mesh: null
         },
         {
@@ -212,11 +232,15 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           d: -2.4,
           speedMs: 26,
           lap: 1,
-          basePace: 0.990,
+          basePace: 1.018,
           stress: 20,
           stateLabel: 'OPTIMAL LINE',
           mistakeTimer: 0,
           mistakeType: null,
+          reactionTimer: 0,
+          throttleInput: 0,
+          brakeInput: 0,
+          steerInput: 0,
           mesh: null
         }
       ];
@@ -312,12 +336,22 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         document.getElementById('hud-lap-count').textContent =
           simState.mode === 'ai_race' ? `1 / ${simState.totalRaceLaps}` : '1';
 
+        simState.hasJumpStarted = false;
+        simState.jumpStartPenaltySec = 0;
+        simState.gantryGoBannerTimer = 0;
+        simState.gantryElapsed = 0;
+        simState.gantryStage = 0;
+        simState.drivingCue = 'none';
+        simState.cueTargetKmh = 300;
+
         const startOverlay = document.getElementById('start-lights-overlay');
         if (triggerCountdown && !simState.inShowcaseMode) {
-          // Trigger 3, 2, 1, GO! Standing Start Countdown Sequence
+          // Phase 1: FIA Standard 5-Red-Light Gantry Start + Random 0.25-2.0s Hold
           simState.countdownActive = true;
-          simState.countdownTimer = 3.5;
-          simState.lastBeepStage = 4;
+          simState.gantryHoldDuration = Number((0.25 + Math.random() * 1.75).toFixed(2));
+          simState.countdownTimer = 3.40 + simState.gantryHoldDuration;
+          simState.lastBeepStage = 0;
+          updateCountdownUI();
           if (startOverlay) startOverlay.classList.remove('hidden');
         } else {
           simState.countdownActive = false;
@@ -329,11 +363,15 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         aiCars.forEach((ai, idx) => {
           ai.s = gridOffsets[idx];
           ai.d = (idx % 2 === 0) ? -3.0 : 3.0;
-          ai.speedMs = 0; // Standing start on the grid waiting for GO!
+          ai.speedMs = 0; // Standing start on the grid waiting for Lights Out!
           ai.lap = 1;
           ai.stress = 15;
           ai.mistakeTimer = 0;
           ai.mistakeType = null;
+          ai.reactionTimer = 0.04 + Math.random() * 0.14;
+          ai.throttleInput = 0;
+          ai.brakeInput = 0;
+          ai.steerInput = 0;
           ai.stateLabel = 'GRID READY';
           ai.mesh.visible = (!simState.inShowcaseMode && simState.mode === 'ai_race');
           const w = sdToWorld(ai.s, ai.d);
@@ -342,44 +380,177 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         });
       }
 
-      function updateCountdownUI(timer) {
+      function updateCountdownUI() {
         const overlay = document.getElementById('start-lights-overlay');
         const numEl = document.getElementById('start-countdown-num');
         const pods = document.querySelectorAll('#start-lights-pods span');
         if (!overlay || !numEl) return;
 
-        if (timer <= 0) {
+        if (!simState.countdownActive && (simState.gantryGoBannerTimer || 0) <= 0) {
           overlay.classList.add('hidden');
           return;
         }
         overlay.classList.remove('hidden');
 
-        // timer goes from 3.5 -> 0.5 (3, 2, 1), then 0.5 -> 0.0 (GO!)
-        if (timer > 0.5) {
-          const stage = Math.ceil(timer - 0.5); // 3, 2, 1
-          if (simState.lastBeepStage !== stage) {
-            simState.lastBeepStage = stage;
+        if (simState.countdownActive) {
+          const litCount = Math.min(5, Math.floor(simState.gantryElapsed / 0.85) + 1);
+          if (simState.lastBeepStage !== litCount) {
+            simState.lastBeepStage = litCount;
             soundEngine.playCountdownBeep(false);
           }
-          numEl.textContent = String(stage);
-          numEl.className = 'text-2xl font-mono-tech font-extrabold text-red-400';
-          const litRedCount = (4 - stage) * 2 - 1; // 1, 3, 5 red lights
+          numEl.textContent = simState.hasJumpStarted
+            ? 'JUMP START! (+5.0s PENALTY)'
+            : (litCount < 5 ? `STAND BY // LIGHT ${litCount} / 5` : 'HOLD LAUNCH // ALL RED ON');
+          numEl.className = 'text-xl font-mono-tech font-extrabold text-red-400 tracking-wider';
           pods.forEach((p, idx) => {
-            p.style.backgroundColor = idx < litRedCount ? '#ef4444' : '#1e293b';
-            p.style.boxShadow = idx < litRedCount ? '0 0 12px #ef4444' : 'none';
+            p.style.backgroundColor = idx < litCount ? '#ef4444' : '#0f172a';
+            p.style.boxShadow = idx < litCount ? '0 0 16px #ef4444' : 'none';
+            p.style.borderColor = idx < litCount ? '#fca5a5' : '#475569';
           });
         } else {
-          if (simState.lastBeepStage !== 0) {
-            simState.lastBeepStage = 0;
-            soundEngine.playCountdownBeep(true);
-          }
-          numEl.textContent = 'GO!';
-          numEl.className = 'text-2xl font-mono-tech font-extrabold text-emerald-400';
+          // Lights out simultaneous launch!
+          numEl.textContent = simState.hasJumpStarted ? 'GO! (+5.0s JUMP START PENALTY)' : 'LIGHTS OUT · AWAY WE GO!';
+          numEl.className = simState.hasJumpStarted
+            ? 'text-xl font-mono-tech font-extrabold text-amber-400 tracking-wider'
+            : 'text-xl font-mono-tech font-extrabold text-emerald-400 tracking-wider';
           pods.forEach(p => {
-            p.style.backgroundColor = '#10b981';
-            p.style.boxShadow = '0 0 14px #10b981';
+            p.style.backgroundColor = '#0f172a';
+            p.style.boxShadow = '0 0 14px rgba(16, 185, 129, 0.45)';
+            p.style.borderColor = '#10b981';
           });
         }
+      }
+
+      // --------------------------------------------------------------------------
+      // 7A. INPUT LAYER TRANSLATION (SHARED BY PLAYER & AI ACTUATORS)
+      // Translates binary keystrokes or AI control intentions into human-like
+      // analog muscle travel (0.18s lift decay, 0.03s brake cut, 0.35s throttle
+      // ramp, 0.15s->72% / 0.40s->100% brake ramp, speed-sensitive S-curve steer).
+      // --------------------------------------------------------------------------
+      function smoothstepBand(edge0, edge1, x) {
+        const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(0.0001, edge1 - edge0)));
+        return t * t * (3 - 2 * t);
+      }
+
+      function translateAnalogPedals(state, rawThrottle, rawBrake, isTrailBrake, dt, throttleTargetCap = 100) {
+        // --- Throttle Control ---
+        if (rawBrake || isTrailBrake) {
+          // Emergency deceleration: cut throttle immediately within 0.03 seconds
+          state.throttleInput = Math.max(0, state.throttleInput - (100 / 0.03) * dt);
+        } else if (rawThrottle) {
+          // Progressive Acceleration Ramp: 0->45% in first 0.20s, 45->100% over next 0.15s (0.35s total)
+          const stageRate = state.throttleInput < 45 ? 225.0 : 366.67;
+          if (state.throttleInput <= throttleTargetCap) {
+            state.throttleInput = Math.min(throttleTargetCap, state.throttleInput + stageRate * dt);
+          } else {
+            // Smoothly decay down if target cap is lowered (e.g. AI partial corner throttle)
+            state.throttleInput = Math.max(throttleTargetCap, state.throttleInput - 454.55 * dt);
+          }
+        } else {
+          // Progressive Lift-off Decay: smoothly decays over 0.18s, tapering through 50%
+          const liftRate = state.throttleInput > 50 ? 714.29 : 454.55;
+          state.throttleInput = Math.max(0, state.throttleInput - liftRate * dt);
+        }
+
+        // --- Braking Control ---
+        if (rawBrake) {
+          // Stage 1 (0.00-0.15s): ramps smoothly to 72% (Trail Braking window)
+          // Stage 2 (0.15-0.40s): continues ramping to 100% (straight-line heavy braking)
+          const brkRate = state.brakeInput < 72 ? 480.0 : 112.0;
+          state.brakeInput = Math.min(100, state.brakeInput + brkRate * dt);
+        } else if (isTrailBrake) {
+          // Dedicated Spacebar assist: smoothly capped at 75% (below manual 85-88% threshold)
+          const cap = 75.0;
+          if (state.brakeInput < cap) {
+            state.brakeInput = Math.min(cap, state.brakeInput + 480.0 * dt);
+          } else {
+            state.brakeInput = Math.max(cap, state.brakeInput - 1250.0 * dt);
+          }
+        } else {
+          // Fast Release Decay: drops to 0% within 0.08s for clean corner-exit acceleration
+          state.brakeInput = Math.max(0, state.brakeInput - 1250.0 * dt);
+        }
+      }
+
+      function getDynamicMaxSteerDeg(spdKmh, carProfile, isReal) {
+        const spd = Math.max(0, Math.abs(spdKmh));
+        const chassisBias = ((carProfile && carProfile.maxSteerDeg ? carProfile.maxSteerDeg : 22.0) - 22.0) * 0.45;
+        let maxDeg;
+        if (spd <= 45) {
+          // Low speed (0-45 km/h): high authority up to 32 deg for tight hairpins
+          maxDeg = 32.0 + chassisBias * 0.8;
+        } else if (spd <= 80) {
+          const s = smoothstepBand(45, 80, spd);
+          maxDeg = 32.0 - s * 14.0 + chassisBias * (0.8 - s * 0.4);
+        } else if (spd <= 180) {
+          // Mid speed (80-180 km/h): progressive damping within 13.8-18.0 deg
+          const s = smoothstepBand(80, 180, spd);
+          maxDeg = 18.0 - s * 4.2 + chassisBias * 0.35;
+        } else if (spd <= 235) {
+          // High speed (180-235 km/h): generous authority (9.8-13.8 deg) for sweepers & lane corrections
+          const s = smoothstepBand(180, 235, spd);
+          maxDeg = 13.8 - s * 4.0 + chassisBias * (0.35 - s * 0.1);
+        } else {
+          // Top speed (> 235 km/h): ~8.2-9.8 deg so high-speed turn-in never feels locked out
+          const s = smoothstepBand(235, 310, spd);
+          maxDeg = 9.8 - s * 1.6 + chassisBias * 0.25;
+        }
+        return isReal ? maxDeg : Math.min(34.0, maxDeg * 1.15);
+      }
+
+      function stepAnalogSteering(currentSteer, rawLeft, rawRight, spdKmh, dt, carProfile, isReal) {
+        const speedNorm = Math.min(1.0, Math.max(0.0, (Math.abs(spdKmh) - 30) / 210));
+        const steerRate = carProfile.steerRampRate * (1.0 - speedNorm * 0.28);
+        let steer = currentSteer;
+        if (rawLeft) {
+          steer = Math.max(-1.0, steer - steerRate * dt);
+        } else if (rawRight) {
+          steer = Math.min(1.0, steer + steerRate * dt);
+        } else {
+          // Adaptive Self-Aligning Torque proportional to vehicle speed (caster trail)
+          const casterRate = (1.6 + (Math.abs(spdKmh) / 24.0) * 1.15) * (isReal ? 1.0 : 1.15);
+          steer *= Math.exp(-casterRate * dt);
+          if (Math.abs(steer) < 0.003) steer = 0;
+        }
+        return steer;
+      }
+
+      // Phase 1: Three-Tier Progressive Corner Guidance Solver
+      // Classifies upcoming corner demand into 'none', 'lift', 'trail', or 'heavy'
+      // to prevent panic stomping that induces ABS lockup and corner-exit speed loss.
+      function computeDrivingCue(s, currSpeedKmh, brkNorm, thrNorm) {
+        if (currSpeedKmh < 45) return { tier: 'none', targetKmh: 300, reqDecel: 0 };
+        const maxScan = Math.min(165, Math.max(55, currSpeedKmh * 0.68));
+        let minTargetKmh = 300;
+        let distToMin = maxScan;
+        let maxCurvAhead = 0;
+
+        for (let off = 20; off <= maxScan; off += 25) {
+          const p = getProProfileAtDistance(s + off);
+          const n = sampleTrackAtS(s + off);
+          const absC = Math.abs(n.curvature || 0);
+          if (absC > maxCurvAhead) maxCurvAhead = absC;
+          if (p.speedKmh < minTargetKmh) {
+            minTargetKmh = p.speedKmh;
+            distToMin = off;
+          }
+        }
+
+        const proAhead = getProProfileAtDistance(s + 22);
+        const vNow = currSpeedKmh / 3.6;
+        const vTgt = minTargetKmh / 3.6;
+        const reqDecel = (vNow > vTgt) ? (vNow * vNow - vTgt * vTgt) / (2 * Math.max(16, distToMin)) : 0;
+
+        let tier = 'none';
+        if (reqDecel > 6.5 || (currSpeedKmh > minTargetKmh + 34 && minTargetKmh < 145) || proAhead.brake > 62) {
+          tier = (currSpeedKmh > minTargetKmh + 8) ? 'heavy' : 'trail';
+        } else if (reqDecel > 2.3 || (currSpeedKmh > minTargetKmh + 14 && minTargetKmh < 185) || (proAhead.brake > 32 && proAhead.brake <= 62)) {
+          tier = (currSpeedKmh > minTargetKmh + 5) ? 'trail' : (maxCurvAhead > 0.0018 && thrNorm > 0.60 ? 'lift' : 'none');
+        } else if (reqDecel > 0.55 || (currSpeedKmh > minTargetKmh + 2 && maxCurvAhead > 0.0015 && thrNorm > 0.60) || (proAhead.brake >= 12 && currSpeedKmh > minTargetKmh + 2)) {
+          tier = 'lift';
+        }
+
+        return { tier, targetKmh: Math.round(minTargetKmh), reqDecel };
       }
 
       function stepPhysics(dt) {
@@ -387,53 +558,33 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         const isReal = (simState.edition === 'realistic');
         simState.backfireFlameTimer = Math.max(0, (simState.backfireFlameTimer || 0) - dt);
         const prevThr = simState.throttleInput;
-
-        if (!manualThrottleDrag) {
-          if (inputs.throttle || (!isReal && inputs.nos)) {
-            simState.throttleInput = Math.min(100, simState.throttleInput + 180 * dt);
-          } else {
-            simState.throttleInput = Math.max(0, simState.throttleInput - 250 * dt);
-          }
-          sliderThrottle.value = String(Math.round(simState.throttleInput));
-        }
-
-        if (!manualBrakeDrag) {
-          if (inputs.brake) {
-            const rampRate = simState.isMobileGamepadActive ? 160 : 220;
-            simState.brakeInput = Math.min(100, simState.brakeInput + rampRate * dt);
-          } else if (inputs.trailBrake) {
-            const targetTB = 74;
-            simState.brakeInput += (targetTB - simState.brakeInput) * Math.min(1, 14 * dt);
-          } else {
-            simState.brakeInput = Math.max(0, simState.brakeInput - 310 * dt);
-          }
-          sliderBrake.value = String(Math.round(simState.brakeInput));
-        }
-
         const carProfile = getCurrentCarHandling();
 
-        if (!manualSteerDrag) {
-          // Dynamic speed-sensitive steering lock calibrated per chassis:
-          // Low speed (< 35 km/h) = 1.0 (full mechanical lock for hairpins, chicanes & recovery)
-          // High speed (240+ km/h) = smoothly scaled to chassis highSpeedLockFactor (~0.27 - 0.32)
-          const spdKmh = Math.abs(simState.speedKmh);
-          const speedFactor = Math.min(1.0, Math.max(0.0, (spdKmh - 30) / 210));
-          const highSpeedFloor = isReal ? carProfile.highSpeedLockFactor : (carProfile.highSpeedLockFactor + 0.16);
-          const maxSteerLock = 1.0 - speedFactor * (1.0 - highSpeedFloor);
-          const steerRate = carProfile.steerRampRate * (1.0 - speedFactor * 0.36);
+        if (!manualThrottleDrag || !manualBrakeDrag) {
+          const tempState = {
+            throttleInput: simState.throttleInput,
+            brakeInput: simState.brakeInput
+          };
+          const rawThr = inputs.throttle || (!isReal && inputs.nos);
+          translateAnalogPedals(tempState, rawThr, inputs.brake, inputs.trailBrake, dt, 100);
+          if (!manualThrottleDrag) {
+            simState.throttleInput = tempState.throttleInput;
+            sliderThrottle.value = String(Math.round(simState.throttleInput));
+          }
+          if (!manualBrakeDrag) {
+            simState.brakeInput = tempState.brakeInput;
+            sliderBrake.value = String(Math.round(simState.brakeInput));
+          }
+        }
 
+        if (!manualSteerDrag) {
+          const spdKmh = Math.abs(simState.speedKmh);
           if (gyroState.enabled && gyroState.active && !inputs.steerLeft && !inputs.steerRight) {
-            const targetSteer = gyroState.steerVal * maxSteerLock;
-            simState.steerInput += (targetSteer - simState.steerInput) * Math.min(1.0, 14.0 * dt);
-          } else if (inputs.steerLeft) {
-            simState.steerInput = Math.max(-maxSteerLock, simState.steerInput - steerRate * dt);
-          } else if (inputs.steerRight) {
-            simState.steerInput = Math.min(maxSteerLock, simState.steerInput + steerRate * dt);
+            simState.steerInput += (gyroState.steerVal - simState.steerInput) * Math.min(1.0, 14.0 * dt);
           } else {
-            // Adaptive auto-centering with smooth exponential damping
-            const centerDecay = Math.pow(carProfile.autoCenterDamping, dt * (1.0 + speedFactor * 0.85));
-            simState.steerInput *= centerDecay;
-            if (Math.abs(simState.steerInput) < 0.003) simState.steerInput = 0;
+            simState.steerInput = stepAnalogSteering(
+              simState.steerInput, inputs.steerLeft, inputs.steerRight, spdKmh, dt, carProfile, isReal
+            );
           }
           sliderSteer.value = String(Math.round(simState.steerInput * 100));
         }
@@ -441,21 +592,49 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         const thr = simState.throttleInput / 100;
         const brk = simState.brakeInput / 100;
 
-        // Handle 3-2-1-GO! Standing Start Countdown Sequence
+        // Phase 1: FIA 5-Red-Light Gantry Start & Jump Start Detection
         if (simState.countdownActive) {
-          simState.countdownTimer -= dt;
-          updateCountdownUI(simState.countdownTimer);
-          if (simState.countdownTimer > 0.5) {
-            // Hold cars on the starting grid; allow player to rev the engine RPM!
-            simState.speedMs = 0;
-            simState.speedKmh = 0;
-            simState.lapElapsed = 0;
-            simState.rpm = Math.round(1200 + thr * 6400 + Math.sin(performance.now() * 0.04) * (thr * 180));
-            return;
-          } else if (simState.countdownTimer <= 0) {
+          simState.gantryElapsed += dt;
+          const totalGantryTime = 3.40 + (simState.gantryHoldDuration || 1.0);
+          simState.countdownTimer = Math.max(0, totalGantryTime - simState.gantryElapsed);
+
+          if (simState.gantryElapsed >= totalGantryTime) {
+            // Lights Out! Simultaneous launch
             simState.countdownActive = false;
-            updateCountdownUI(0);
+            simState.countdownTimer = 0;
+            simState.gantryGoBannerTimer = 1.15;
+            soundEngine.playCountdownBeep(true);
+            updateCountdownUI();
+          } else {
+            updateCountdownUI();
+            if (brk > 0.10 || thr <= 0.15) {
+              // Holding brake / idle: Launch clutch holds stationary while player revs engine!
+              simState.speedMs = 0;
+              simState.speedKmh = 0;
+              simState.lapElapsed = 0;
+              simState.rpm = Math.round(1200 + thr * 6800 + Math.sin(performance.now() * 0.04) * (thr * 180));
+              if (simState.mode === 'ai_race') stepAIRivals(dt);
+              return;
+            } else {
+              // Player dropped clutch / hit throttle BEFORE Lights Out! Allow creep & detect Jump Start (>0.5m)
+              const creepAccel = thr * 6.5;
+              simState.speedMs = Math.min(28, simState.speedMs + creepAccel * dt);
+              simState.speedKmh = simState.speedMs * 3.6;
+              simState.s += simState.speedMs * dt;
+              simState.rpm = Math.round(1800 + thr * 6500);
+              simState.lapElapsed = 0;
+              if (simState.s > 0.5 && !simState.hasJumpStarted) {
+                simState.hasJumpStarted = true;
+                simState.jumpStartPenaltySec = 5.0;
+                updateCountdownUI();
+              }
+              if (simState.mode === 'ai_race') stepAIRivals(dt);
+              return;
+            }
           }
+        } else if ((simState.gantryGoBannerTimer || 0) > 0) {
+          simState.gantryGoBannerTimer = Math.max(0, simState.gantryGoBannerTimer - dt);
+          updateCountdownUI();
         }
 
         const trackNode = sampleTrackAtS(simState.s);
@@ -479,17 +658,24 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           simState.steerResistance = 1.00;
         }
 
-        // RFC Module 2: Suspension Deflection via Damped Harmonic Oscillation (y = A * e^(-gamma*t) * cos(omega*t))
+        // RFC Module 2 & Proposal Sec. 5: Suspension Deflection + Lockup Chassis Shudder
         // Decoupled from camera rig — applied locally to vehicle chassis mesh
+        let lockupShudder = 0;
+        if ((simState.isBrakeLockup || simState.brakeInput > 88) && simState.speedKmh > 35) {
+          const tNow = (typeof performance !== 'undefined' ? performance.now() : Date.now()) * 0.001;
+          lockupShudder = Math.sin(tNow * Math.PI * 2 * 13.5) * 0.0065;
+        }
         if (simState.onKerb && simState.speedKmh > 10) {
           simState.kerbTime = (simState.kerbTime || 0) + dt;
           const omega = 2 * Math.PI * (28 + (simState.speedKmh / 300) * 20); // 28-48 Hz matching velocity
           const amp = Math.min(0.034, 0.010 + (simState.speedKmh / 280) * 0.024);
           const damping = Math.exp(-6.0 * (simState.kerbTime % 0.22));
-          simState.suspensionDispY = amp * damping * Math.cos(omega * simState.kerbTime);
+          simState.suspensionDispY = amp * damping * Math.cos(omega * simState.kerbTime) + lockupShudder;
+          simState.chassisVibrationAmp = amp;
         } else {
           simState.kerbTime = 0;
-          simState.suspensionDispY *= Math.max(0, 1 - 20 * dt);
+          simState.suspensionDispY = simState.suspensionDispY * Math.max(0, 1 - 20 * dt) + lockupShudder;
+          simState.chassisVibrationAmp = Math.abs(lockupShudder);
         }
 
         // RFC Module 2: Route rumble signals to Gamepad vibration actuators (if connected)
@@ -689,12 +875,16 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         const maxLatG = (baseMuLat + aeroBonusG) * simState.surfaceGrip * trailBrakeBonus * fullThrottleUndersteerPenalty * lockupPenalty;
         const maxLatAccelMs2 = maxLatG * 9.81;
 
-        // Milliken & Milliken Understeer Gradient Dynamic Cornering Model:
-        // kappa(v) = tan(delta) / (L * (1 + Kus * v^2))
-        // Low speed: pure Ackermann turning (R ≈ 5.8m - 6.5m at full lock).
-        // High speed: naturally damped steering gain preventing twitchiness and unrealistic yaw rates.
-        const maxFrontWheelRad = (carProfile.maxSteerDeg * Math.PI) / 180;
-        const frontWheelAngle = simState.steerInput * maxFrontWheelRad;
+        // Proposal Sec. 4: Speed-Sensitive Dynamic Steering Ratio + S-Curve High-Speed Response
+        // 0-45 km/h: up to 32 deg; 80-180 km/h: ~14-18 deg; >180 km/h: ~8.2-13.8 deg
+        const dynMaxSteerDeg = getDynamicMaxSteerDeg(simState.speedKmh, carProfile, isReal);
+        const maxFrontWheelRad = (dynMaxSteerDeg * Math.PI) / 180;
+        const absSteer = Math.abs(simState.steerInput);
+        const highSpeedBlend = Math.min(1.0, Math.max(0.0, (Math.abs(simState.speedKmh) - 140) / 80));
+        const sCurveNorm = absSteer * (1.0 - highSpeedBlend) + (absSteer * absSteer * (3 - 2 * absSteer)) * highSpeedBlend;
+        const shapedSteerInput = Math.sign(simState.steerInput) * sCurveNorm;
+        const frontWheelAngle = shapedSteerInput * maxFrontWheelRad;
+
         const understeerDamping = 1.0 + (carProfile.understeerCoeff || 0.001) * vMs * vMs;
         const linearCurvature = (Math.tan(frontWheelAngle) / carProfile.wheelbase) / understeerDamping;
 
@@ -704,6 +894,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         const desiredLatAccel = vMs * vMs * Math.abs(linearCurvature);
 
         simState.isUndersteer = false;
+        simState.isOversteer = false;
         let actualCurvature = linearCurvature;
 
         // When centrifugal demand exceeds tire lateral grip capacity:
@@ -713,11 +904,11 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         }
 
         // Understeer alert ONLY triggers when player carries excessive corner speed into a turn
-        // and front tires are severely grip-saturated (realistic racing feedback, not constant false alarms):
+        // and front tires are severely grip-saturated:
         const cornerMaxKmh = getUpcomingCornerMaxSpeedKmh(simState.s);
         const isCarryingExcessSpeed = (simState.speedKmh > cornerMaxKmh + 16);
         const isGripSaturated = (desiredLatAccel > maxLatAccelMs2 * 1.15);
-        if (isCarryingExcessSpeed && isGripSaturated && vMs > 12.0 && Math.abs(simState.steerInput) > 0.25) {
+        if (isCarryingExcessSpeed && isGripSaturated && vMs > 12.0 && absSteer > 0.25) {
           simState.isUndersteer = true;
           if (Math.random() < 0.05) simState.understeerCount++;
         }
@@ -728,10 +919,10 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
         let targetYawRate = 0;
         if (isReal) {
-          const straightCentering = (!simState.offTrack && Math.abs(simState.steerInput) < 0.04 && Math.abs(trackNode.curvature) < 0.002)
+          const straightCentering = (!simState.offTrack && absSteer < 0.04 && Math.abs(trackNode.curvature) < 0.002)
             ? -headingDiff * 1.1
             : 0;
-          // Turn-in agility boost when initiating cornering:
+          // Turn-in agility boost when initiating cornering (clean grip without artificial rear slip rotation):
           const turnInBonus = (vMs > 3 && vMs < 35) ? carProfile.turnInAgility : 1.0;
           targetYawRate = actualCurvature * vMs * turnInBonus + straightCentering;
           simState.driftAngle *= Math.pow(0.01, dt);
@@ -760,7 +951,11 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.latG = (vMs * simState.yawRate) / 9.81;
         simState.tireSlipRatio = Math.min(1.35, Math.hypot(simState.latG / maxLatG, simState.longG / 2.2));
 
-        simState.brakeNowWarning = (simState.speedKmh > cornerMaxKmh + 28 && brk < 0.2);
+        // Phase 1: Three-Tier Progressive Driving Guidance (Lift & Coast -> Light Trail Brake -> Heavy Brake)
+        const cueRes = computeDrivingCue(simState.s, simState.speedKmh, brk, thr);
+        simState.drivingCue = cueRes.tier;
+        simState.cueTargetKmh = cueRes.targetKmh;
+        simState.brakeNowWarning = (cueRes.tier === 'heavy' && brk < 0.25);
 
         const wPos = sdToWorld(simState.s, simState.d);
         const carYaw = simState.heading + simState.driftAngle;
@@ -986,62 +1181,95 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
       }
 
       function stepAIRivals(dt) {
+        const diff = simState.aiDifficulty || 1.0;
         aiCars.forEach(ai => {
+          // Hold stationary on grid during FIA 5-Red-Light sequence
+          if (simState.countdownActive) {
+            ai.speedMs = 0;
+            ai.stateLabel = 'GRID HOLD';
+            ai.throttleInput = 45;
+            ai.brakeInput = 100;
+            const w = sdToWorld(ai.s, ai.d);
+            ai.mesh.position.set(w.x, w.y, w.z);
+            ai.mesh.rotation.y = -w.heading;
+            if (ai.mesh.userData.tailLight) setSlotBrakeLight(ai.mesh, true, 0xff2222, 0x550000);
+            return;
+          }
+          if ((ai.reactionTimer || 0) > 0) {
+            ai.reactionTimer -= dt;
+            ai.stateLabel = 'LAUNCH PREP';
+            return;
+          }
+
           const node = sampleTrackAtS(ai.s);
+          const apexLook = sampleTrackAtS(ai.s + 24);
           const lookNode = sampleTrackAtS(ai.s + 95);
-          // Use the exact physics-solved PRO speed profile as the AI target speed!
-          // This ensures AI cars hit 270-298 km/h on straights AND brake hard before corners!
           const proRef = getProProfileAtDistance(ai.s);
-          let targetV = proRef.speedKmh * ai.basePace * simState.aiDifficulty;
+
+          // Elevate AI cornering apex grip above conservative 1.42G baseline (~1.56G-1.62G human pace)
+          const absCurv = Math.abs(node.curvature || 0);
+          const apexGripBonus = absCurv > 0.0020 ? (1.06 + Math.max(0, (diff - 0.92) * 0.25)) : 1.0;
+          const isCornerExit = (absCurv > 0.0020 && Math.abs(lookNode.curvature || 0) < 0.0025);
+          const exitSurge = isCornerExit ? 1.055 : 1.0;
+          let targetV = Math.min(306, proRef.speedKmh * apexGripBonus * exitSurge * ai.basePace * diff);
 
           const playerTotalS = (simState.lap - 1) * totalTrackLength + simState.s;
           const aiTotalS = (ai.lap - 1) * totalTrackLength + ai.s;
           const gapMeters = aiTotalS - playerTotalS;
 
           let targetD = proRef.optimalD;
-          ai.stateLabel = proRef.brake > 20 ? 'BRAKING ZONE' : 'FULL PACE';
+          ai.stateLabel = proRef.brake > 20 ? 'BRAKING ZONE' : (isCornerExit ? 'EXIT SURGE' : 'FULL PACE');
 
-          if (gapMeters < -4 && gapMeters > -55 && Math.abs(node.curvature) < 0.0025) {
-            if (gapMeters > -16) {
-              targetD = simState.d > 0 ? simState.d - 3.8 : simState.d + 3.8;
-              ai.stateLabel = 'OVERTAKE MOVE';
-            } else {
-              targetD = simState.d;
-              ai.stateLabel = 'SLIPSTREAMING';
+          // Trailing Player: Straight Slipstream Slingshot OR Aggressive Late-Braking Dive
+          if (gapMeters < -3 && gapMeters > -62) {
+            if (Math.abs(node.curvature) < 0.0025) {
+              if (gapMeters > -18) {
+                targetD = simState.d > 0 ? simState.d - 3.8 : simState.d + 3.8;
+                ai.stateLabel = 'SLINGSHOT PASS';
+              } else {
+                targetD = simState.d;
+                ai.stateLabel = 'SLIPSTREAMING';
+              }
+              targetV *= 1.08;
+            } else if (gapMeters > -22 && Math.abs(lookNode.curvature) > 0.0035) {
+              const insideSign = Math.sign(lookNode.curvature || 1);
+              targetD = insideSign * 5.0;
+              targetV *= 1.07;
+              ai.stateLabel = 'LATE BRAKE DIVE';
             }
-            targetV *= 1.06;
           }
 
+          // Leading Player Under Pressure: Smart Defense & Realistic Micro-Mistake (no artificial 28% crash)
           if (gapMeters > 0 && gapMeters < 42) {
-            const pressureGain = gapMeters < 20 ? 18 * dt : 7 * dt;
+            const pressureGain = gapMeters < 18 ? 14 * dt : 5 * dt;
             ai.stress = Math.min(100, ai.stress + pressureGain);
 
             if (Math.abs(lookNode.curvature) > 0.004) {
               const insideSign = Math.sign(lookNode.curvature || 1);
-              targetD = insideSign * 5.2;
+              targetD = insideSign * 5.0;
               ai.stateLabel = 'DEFENSIVE LINE';
             } else {
               targetD = simState.d * 0.65;
               ai.stateLabel = 'DEFENDING';
             }
 
-            if (ai.stress > 78 && ai.mistakeTimer <= 0 && Math.abs(lookNode.curvature) > 0.0065) {
-              if (Math.random() < 0.38 * dt) {
-                ai.mistakeTimer = 2.6;
-                ai.mistakeType = Math.random() < 0.5 ? 'LATE BRAKE WIDE' : 'APEX LOCKUP';
-                ai.stress = 35;
+            if (ai.stress > 86 && ai.mistakeTimer <= 0 && Math.abs(lookNode.curvature) > 0.0068) {
+              if (Math.random() < 0.18 * dt) {
+                ai.mistakeTimer = 0.85;
+                ai.mistakeType = Math.random() < 0.5 ? 'MISSED APEX' : 'SLIGHT LOCKUP';
+                ai.stress = 42;
               }
             }
           } else {
-            ai.stress = Math.max(8, ai.stress - 5 * dt);
+            ai.stress = Math.max(8, ai.stress - 6 * dt);
           }
 
           if (ai.mistakeTimer > 0) {
             ai.mistakeTimer -= dt;
             ai.stateLabel = `⚠ ${ai.mistakeType}`;
             const outsideSign = -Math.sign(node.curvature || 1);
-            targetD = outsideSign * (TRACK_WIDTH * 0.42);
-            targetV *= 0.72;
+            targetD += outsideSign * 1.45;
+            targetV *= 0.94;
             const wAi = sdToWorld(ai.s, ai.d);
             spawnTireSmoke(wAi.x, wAi.y, wAi.z, 'smoke');
           }
@@ -1050,7 +1278,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             targetD += (ai.d >= simState.d ? 2.8 : -2.8);
           }
 
-          // AI-to-AI lateral spacing so AI rivals overtake cleanly without overlapping each other
+          // AI-to-AI lateral spacing
           aiCars.forEach(other => {
             if (other === ai) return;
             const otherTotalS = (other.lap - 1) * totalTrackLength + other.s;
@@ -1059,20 +1287,35 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             }
           });
 
-          // Apply authentic GT3 acceleration and braking rates so AI launches and brakes realistically
+          // Drive AI actuators through shared progressive Input Translation Layer
           const targetMs = targetV / 3.6;
-          if (targetMs < ai.speedMs) {
-            // AI Braking into corner (up to 16.5 m/s^2)
-            ai.speedMs = Math.max(targetMs, ai.speedMs - 16.5 * dt);
-          } else {
-            // AI Accelerating using the same GT3 power & drag curve as the player
-            const vEff = Math.max(ai.speedMs, 12.5);
-            const aiDriveAccel = Math.min(8.25, 338.0 / vEff) * ai.basePace * simState.aiDifficulty;
-            const aiDrag = 0.000557 * ai.speedMs * ai.speedMs + 0.14;
-            ai.speedMs = Math.min(targetMs, ai.speedMs + Math.max(0.5, aiDriveAccel - aiDrag) * dt);
-          }
+          const speedErrMs = targetMs - ai.speedMs;
+          const aiRawBrake = (speedErrMs < -4.5 || (proRef.brake > 68 && speedErrMs < -1.5));
+          const aiRawTrail = (!aiRawBrake && (speedErrMs < -0.9 || (proRef.brake > 22 && speedErrMs < 0)));
+          const aiRawThrottle = (!aiRawBrake && !aiRawTrail && speedErrMs > -0.4);
+          const aiThrCap = (absCurv > 0.0055 && !isCornerExit) ? 78 : 100;
 
-          ai.d += (targetD - ai.d) * Math.min(1, 3.0 * dt);
+          if (ai.throttleInput === undefined) ai.throttleInput = 0;
+          if (ai.brakeInput === undefined) ai.brakeInput = 0;
+          translateAnalogPedals(ai, aiRawThrottle, aiRawBrake, aiRawTrail, dt, aiThrCap);
+
+          const aiThr = ai.throttleInput / 100;
+          const aiBrk = ai.brakeInput / 100;
+          const vEff = Math.max(ai.speedMs, 11.5);
+          const aiDriveAccel = aiThr * Math.min(9.0, 358.0 / vEff) * ai.basePace * diff;
+          const aiBrakeDecel = aiBrk * 19.2;
+          const aiDrag = 0.00054 * ai.speedMs * ai.speedMs + 0.14;
+          const aiEngineBrk = (aiThr < 0.05 && ai.speedMs > 1.0) ? 0.65 : 0;
+          const aiNetAccel = aiDriveAccel - aiBrakeDecel - aiDrag - aiEngineBrk;
+          ai.speedMs = Math.max(0, ai.speedMs + aiNetAccel * dt);
+
+          // Speed-sensitive lateral lane transition matching vehicle dynamic steering ratio
+          const aiMaxDeg = getDynamicMaxSteerDeg(ai.speedMs * 3.6, CAR_HANDLING_PROFILES.procedural, true);
+          const aiMaxLatSpeed = Math.max(1.8, ai.speedMs * Math.sin((aiMaxDeg * Math.PI) / 180) * 0.48);
+          const desiredLatVel = (targetD - ai.d) * 3.2;
+          const clampedLatVel = Math.max(-aiMaxLatSpeed, Math.min(aiMaxLatSpeed, desiredLatVel));
+          ai.d += clampedLatVel * dt;
+
           ai.s += ai.speedMs * dt;
           if (ai.s >= totalTrackLength) {
             ai.s -= totalTrackLength;
@@ -1083,10 +1326,9 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           ai.mesh.position.set(w.x, w.y, w.z);
           ai.mesh.rotation.y = -w.heading;
 
-          // Illuminate AI brake tail-lights when braking!
+          // Illuminate AI brake tail-lights strictly from real translated brake pressure
           if (ai.mesh.userData.tailLight) {
-            const isAiBraking = (targetMs < ai.speedMs - 1.0) || proRef.brake > 15;
-            setSlotBrakeLight(ai.mesh, isAiBraking, 0xff2222, 0x550000);
+            setSlotBrakeLight(ai.mesh, ai.brakeInput > 8, 0xff2222, 0x550000);
           }
         });
       }
@@ -1099,6 +1341,10 @@ window.simState = simState;
 window.aiCars = aiCars;
 window.selectCircuit = selectCircuit;
 window.resetSession = resetSession;
+window.translateAnalogPedals = translateAnalogPedals;
+window.getDynamicMaxSteerDeg = getDynamicMaxSteerDeg;
+window.stepAnalogSteering = stepAnalogSteering;
+window.computeDrivingCue = computeDrivingCue;
 window.stepPhysics = stepPhysics;
 window.stepAIRivals = stepAIRivals;
 if (window.__apexTrace) window.__apexTrace('physics.js', 'OK');

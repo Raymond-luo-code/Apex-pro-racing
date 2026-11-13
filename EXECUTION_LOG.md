@@ -365,4 +365,29 @@ Script error. at module(main.js:START):0:0
   1. **AI 開車技術全面升級（匹敵人類頂尖玩家）**：解決目前 AI 過慢、入彎極限保守（僅 1.42G）、直線缺乏檔位爆發力、受壓迫失誤減速 28% 過度嚴苛等核心痛點；重新校準出彎早給油、晚煞車進攻走線與外星人 Alien 頂級配速。
   2. **賽道階梯式煞車與油門指引（杜絕鎖死重煞）**：廢除單一粗暴的「🛑 BRAKE NOW」警告，建立三階指引（1. 略收油門滑行 Lift & Coast、2. 輕度循跡帶煞 Trail Brake 20~40%、3. 極限重煞區 Heavy Brake 70~90% 與目標速度提醒），同步升級 3D 動態綵帶四色漸變與 HUD 智慧圖標。
 - 調整 Phase 1 開發排程為：【AI 實力躍升】+【賽道多階煞車指引】+【FIA 5盞紅燈起跑】。
-- 依「日誌文件直接推送」守則，提交並推向 GitHub 遠端倉庫。
+- 依「日誌文件直接推送」守則，提交並推向 GitHub 遠端倉庫（Commit `2e27564`）。
+
+---
+
+## 🕒 2026-11-13 21:45 ~ 21:54 // Pre-Phase 1 核心輸入轉譯與 AI 真實執行器架構升級 (`proposal.md`)
+
+### 1. 操作目標
+依據 [`proposal.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/proposal.md) 規格書，在進入 `OPTIMIZATION_PLAN.md` 第一階段開發前，建立將二元按鍵轉化為擬真肌肉行程（Analog Muscle Travel）的**共用輸入轉譯層（Input Layer Translation）**，不僅全面提升玩家操控與聽覺/視覺不疲勞回饋，更讓 AI 賽車共用該轉譯與動態限制模組，表現出更接近真實賽車手的操控行為。
+
+### 2. 核心程式碼實作內容（待玩家實測確認後推送）
+| 修改檔案 | 位置與函式 | 實作細節 |
+| :--- | :--- | :--- |
+| [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L397-L515) | `translateAnalogPedals()` | • **油門控制**：鬆開 W 於 `0.18s` 內平滑衰減（精準經過 50% 區間利於 S 彎半油門點放，實測 `0.07s` 達 50%）；踩下 S / 空白鍵時於 `0.03s` 內緊急斷油。<br>• **油門加速斜率**：前 `0.20s` 平順通過 `35%~50%` 區間（實測 `45.0%`）保護後輪出彎循跡，於 `0.35s` 達到 `100%`。<br>• **雙階煞車與快放**：Stage 1（`0~0.15s`）迅速斜坡上升至 `72%` 進入最佳循跡帶煞窗口（Trail Braking）；Stage 2（`0.15~0.40s`）持續壓深至 `100%` 全力重煞；鬆開後 `0.08s` 歸零；空白鍵協助上限鎖定 `75%`，保留手動 S 鍵調控 `85%~88%` 極限門檻的單圈速度優勢。 |
+| [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L446-L483) | `getDynamicMaxSteerDeg()`, `stepAnalogSteering()` | • **隨速動態轉向角與 S 型曲線**：`0~80 km/h` 最高達 `32°`（髮夾彎靈活指向）；`80~180 km/h` 隨速阻尼收斂至 `12°~16°`；`>180 km/h` 透過平滑 S 曲線收緊至 `5°~7°` 確保極速變線穩定。<br>• **隨速自回正力矩 (Caster Trail)**：放開 A/D 時依車速成正比指數回正。 |
+| [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L567-L845) | `stepPhysics(dt)` | • **反過度簡化守護**：擬真模式不強行依轉向角限制油門上限，新增真實**大油門過度轉向 (`isOversteer`)** 物理判定與微幅車尾側滑擺動；新增重煞車鎖死時底盤 13.5 Hz 細微震顫回饋（不直接抖動相機）。 |
+| [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L1172-L1220) | `stepAIRivals(dt)` | • **AI 共享執行器與真實行為**：為每台 AI 車輛掛載 `throttleInput` / `brakeInput` / `steerInput` 並接入 `translateAnalogPedals()` 與 `getDynamicMaxSteerDeg()` 側向速度物理限制，且尾燈 strictly 依 `ai.brakeInput > 8` 真實點亮。 |
+| [`js/audio.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/audio.js#L60-L155) | `soundEngine` | • **低疲勞暖音輪胎摩擦**：將刺耳 1850~2280 Hz 尖叫聲改為 `350~750 Hz` 低通濾波質感摩擦音。<br>• **鎖死脈衝回饋**：煞車逼近/超過鎖死門檻（`>88%`）時，於 `80~140 Hz` 區間觸發 13.5 Hz 節奏性低頻脈衝模擬踏板彈腳感。 |
+| [`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js#L106-L162), [`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html#L3299-L3305) | `updateHUD()` | • **儀表板動態變色**：`#bar-brake` 隨踩踏區間自動切換色彩（`5~75%` 琥珀黃循跡區 ➔ `76~88%` 橘色極限區 ➔ `>88%` 紅燈閃爍鎖死區），外框微光提示逼近抓地力邊緣；腳本快取版本升至 `?v=20261113_proposal`。 |
+
+### 3. Google Chrome V8 實機與自動化全測試驗證結果
+1. **`scratch/test_proposal.py`（真實 Chrome Headless V8 引擎驗證）**：**16 / 16 全數通過 (PASS)**
+   - 實測數值全數符合 `proposal.md` 毫秒級行程規範，且完整 `index.html` 在真實 Chrome V8 無啟動錯誤（0 `#apex-crash-banner`）。
+2. **`scratch/check_syntax.py`**：7 / 7 JS 模組語法完整（OK）。
+3. **`scratch/test_physics_math.py`**：26 / 26 通過。
+4. **`scratch/test_rfc_improvements.py`**：38 / 38 通過。
+5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於工作區等待用戶本地測試確認後再行推送。

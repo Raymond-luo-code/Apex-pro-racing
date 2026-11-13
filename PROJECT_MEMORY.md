@@ -10,10 +10,11 @@
 
 ## 📌 一、專案哲學與核心鐵律 (Core Philosophy & Cardinal Rules)
 
-### 1. 核心開發與交付流程：**「任務完成即更新日誌並自動推送」**
-- **用戶授權守則 (2026-11-13 更新)**：每次在本地端完成一項任務（功能開發、Bug 修復、系統重構）並通過測試驗證後，**必須立即更新 [`EXECUTION_LOG.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/EXECUTION_LOG.md)，並直接執行 Commit 與 Push 推送至 GitHub**，無須再向用戶反覆詢問確認。
-- **日誌定位**：`EXECUTION_LOG.md` 為專案自我追蹤、架構演進與除錯覆盤之用，每次任務交付均須詳實記錄變更細節。
-- **推進節奏**：本地開發 ➔ 自動化/語法驗證 ➔ 撰寫詳細執行日誌 ➔ 自動 Commit & Push 交付。
+### 1. 核心開發與交付流程：**「程式待確認後推送，日誌文件直接推送」**
+- **用戶授權守則 (2026-11-13 精確更新)**：
+  1. **遊戲程式部分**（`index.html`、`js/*`、`assets/*` 等所有可執行代碼）：**必須待用戶確認後才能推送**，嚴格遵守「本地先改、測試無誤、確認才推」。
+  2. **日誌與文檔部分**（[`EXECUTION_LOG.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/EXECUTION_LOG.md)、`PROJECT_MEMORY.md`、`*.md` 等）：**完成任務後直接 Commit & Push 推送**，無須詢問用戶，專供自我除錯與覆盤追蹤之用。
+- **推進節奏**：本地開發 ➔ 測試與語法校驗 ➔ 更新執行日誌 (直接推送文檔) ➔ 呈報程式變更待用戶確認 ➔ 獲准後推送程式。
 
 ### 2. 模組化無構建純粹架構 (Zero-Build Modular Browser Architecture)
 - **單一 HTML 入口**：根目錄 [`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html) 精簡至 ~2,000 行（純 UI DOM 與樣式），透過 `<script src="js/...">` 循序載入 7 個領域職責模組。

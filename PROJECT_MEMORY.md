@@ -10,10 +10,10 @@
 
 ## 📌 一、專案哲學與核心鐵律 (Core Philosophy & Cardinal Rules)
 
-### 1. 用戶最高鐵律：**「本地先改、確認才推」**
-- **嚴格守則**：所有程式碼的修改（功能新增、Bug 修復、樣式調整）**必須 100% 先在本地環境進行與測試**。
-- **嚴禁自動 Push**：任何時刻皆不得在未經用戶明確指示（例如「請推送」、「推送至 GitHub」、「可以 push」）前自行執行 `git push`。
-- **推進節奏**：修改 ➔ 本地檢查／語法平衡確認 ➔ 請用戶本地瀏覽器驗證 ➔ 用戶確認滿意並要求推送 ➔ 執行 Commit & Push。
+### 1. 核心開發與交付流程：**「任務完成即更新日誌並自動推送」**
+- **用戶授權守則 (2026-11-13 更新)**：每次在本地端完成一項任務（功能開發、Bug 修復、系統重構）並通過測試驗證後，**必須立即更新 [`EXECUTION_LOG.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/EXECUTION_LOG.md)，並直接執行 Commit 與 Push 推送至 GitHub**，無須再向用戶反覆詢問確認。
+- **日誌定位**：`EXECUTION_LOG.md` 為專案自我追蹤、架構演進與除錯覆盤之用，每次任務交付均須詳實記錄變更細節。
+- **推進節奏**：本地開發 ➔ 自動化/語法驗證 ➔ 撰寫詳細執行日誌 ➔ 自動 Commit & Push 交付。
 
 ### 2. 模組化無構建純粹架構 (Zero-Build Modular Browser Architecture)
 - **單一 HTML 入口**：根目錄 [`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html) 精簡至 ~2,000 行（純 UI DOM 與樣式），透過 `<script src="js/...">` 循序載入 7 個領域職責模組。

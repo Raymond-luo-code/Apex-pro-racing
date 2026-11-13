@@ -205,3 +205,116 @@
 
 ### 2. 驗證結果
 - 執行 `scratch/run_v8_test.py`：`errors: []`、`presetsWithGLB: 4/4`，車庫 4 台賽車模型切換與所有端到端流程 100% 通過。
+
+---
+
+## 🕒 2026-11-10 22:20 ~ 23:50 // RFC 核心物理與模擬系統重大重構 (Module 1, 2, 3)、萬向節翻轉修復、自然倒車與檢查點完賽結算驗證
+
+### 1. 任務背景與重構目標
+依據工程規格書 [`RFC.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/RFC.md) 針對核心模擬系統進行全方位重構與升級，涵蓋三大模組：
+1. **Module 1 (Showroom Camera Constraints & Vehicle Inspect Mode)**：約束展間俯仰角避免萬向節死鎖；建立 360° 車輛鑑賞模式（點擊車體聚焦質心、影棚環境隔離、專屬聚光燈、常駐退出控制）。
+2. **Module 2 (Surface Physics Feedback Refactor)**：徹底移除直接注入相機投影矩陣的隨機噪聲位移向量（`jx`, `jy`）；以 $y = A e^{-\gamma t} \cos(\omega t)$ 底盤局部阻尼諧振取代畫面抖動；路緣石/草地物理抓地力與滾動阻力懲罰；35~50 Hz 低頻三角波合成音效與 HTML5 Gamepad API 雙馬達震動回饋。
+3. **Module 3 (Sequential Checkpoint & Anti-Cheat Validation System)**：16 個虛擬檢核門依序驗證與向量內積前進驗證，防堵倒車衝線與瞬移抄截。
+
+---
+
+### 2. 第一階段實作與規格落地
+
+| 模組與領域 | 涉及檔案 | 具體實作內容 |
+| :--- | :--- | :--- |
+| **Module 1: 展間相機約束與鑑賞模式** | [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L26-L80)<br>[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L2540-L2585)<br>[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js#L1070-L1140)<br>[`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html#L2315-L2335) | 1. **預設轉盤模式約束**：建立 `showroomCam` 球座標控制器，俯仰角嚴格約束於 $75^\circ \sim 85^\circ$（近水平），低速 0.8~1.2 RPM 水平自動旋轉，鎖定滾輪縮放與相機平移。<br>2. **360° 車輛鑑賞模式 (`enterInspectMode`)**：透過 `Raycaster.intersectObjects` 射線點擊 3D 車體（或點擊「🔍 360° 鑑賞」按鈕），相機平滑 Lerp 聚焦至車體質心 $(pWorld.x, pWorld.y + 0.65, pWorld.z)$。<br>3. **全方位環視與縮放夾緊**：水平 $360^\circ$ 無限制旋轉，垂直俯仰角夾緊於 $15^\circ \sim 85^\circ$（可俯瞰車頂至車側擾流板）；滾輪與雙指推拉距離嚴格夾緊於 $3.5\text{m} \sim 8.0\text{m}$，防止視角穿模入座艙內部。<br>4. **極簡影棚環境隔離 (`studioGroup`)**：進入鑑賞時自動切換 `circuitSceneryGroup.visible = false` 隱藏賽道雜訊；啟用深色圓頂、地面柔和接觸陰影、專屬 Key 聚光燈與 Rim 邊緣藍光反射輪廓燈。<br>5. **常駐退出浮動列**：新增 [`#inspect-mode-overlay`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html#L2315-L2335)，支援點擊「✕ 退出鑑賞模式」或按 `[ESC]` 鍵即時退回。 |
+| **Module 2: 路面物理反饋與相機解耦** | [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L2595-L2630)<br>[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L465-L515)<br>[`js/audio.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/audio.js#L70-L125)<br>[`js/input.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/input.js#L547-L568) | 1. **消除畫面隨機噪聲**：徹底刪除注入至相機位置的隨機噪聲位移向量（`jx = Math.sin(nowSec * 65) * vibeAmp`、`jy = Math.cos(nowSec * 82) * vibeAmp`），駕駛視野恢復純淨穩定。<br>2. **底盤懸吊局部阻尼諧振**：壓路緣石時由 $y = A e^{-\gamma t} \cos(\omega t)$ 計算 28~48 Hz 物理諧振位移，直接驅動 `playerExteriorMesh.position.y` 與 `cockpitGroup.position.y`，產生機械懸吊跳動感。<br>3. **真實摩擦與滾阻係數**：路緣石抓地力降至 85%、機械轉向阻力 1.25 倍；草地抓地力降至 42%、滾動阻力放大 3 倍（$3.45 + 0.075 \cdot v$），大腳油門自然滑移。<br>4. **音效與實體手把震動**：路緣石音效升級為 35~50 Hz 低頻三角波合成器 + 180 Hz 低通濾波器（頻率正比於車速）；實作 `window.triggerGamepadRumble` 透過 HTML5 Gamepad API `vibrationActuator.playEffect('dual-rumble')` 將路面反饋傳至手把馬達。 |
+| **Module 3: 檢查點防作弊計時管線** | [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L845-L985) | 將賽道劃分 16 個依序檢核點 ($CP_0 \dots CP_{15}$)，計算 $\vec{V}_{car} \cdot \vec{N}$ 進行正向通行驗證。 |
+
+---
+
+### 3. 第二階段：用戶反饋排查與根因定位
+
+用戶測試後回報兩項待改進問題：
+1. **「沒有解決萬向節死鎖的問題」**：提供截圖（`media_1794322007803_457aca97.jpg`），顯示進入鑑賞模式後，車子與整個世界垂直上下顛倒（底朝天倒掛）。
+2. **「不用限制倒車，這樣很刻意，只要確保衝過終點線時已通過所有檢查點才進入完賽結算畫面就好，也只有這樣才計入圈速」**：提供截圖（`media_1794323206575_182fa0a6.jpg`），顯示起跑線倒車時彈出刻意的紅色大橫幅 `⚠ LAP INVALIDATED // 單圈無效 (起跑線逆向倒車鎖定)` 且車輛被強制減速鎖死。
+
+#### A. 萬向節翻轉的數學根因分析與徹底修復
+* **數學根因證明**：
+  在 Three.js 中，以 Euler XYZ 順序分解四元數旋轉矩陣時，當相機方位角繞行至物體後方（$azimuth \in [90^\circ, 270^\circ]$）時，Euler $Z$ 軸滾轉角（Roll）必然產生約 $180^\circ$ 的內在幾何補償值，以確保相機的頂部朝向世界正上方 $(0, 1, 0)$。
+  然而在先前程式碼中，`camera.lookAt(...)` 之後緊接著執行了：
+  ```javascript
+  camera.lookAt(showroomCam.currentTarget);
+  camera.rotation.z = 0; // 致命元兇！
+  ```
+  當強制將 Euler $Z$ 設為 0 時，Three.js 會根據此 Euler 角度重新計算旋轉矩陣，導致相機 UP 向量在 $Y$ 軸的分量變為負值（$up_y < 0$），**直接將相機在垂直方向翻轉 180°，造成車輛上下倒掛**！
+  撰寫模擬腳本 `scratch/test_flip.py` 進行數學驗證，證實在 $azimuth \in [90^\circ, 270^\circ]$ 區間內，`camera.rotation.z = 0` 造成 100% 機率翻轉倒掛（如 `polar=15, az=180` 時 $up_y = -0.259$；`polar=80, az=180` 時 $up_y = -0.985$）。
+* **修復方案**：
+  1. 於 [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L2579-L2582) **徹底刪除 `camera.rotation.z = 0;`**。
+  2. 在每次執行 `lookAt` 前重置並確保 `camera.up.set(0, 1, 0)`。
+  3. 執行 `scratch/test_pure_lookat.py` 遍歷球座標 2,592 個方位視角，驗證結果：**100% 視角維持正立穩定（$up_y > 0$），死鎖與翻轉現象完全根除**。
+
+#### B. 自然倒車與終點線檢查點完賽結算重構
+* **問題剖析**：先前為了防作弊，直接在起跑線強行鎖定座標 `simState.s = 0`、強制剎車 `speedMs *= 0.45` 並跳出警告，嚴重破壞真實賽車操駕體驗。
+* **修復方案**：
+  1. **移除強制限制**：於 [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L830-L845) 移除起跑線倒車鎖定、減速懲罰與逆向折返警告；在非倒車檔且時速大於 20 km/h 逆向行駛時才判定逆向，日常倒車脫困完全自然順暢。
+  2. **隱藏擾人橫幅**：於 [`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js#L79-L83) 隱藏行駛中的 `#hud-lap-invalid` 橫幅。
+  3. **終點線全覆蓋驗證（合法才結算）**：於 [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L930-L985)：
+     ```javascript
+     const requiredGates = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+     const allGatesCleared = requiredGates.every(g => simState.clearedGates && simState.clearedGates.includes(g));
+     const isForwardFinish = forwardDot > 0;
+     const isLapLegitimate = allGatesCleared && isForwardFinish;
+     ```
+     - **倒車跨線或未跑完全程衝線**：`isLapLegitimate = false`，**不呼叫完賽函式 `__apexFlowFinish`、不計入圈速與 PB、不推進圈數**，車輛可自由倒車或調整位置，不受任何妨礙。
+     - **正向依序通過全檢查點衝線**：`isLapLegitimate = true`，**正式計入有效單圈、更新 PB 紀錄，並觸發完賽結算畫面**！
+
+---
+
+### 4. 第三階段：啟動語法錯誤排查與括號平衡修復
+
+用戶隨後反饋啟動異常（附圖 `media_1794323206575_182fa0a6.jpg`）：
+```
+⚠ 遊戲啟動錯誤：
+Script error. at module(main.js:START):0:0
+[執行軌跡] [15:06:22.577] ERROR -> Script error. at module(render.js:OK):0:0 | [15:06:22.580] input.js -> START ...
+```
+
+* **診斷分析**：
+  觀察 `[執行軌跡]`，`render.js:OK` 之後直接跳 `input.js -> START`，中繼的 `physics.js` 完全未輸出 `OK`，代表 `physics.js` 在 V8 解析階段即拋出語法錯誤（SyntaxError），導致整個物理模組與 `simState` 匯出中斷，進而引發 `main.js` 啟動失敗。
+* **根因定位**：
+  編寫括號深度檢測器 `scratch/check_syntax.py` 掃描所有 JS 檔案，立即精確捕獲：
+  `js\physics.js: ERR: depth=-1, Mismatched } at line 987`。
+  經比對，第 981 行多出了一個閉合大括號 `}`，提前閉合了 `stepPhysics(dt)` 函式，使後續的 `stepAIRivals` 外部閉合括號失配中斷。
+* **修復動作**：
+  1. 於 [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L975-L985) 刪除多餘的 `}`。
+  2. 重新執行全模組語法校驗，7 大核心模組全數通過：
+     ```
+     js\audio.js:    OK (depth=0)
+     js\circuits.js:  OK (depth=0)
+     js\flow.js:      OK (depth=0)
+     js\input.js:     OK (depth=0)
+     js\main.js:      OK (depth=0)
+     js\physics.js:   OK (depth=0)
+     js\render.js:    OK (depth=0)
+     ```
+  3. 於 [`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html#L3299-L3305) 更新腳本快取標籤至 `?v=20261110_v2`，強制瀏覽器載入最新修復程式碼。
+
+---
+
+### 5. 自動化測試驗證結果 (Test Suite Execution)
+
+1. **`scratch/check_syntax.py`**：
+   - 掃描全專案 7 大 JS 模組，語法樹深度（Brace Depth）皆精確為 0，**7 / 7 OK 零錯誤**。
+2. **`scratch/test_physics_math.py`**：
+   - **26 / 26 測試項目全數通過 (PASS)**：
+     - 起跑線倒車順暢環繞至 3395.0m，不鎖死、不觸發完賽、不計入圈速。
+     - 未跑完全檢查點跨越終點線：嚴格略過（`IGNORED`），不結算、不計時。
+     - 正向依序通過全 15 個檢查點衝線：正式觸發完賽結算畫面（`FINISHED`），寫入個人最佳紀錄 PB。
+     - 攝影機方位角/俯仰角遍歷 2,592 個球座標組合，100% 保持直立向上（$up_y > 0$），零死鎖、零倒置。
+3. **`scratch/test_rfc_improvements.py`**：
+   - **38 / 38 測試項目全數通過 (PASS)**：涵蓋 HTML 元素標記、CSS 視角隔離規則、Web Audio 三角波合成、手把震動 API、物理抓地力與滾阻、懸吊諧振公式、相機無噪聲等。
+
+---
+
+### 6. Git 提交與推送紀錄 (Milestone Commits)
+
+已依用戶指令正式推送至 GitHub 遠端倉庫：
+- **Commit `a8749e0`**：`feat: core simulation RFC improvements (vehicle inspect mode, non-inverting camera, surface physics feedback, decoupled camera rig, and sequential checkpoint finish validation)`
+- **Commit `5a6807a`**：`docs: update project memory dossier with RFC v2.2 commit milestone`
+- **遠端分支狀態**：`main -> main`（已同步至 [Raymond-luo-code/Apex-pro-racing](https://github.com/Raymond-luo-code/Apex-pro-racing)）。

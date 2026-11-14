@@ -797,3 +797,37 @@ Script error. at module(main.js:START):0:0
 4. **`scratch/test_physics_math.py`**：**26 / 26 PASSED**
 5. **`scratch/test_rfc_improvements.py`**：**38 / 38 PASSED**
 6. **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`index.html`、`js/flow.js`、`js/circuits.js`、`js/physics.js`、`scratch/`）保留於本地等待用戶測試確認「推送」後再行推送。
+
+---
+
+## 2026-11-14 — Unified Player / PRO Ghost / AI Launch & Corner-Exit Physics Calibration
+
+### Root Causes Addressed
+1. **Unfair Standing-Start Launch**:
+   - PRO Ghost (`generateProBenchmarkLap`) previously began at `vProfileMs[0] = 14.0 m/s` (`50.4 km/h`) with zero Lights-Out reaction delay and skipped the Player's `0.35s` launch ramp and `0.08s` upshift ignition cuts.
+   - AI rivals previously started up to `26m` ahead (`[26, 17, 8]`), pre-loaded `45%` throttle during red lights, reacted in `0.04–0.18s`, and accelerated with a stronger engine curve (`Math.min(9.0, 358/vEff)`) without `0.08s` upshift cuts or `latG * 0.38` cornering scrub.
+2. **Corner-Exit Surge Disparity**:
+   - AI previously skipped `latG * 0.38` corner scrub and `throttleWeightTransfer`, stacked `exit_surge` extra drive multiplier, and applied `+5%..+8.5%` rubber-band speed boosts when behind the Player outside slipstream.
+
+### Key Changes (Held Locally Pending User Push Confirmation)
+- **[js/circuits.js](js/circuits.js)**:
+  - Split `generateProBenchmarkLap()` into closed-loop `vFlyingMs` (Player-matched `Math.min(8.25, 338.0 / vEff)`, `0.955` shift factor below `252 km/h`, `latG * 0.38` corner scrub, `0.28..1.0` traction circle) and standing-start Lap 1 (`vProfileMs[0] = 0.0`, `launchRamp = 0.78 / 0.94`, `simTime = 0.22s` human Lights-Out reaction delay, `vAvg = Math.max(5.9, 0.55 * vNext)` at `i === 0`, `proPaceFactor` `1.005 / 0.996 / 0.980`).
+  - Exported `window.sampleGhostAtTime` and separated `refSpeed` in `getProProfileAtDistance()`.
+- **[js/physics.js](js/physics.js)**:
+  - Compacted AI grid offsets (`[15, 10, 5]`), zeroed red-light throttle (`0`), set human Lights-Out reaction (`0.22 + idx * 0.04 + Math.random() * 0.06`), added 6-speed gearbox with `0.08s` upshift ignition cuts (`0.12x`), physical `aiInSlipstream` check, Player-matched `Math.min(8.25, 338/vEff)` + `aiLatG * 0.38` + `throttleWeightTransfer`, removed non-slipstream rubber-band speed boosts, and calibrated the 3 tiers (`業餘 0.735 / 0.635 / 232 km/h`, `專業 0.922 / 1.000 / 286 km/h`, `頂尖 1.015 / 1.085 / 310 km/h`).
+- **[scratch/proposal_runner.html](scratch/proposal_runner.html)**:
+  - Added Test 26 (`Unified launch & exit physics`) verifying `3.5s` standing-start parity across Player, PRO AI, and PRO Ghost, plus corner-exit early-throttle advantage.
+
+### Verification Results (Post-Final-Edit)
+- `python scratch/check_syntax.py`: **7/7 OK**
+- `python scratch/test_proposal.py`: **44/44 PASSED**
+  - PRO Ghost standing-start benchmarks: Monza `80.4s`, Fuji `86.3s`, Hakone `95.0s`
+  - Test 26 launch parity at `3.5s`: Player `38.0m`, PRO AI `37.5m`, PRO Ghost `37.7m`
+  - Test 26 corner exit (`0.25s` earlier throttle): Player `+128.9m` vs PRO AI `+108.4m`
+  - Full `index.html` headless Chrome boot: `147194 chars`, zero `#apex-crash-banner`
+- `python scratch/test_physics_math.py`: **26/26 PASSED**
+- `python scratch/test_rfc_improvements.py`: **38/38 PASSED**
+- Standing-start AI lap benchmarks (`bench_laps.py`):
+  - **Monza**: 業餘 `96.20–96.52s` / 專業 `81.40–81.64s` / 頂尖 `78.72–78.88s`
+  - **Fuji**: 業餘 `104.60–104.84s` / 專業 `87.16–87.44s` / 頂尖 `83.08–83.20s`
+  - **Hakone**: 業餘 `115.60–116.04s` / 專業 `95.32–95.60s` / 頂尖 `89.96–90.08s`

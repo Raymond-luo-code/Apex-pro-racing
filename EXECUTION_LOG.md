@@ -766,3 +766,34 @@ Script error. at module(main.js:START):0:0
 4. **`scratch/test_physics_math.py`**：**26 / 26 PASSED**
 5. **`scratch/test_rfc_improvements.py`**：**38 / 38 PASSED**
 6. **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`js/circuits.js`、`js/physics.js`、`scratch/proposal_runner.html`）保留於本地工作區等待用戶實測確認「推送」後再行推送。
+
+---
+
+## 🕒 2026-11-14 22:25 // AI 難度三級重分層：業餘 / 專業 (標準 PRO AI) / 頂尖 級距拉大與基準校準
+
+### 🎯 調整目標
+依用戶實際水平（接近標準 PRO）與試玩回饋（「快同學再快 3–4 秒、新手慢約 20 秒，希望各級距差異拉大、讓新手不要太有壓力」），重新設計三級難度階層與對應圈速：
+- **業餘 (`0.92`)**：大幅降低彎速與推進權重，比專業慢約 12–18 秒，讓新手能輕鬆體驗對戰樂趣。
+- **專業 (`1.00`, 標準 PRO AI)**：將標準 AI 與賽道官方 `PRO_LAP_TIME` 精準校準於用戶個人最佳表現區間（Monza `~80.5s` / Fuji `~86.4s` / Hakone `~95.2s`）。
+- **頂尖 (`1.10`)**：保持全物理極限輸出，比專業快約 6–8 秒，專供頂尖玩家挑戰。
+
+### 🔧 主要修改明細
+1. **UI 選項文字更新（[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js#L608-L612)、[`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html#L3017-L3022)）**：
+   - 統一將三個選項命名為：**`業餘 (新手友善)`**（`0.92`）、**`專業 (標準 PRO AI)`**（`1.0`）、**`頂尖 (極限挑戰)`**（`1.10`）。
+2. **官方 PRO 基準圈速對齊專業級（[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js#L17-L110)）**：
+   - 於 `generateProBenchmarkLap()` 時間積分加入 `proPaceFactor`（Monza `0.970` / Fuji `0.955` / Hakone `0.940`），在不影響 `computeDrivingCue` 與極限速度曲線的前提下，將官方 `PRO_LAP_TIME` 精準定錨於 **`80.456s`（Monza）/ `86.379s`（Fuji）/ `95.171s`（Hakone）**。
+3. **三級 AI 獨立分層配速模型（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L1941-L1955)）**：
+   - **業餘 (`< 0.96`)**：`tierSpeedMult = 0.710`, `tierPowerMult = 0.565`, 極速上限 `226 km/h`
+   - **專業 (`0.96..1.04`)**：`tierSpeedMult = 0.888`, `tierPowerMult = 0.845`, 極速上限 `276 km/h`
+   - **頂尖 (`> 1.04`)**：`tierSpeedMult = 0.968`, `tierPowerMult = 1.060`, 極速上限 `308 km/h`
+
+### ✅ 驗證結果（Chrome Headless V8 全套實測）
+1. **三級 AI 全圈單圈計時實測**：
+   - **Monza（PRO `80.456s`）**：業餘 **`92.32–92.72s`** / 專業 **`79.76–80.12s`** / 頂尖 **`73.76–74.04s`**
+   - **Fuji（PRO `86.379s`）**：業餘 **`101.56–101.92s`** / 專業 **`86.24–86.44s`** / 頂尖 **`79.52–79.76s`**
+   - **Hakone（PRO `95.171s`）**：業餘 **`113.04–113.68s`** / 專業 **`94.64–95.08s`** / 頂尖 **`87.20–87.72s`**
+2. **`scratch/check_syntax.py`**：**7 / 7 OK**
+3. **`scratch/test_proposal.py`**：**43 / 43 PASSED**（完整 `index.html` 啟動 `147132 chars`，零 `#apex-crash-banner`；同風格 `spread = 0.34%`；外內外 `entry=-7.5/apex=6.8/exit=-6.8`）
+4. **`scratch/test_physics_math.py`**：**26 / 26 PASSED**
+5. **`scratch/test_rfc_improvements.py`**：**38 / 38 PASSED**
+6. **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`index.html`、`js/flow.js`、`js/circuits.js`、`js/physics.js`、`scratch/`）保留於本地等待用戶測試確認「推送」後再行推送。

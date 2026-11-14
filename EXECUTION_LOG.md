@@ -613,3 +613,29 @@ Script error. at module(main.js:START):0:0
 - `scratch/test_physics_math.py`：**26 / 26 PASSED**
 - `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
 - **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼維持於本地待用戶測試確認後推送。
+
+---
+
+## 🕒 2026-11-14 19:09 ~ 19:12 // 改善刺耳回火音效並徹底根除碰撞閃現（Continuous Contact）
+
+### 🔍 問題診斷
+1. **回火／換檔音效刺耳 (`js/audio.js`)**：`triggerBackfire()` 原本直接使用未經低通濾波器的 `sawtooth` 鋸齒波，高次諧波直衝數千赫茲產生刺耳電子音；`triggerShiftClunk()` 與 `triggerTurboFlutter()` 中心頻率偏高亦略顯尖銳。
+2. **碰撞必定發生視覺閃現 (`js/physics.js`)**：
+   - `testOBBOverlap()` 的速度啟發權重在兩車**並排擦撞**（`relSpdMag > 1.5` 但橫向接近速度小於 `0.4`）時，對橫向軸施加重罰（`+ 5.0`），導致 SAT 錯誤選出縱向軸並將並排車輛瞬間前後瞬移推開 `1.8m+`！
+   - `sepFactor = overlap + 0.02` 於單幀強制推離 100% 重疊深度，造成畫面單幀跳變（閃現）且無法體驗連續擠壓／摩擦的肉搏撞擊感。
+
+### 🔧 修改明細
+1. **`js/audio.js`**
+   - 重寫 `triggerBackfire()`：改為 `92 -> 36 Hz` 正弦低頻胸腔悶響搭配 `390 -> 160 Hz` 低通濾波白噪音氣流聲，完全濾除刺耳高頻諧波。
+   - 同步柔化 `triggerShiftClunk()`（低通 `460 Hz` 氣動悶響）、`triggerTurboFlutter()`（暖化至 `1150 -> 420 Hz`）與 `triggerCollision()`（低沉鈑金與碳纖衝擊）。
+2. **`js/physics.js` (`testOBBOverlap`, `resolveVehicleCollisions`)**
+   - 修正 `testOBBOverlap()` 預設嚴格遵循**幾何最小重疊軸（MTV）**，僅在極端高速追撞深嵌（`minOverlap > 0.85m` 且 `closing / overlap` 極短）時才覆寫，徹底消除並排擦撞縱向瞬移。
+   - 改採 **Baumgarte 漸進柔順接觸分離（`erp = 0.36`，單幀總分離上限 `0.24m`）** 搭配低反彈鈑金係數（`e = 0.16`）與較高側擦滑移摩擦（`muC = 0.28`），讓車輛維持多幀連續擠壓、噴濺火花與偏航力矩拉扯感，不再單幀跳脫閃現。
+   - 加入起終點線 `s` 邊界保護，防止發車／衝線區間碰撞分離誤跨圈數邊界。
+
+### ✅ 驗證結果（編修後全套實測）
+- `scratch/check_syntax.py`：**7 / 7 OK**
+- `scratch/test_proposal.py`：**36 / 36 PASSED**（新增並通過 Test 18 並排擦撞防閃現測試 `pS=200.000, pD=-0.025`，以及連續多幀 OBB 衝量與漸進分離測試）
+- `scratch/test_physics_math.py`：**26 / 26 PASSED**
+- `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
+- **推送狀態**：僅更新並推送 [`EXECUTION_LOG.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/EXECUTION_LOG.md) 至 `origin/main`；遊戲程式碼維持於本地待用戶試駕確認後推送。

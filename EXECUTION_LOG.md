@@ -639,3 +639,21 @@ Script error. at module(main.js:START):0:0
 - `scratch/test_physics_math.py`：**26 / 26 PASSED**
 - `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
 - **推送狀態**：僅更新並推送 [`EXECUTION_LOG.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/EXECUTION_LOG.md) 至 `origin/main`；遊戲程式碼維持於本地待用戶試駕確認後推送。
+
+---
+
+## 🕒 2026-11-14 19:20 ~ 19:21 // 修正煞車／打滑胎痕寬度與貼圖轉軸錯誤
+
+### 🔍 問題診斷
+- 檢查用戶回報截圖後確認：[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js) `skidGeo` 原本設為 `PlaneGeometry(0.95, 2.4)` 搭配 `rotation.x = -Math.PI/2; rotation.z = -heading`，造成長寬軸向顛倒——原本長邊 `2.4m` 橫跨車尾左右方向，使左右雙輪胎痕在車底重疊鋪成一條超過車寬的巨大黑色方塊地毯。
+
+### 🔧 修改明細
+1. **`js/render.js` (`spawnSkidMark`)**
+   - 將 `skidGeo` 修正為 **`PlaneGeometry(1.45, 0.28)`**（`1.45m` 為行進切線長度、`0.28m` 為真實 GT3 輪胎接地面寬度）。
+   - 將歐拉角順序改為 `rotation.order = 'YXZ'`（`rotation.x = -Math.PI/2; rotation.y = -heading; rotation.z = 0`），使 `0.28m` 胎痕嚴格貼合輪胎滾動方向；同時調整材質透明度為 `0.42`、`depthWrite: false` 並擴充 FIFO 池 `MAX_SKIDS = 260`。
+2. **`js/physics.js` (`stepPhysics`)**
+   - 將輪距對齊真實左右胎寬 `±0.78m`，並區分「後輪甩尾／過彎極限滑移」與「前輪重煞鎖死／推頭（`fl`/`fr`）」，各自留下清晰的雙道平行細長橡膠胎痕。
+
+### ✅ 驗證結果
+- `scratch/check_syntax.py`：**7 / 7 OK**；`scratch/test_proposal.py`：**36 / 36 PASSED**；`scratch/test_physics_math.py`：**26 / 26 PASSED**；`scratch/test_rfc_improvements.py`：**38 / 38 PASSED**。
+- **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼維持於本地待用戶測試確認後推送。

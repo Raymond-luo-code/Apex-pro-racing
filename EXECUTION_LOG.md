@@ -461,3 +461,35 @@ Script error. at module(main.js:START):0:0
 ### 📦 文件產出與狀態
 - 新增計畫書：[`CORNERING_OPTIMIZATION_PLAN.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/CORNERING_OPTIMIZATION_PLAN.md)（尚未動及任何遊戲程式碼，待用戶審閱確認計畫後開始開發）。
 - **推送狀態**：僅更新並推送本執行日誌與計畫書文件至 `origin/main`。
+
+---
+
+## 🕒 2026-11-14 18:07 ~ 18:10 // 實作過彎與轉向優化計畫（4 大模組：`CORNERING_OPTIMIZATION_PLAN.md`）
+
+### 🎯 任務核心
+依 [`CORNERING_OPTIMIZATION_PLAN.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/CORNERING_OPTIMIZATION_PLAN.md) 實作模組 1–4，解決鍵盤/觸控點按彈直與早飽和、三重物理階躍懸崖、賽道進彎速折減偏差，以及剛性追尾視角問題。
+
+### 🔧 主要修改明細
+1. **模組 1 & 2 — 轉向濾波與連續輪胎/荷載模型 (`js/physics.js`)**
+   - **`stepAnalogSteering()`**：轉向靈敏增益調升至 `1.15x` 並新增 `1.95x` 反打提速（Counter-steer）倍率；回正係數 `casterRate` 平順化為 `1.9 + min(2.5, (spd / 100) * 1.25)`，將高速鬆手半衰期由 `49–83 ms` 延長至更線性好點按的阻尼窗口。
+   - **拔除三大階躍懸崖與死區 (`stepPhysics`)**：
+     - 以 `Math.pow(absSteer, 1.18)` 取代三次 S-Curve 盲區，並於 `vMs > 14` 且無手動拖桿時套用 **抓地感知舵角包絡 (`gripLimitedCurvature * 1.26`)**，使 `0%–100%` 轉向按鍵行程完整覆蓋有效過彎區間。
+     - 將 `0.88` 過載斷崖重構為 **峰值滑移平台 (Peak Slip Plateau)**（`overRatio <= 1.25` 維持 `1.00 -> 0.97` 平緩過度，超過 `1.25` 再漸進降至下限 `0.90`）。
+     - 將 `0.78` 全油門開關與 `trailBrakeBonus` 改為連續荷載轉移函數（全油門依車型 `understeerCoeff` 漸進衰減約 `6.2%–9.2%`）。
+     - 以 `smoothstepBand(75, 195, speedKmh)` 平滑過渡 `turnInBonus`（消除 `126 km/h` 階躍突跳），並放寬 `straightCentering`（`-0.38`）不再干擾出彎斜切路線。
+2. **模組 3 — 賽道曲率折減校準 (`js/circuits.js`)**
+   - 新增 `getCornerLineCutFactor()`（寬賽道 `TRACK_WIDTH >= 22` 為 `0.68`，一般/窄賽道為 `0.72`），套用至 `getUpcomingCornerMaxSpeedKmh()` 與 `generateProBenchmarkLap()`，使建議入彎速更貼近實測極限。
+3. **模組 4 — 動態彎心預瞄追尾視角 (`js/render.js`, `index.html`)**
+   - 於 `js/render.js` 新增 `chaseCamRig`，於追尾視角導入指數阻尼航向追隨（`1 - exp(-13.5 * dtCam)`，跨 `0.75 rad` 瞬間重置）與隨舵角/橫擺率主動看向彎心的 **Dynamic Look-Into-Apex (`±0.095 rad`)**；駕駛艙/引擎蓋視角混入 `0.45x` 溫和頭動預瞄。
+   - 更新 `index.html` script 版本參數為 `?v=20261114_cornering`。
+
+### ✅ 驗證結果（編修後全套實測）
+1. **`scratch/check_syntax.py`**：7 / 7 JS 模組語法完整（OK）。
+2. **`scratch/test_proposal.py`**（Headless Chrome V8 + 完整 `index.html`）：**29 / 29 全數通過**，其中新增 Test 11 實證：
+   - `140 km/h` 點按 `0.12s` 後鬆手 `0.12s` 保留率達 **`0.65`**（`>= 0.55` 目標）。
+   - 連續 S 彎反打速度達單邊入彎 **`> 1.75x`**。
+   - `140 km/h` 全油門過彎保有 **`1.66 G`**（vs 收油門 `1.77 G`，落在 `88%–96%` 順滑區間）。
+   - 跨越 `126 km/h`（`123 -> 129 km/h`）橫擺率變化僅 **`4.0%`**（完全消除階躍突跳），且 `index.html` 載入 0 崩潰。
+3. **`scratch/test_physics_math.py`**：**26 / 26 通過**（0 失敗）。
+4. **`scratch/test_rfc_improvements.py`**：**38 / 38 通過**（0 失敗）。
+5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；所有遊戲程式碼變更保留於本地工作區等待用戶試跑確認後再行推送。

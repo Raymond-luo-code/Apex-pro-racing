@@ -559,3 +559,33 @@ Script error. at module(main.js:START):0:0
   - 修訂 **「方案 2：純粹競技 AI」**（徹底刪除壓力值與失誤機制，專注極致走線與防守）。
   - 調整優先級矩陣，將剛體碰撞與純粹 AI 列為 **Phase 2 雙首發核心任務**。
 - **推送狀態**：依照規範，僅將本執行日誌與計畫書文件提交並推送至 `origin/main`。
+
+---
+
+## 🕒 2026-11-14 18:42 ~ 18:49 // 完成 Phase 2 全核心系統實作與實機 V8 驗證
+
+### 🎯 目標範圍（依 `OPTIMIZATION_PLAN.md` v3.2）
+1. **核心 1 — 車輛實體剛體碰撞與衝量回饋 (`resolveVehicleCollisions`)**
+2. **核心 2 — 純粹零失誤競技 AI（徹底移除 `stress` / `mistakeTimer`）**
+3. **核心 3 — 三種 GT3 輪胎配方 (`Soft / Medium / Hard`)**
+4. **核心 4 — 高階程序化音效與 `0.08s` 換檔斷油 (`Turbo Flutter` & `Shift Clunk`)**
+
+### 🔧 修改明細
+1. **`js/physics.js` (`TIRE_COMPOUNDS`, `stepPhysics`, `stepAIRivals`, `testOBBOverlap`, `resolveVehicleCollisions`)**
+   - 新增速度感知 **2D SAT OBB 剛體碰撞系統**（GT3 車身尺寸 `4.7m × 2.0m`），針對 **玩家 ↔ AI** 與 **AI ↔ AI** 進行最小分離向量（MTV）空間推離，套用法向恢復衝量（$e = 0.28$）、切向擦撞摩擦（$\mu_c = 0.22$）與偏心撞擊力矩偏轉（`simState.yawRate` / `ai.colHeadingOffset` 與 `colVelD` 側滑恢復衰減）。
+   - 徹底刪除 AI `stress`、`mistakeTimer`、`mistakeType` 及假性瞬移閃避外推（`targetD += 2.8`），改以純粹競技防守線、尾流超車與真實物理接觸處理近身對決。
+   - 新增三種輪胎配方 `TIRE_COMPOUNDS`（`Soft` 1.65G、`Medium` 1.52G、`Hard` 1.42G），動態縮放 `baseMuLat` 與峰值滑移高原窗（Hard 具備 `1.25×` 高容錯漸進滑動區間）。
+   - 於手/自排升檔加入 `0.08s` `ignitionCutTimer` 扭力斷油過渡，並於高轉速收油觸發渦輪洩壓聲浪。
+2. **`js/audio.js` & `js/input.js`**
+   - 實作純 Web Audio 合成的 `triggerShiftClunk(isUpshift)`、`triggerTurboFlutter()`、`triggerBackfire()` 與依相對撞擊速度調整強度的 `triggerCollision(intensity)`；同步接線至自排換檔與手排 `shiftGear`。
+3. **`js/render.js`**
+   - `spawnTireSmoke(..., 'spark')` 支援金屬金色摩擦火花粒子拋物線飛濺；移除 `ai.stress` 壓力條，改繪製清爽的車手編號色條與即時戰術標籤。
+4. **`js/flow.js`、`js/main.js` & `index.html`**
+   - 於車庫（STEP 4）自訂面闆加入「🛞 輪胎配方（S / M / H）」切換鈕與動態抓地力摘要；於駕艙 HUD 新增 `#hud-tire-badge` 即時顯示當前胎種，並將腳本版號更新為 `?v=20261114_phase2`。
+
+### ✅ 驗證結果（編修後全套實測）
+- `scratch/check_syntax.py`：**7 / 7 OK**
+- `scratch/test_proposal.py`：**34 / 34 PASSED**（含 Phase 2 實測：Player↔AI 碰撞動量傳遞 `40.4 / 48.8 m/s` ＋ 偏航力矩 ＋ `4.75m` OBB 分離、AI↔AI 碰撞分離、零失誤欄位與狀態、三種胎種側向 G 梯度 `S:1.89G > M:1.77G > H:1.67G`、`0.080s` 升檔斷油與音效掛鉤、`index.html` 無報錯啟動）
+- `scratch/test_physics_math.py`：**26 / 26 PASSED**
+- `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
+- **推送狀態**：僅提交並推送 [`EXECUTION_LOG.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/EXECUTION_LOG.md) 至 `origin/main`；遊戲本體程式碼保留於本地供用戶試駕確認後再推送。

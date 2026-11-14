@@ -511,3 +511,19 @@ Script error. at module(main.js:START):0:0
 ### ✅ 驗證結果（編修後全套實測）
 - `scratch/check_syntax.py`：7 / 7 OK；`scratch/test_proposal.py`：**29 / 29** 通過；`scratch/test_physics_math.py`：**26 / 26** 通過；`scratch/test_rfc_improvements.py`：**38 / 38** 通過。
 - **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於本地待用戶測試確認後推送。
+
+---
+
+## 🕒 2026-11-14 18:17 ~ 18:19 // 修正 3D 煞車距離指示牌水平鏡像問題
+
+### 🎯 問題原因
+- `js/render.js` `signHolder.rotation.y = -boardNode.heading + Math.PI / 2` 使 `PlaneGeometry` 正面朝向順向車流（背對迎面而來的車手），導致車手看到 `DoubleSide` 背面渲染而使 `150 / 100 / 50 METERS` 文字水平反轉（如 `001`）。
+
+### 🔧 修改明細
+1. **`js/render.js` (`rebuild3DCircuitScene`)**
+   - 將 `signHolder.rotation.y` 修正為 `-boardNode.heading - Math.PI / 2`，使指示牌正面朝向迎面車手且局部 `+X` 對齊行車左至右方向。
+   - 將看板材質改為 `THREE.FrontSide`，並於背面 `z = -0.02` 增加深鐵灰背板 `backMesh`（旋轉 `Math.PI`），避免從背面穿視反字。
+
+### ✅ 驗證結果（編修後全套實測）
+- `scratch/check_syntax.py`：7 / 7 OK；`scratch/test_proposal.py`：**29 / 29** 通過；`scratch/test_physics_math.py`：**26 / 26** 通過；`scratch/test_rfc_improvements.py`：**38 / 38** 通過。
+- **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於本地待用戶測試確認後推送。

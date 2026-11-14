@@ -493,3 +493,21 @@ Script error. at module(main.js:START):0:0
 3. **`scratch/test_physics_math.py`**：**26 / 26 通過**（0 失敗）。
 4. **`scratch/test_rfc_improvements.py`**：**38 / 38 通過**（0 失敗）。
 5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；所有遊戲程式碼變更保留於本地工作區等待用戶試跑確認後再行推送。
+
+---
+
+## 🕒 2026-11-14 18:14 ~ 18:16 // 移除 HUD 紅色重煞警告（`HEAVY BRAKE`）並修正提前誤觸
+
+### 🎯 用戶回饋
+- 用戶反映頂部 `🛑 HEAVY BRAKE · 重煞降至 ...` 警告干擾且彎過後仍不消失，要求移除該重煞警告。
+
+### 🔧 修改明細
+1. **`js/main.js` (`updateHUD`)**
+   - 移除 `#alert-brake-now` 的 `cueTier === 'heavy'` 紅色／橘色彈窗顯示，並移除 `#edge-feedback` 對 `simState.brakeNowWarning` 的全螢幕紅框閃爍（改由路面四色動態走線與距離標示牌提供煞車節奏提示）。
+2. **`js/physics.js` (`computeDrivingCue`, `stepPhysics`)**
+   - 將 `simState.brakeNowWarning` 常駐設為 `false`。
+   - 移除 `computeDrivingCue()` 中容易於大直線前 `165m` 提前誤亮或跨彎殘留的 `minTargetKmh < 145` / `< 185` 單純速差覆蓋條件，僅依實際減速度需求 `reqDecel` 與前方 PRO 煞車段 `proAhead.brake` 輸出提示，確保過彎或加速後立即歸零（`'none'`）。
+
+### ✅ 驗證結果（編修後全套實測）
+- `scratch/check_syntax.py`：7 / 7 OK；`scratch/test_proposal.py`：**29 / 29** 通過；`scratch/test_physics_math.py`：**26 / 26** 通過；`scratch/test_rfc_improvements.py`：**38 / 38** 通過。
+- **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於本地待用戶測試確認後推送。

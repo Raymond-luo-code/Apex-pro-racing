@@ -441,3 +441,23 @@ Script error. at module(main.js:START):0:0
 3. **`scratch/test_physics_math.py`**：**26 / 26 通過**。
 4. **`scratch/test_rfc_improvements.py`**：**38 / 38 通過**。
 5. **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更仍保留於本地工作區待用戶確認後再推送。
+
+---
+
+## 🕒 2026-11-14 17:54 ~ 18:05 // 過彎與轉向手感根因實測診斷暨 `CORNERING_OPTIMIZATION_PLAN.md`
+
+### 🎯 任務核心
+針對玩家反映「轉向不順、不好過彎」，於 Headless Chrome V8 實跑全速域圓周與賽道曲率遙測（`scratch/diag_cornering.html`），逐行比對 `js/physics.js`、`js/circuits.js`、`js/input.js`、`js/render.js` 後彙整實證診斷與四模組優化計畫書。
+
+### 🔍 關鍵實測發現（修正純理論誤判）
+1. 確認既有確認版遊戲程式碼已推送至 `origin/main`（`fa6fa32`）。
+2. **破除誤區**：問題並非「舵角或 Damping 把車鎖死轉不動」；`ferrari458` 在 `140 / 180 / 260 km/h` 滿舵需求高達 `5.97 G / 6.30 G / 4.92 G`，僅 `25%` 舵角即達 `1.46 G`。
+3. **真實 5 大病灶**：
+   - `stepAnalogSteering` 在 `140–260 km/h` 鬆手回正半衰期僅 `83–49 ms`，按住超過 `0.15s` 即過飽和推頭、鬆手瞬間彈直。
+   - `stepPhysics()` 存在 `0.88` 摩擦圓過載硬斷崖、`0.78` 全油門推頭硬開關（`140 km/h` 轉彎半徑從 `92.9m` 突漲至 `129.1m`），以及 `126 km/h (35 m/s)` `turnInBonus` 階躍切換、三次 S-Curve 盲區與出彎 `straightCentering` 搶舵。
+   - `js/circuits.js` 以 `maxCurv * 0.62` 推算過彎極限（使富士 T2/T4 中心線需 `1.32~1.36 G`），在全油門最高僅 `1.29 G` 下必定推頭。
+   - `js/render.js` 追尾鏡頭剛性綁定 `simState.heading`，缺少平滑阻尼與彎心預瞄。
+
+### 📦 文件產出與狀態
+- 新增計畫書：[`CORNERING_OPTIMIZATION_PLAN.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/CORNERING_OPTIMIZATION_PLAN.md)（尚未動及任何遊戲程式碼，待用戶審閱確認計畫後開始開發）。
+- **推送狀態**：僅更新並推送本執行日誌與計畫書文件至 `origin/main`。

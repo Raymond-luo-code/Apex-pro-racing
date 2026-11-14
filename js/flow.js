@@ -417,7 +417,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                 }).join('')}
               </div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
               <span style="font-size:11px;color:#cbd5e1;font-weight:700;">⚙️ 輪框塗裝</span>
               <div style="display:flex;gap:6px;">
                 ${RIM_SWATCHES.map(s => {
@@ -429,6 +429,19 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                 }).join('')}
               </div>
             </div>
+            ${typeof TIRE_COMPOUNDS !== 'undefined' ? `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="font-size:11px;color:#cbd5e1;font-weight:700;">🛞 輪胎配方</span>
+              <div style="display:flex;gap:6px;">
+                ${Object.values(TIRE_COMPOUNDS).map(tc => {
+                  const active = (simState.tireCompound || 'medium') === tc.id;
+                  return `<button type="button" data-pick-tire="${tc.id}" title="${tc.summary}"
+                    style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:${active ? 'rgba(15,23,42,0.95)' : 'rgba(15,23,42,0.75)'};color:${active ? tc.color : '#94a3b8'};border:1px solid ${active ? tc.color : 'rgba(148,163,184,0.28)'};cursor:pointer;display:flex;align-items:center;gap:4px;">
+                    <i style="display:inline-block;width:8px;height:8px;border-radius:999px;background:${tc.color};"></i>${tc.code} · ${tc.peakMuG.toFixed(2)}G
+                  </button>`;
+                }).join('')}
+              </div>
+            </div>` : ''}
           `;
           paintCustEl.querySelectorAll('[data-pick-paint]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -448,12 +461,25 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
               renderGarageScreen();
             });
           });
+          paintCustEl.querySelectorAll('[data-pick-tire]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const tid = btn.getAttribute('data-pick-tire');
+              if (typeof setTireCompound === 'function') {
+                setTireCompound(tid);
+              } else {
+                simState.tireCompound = tid;
+              }
+              renderGarageScreen();
+            });
+          });
         }
 
         const chassisNoteEl = document.getElementById('lbl-gar-chassis-note');
         if (chassisNoteEl && typeof getCurrentCarHandling === 'function') {
           const hp = getCurrentCarHandling();
-          chassisNoteEl.textContent = `✔ 專屬底盤參數：軸距 ${hp.wheelbase.toFixed(2)}m · 機械轉角 ${hp.maxSteerDeg}° · 基準側向抓地力 ${hp.baseMuLat.toFixed(2)}G · 車重 ${hp.weightKg}kg`;
+          const tp = (typeof getCurrentTireProfile === 'function') ? getCurrentTireProfile() : { label: 'Medium', peakMuG: 1.52 };
+          const effMuG = hp.baseMuLat * (tp.peakMuG / 1.52);
+          chassisNoteEl.textContent = `✔ 底盤＋輪胎實戰參數：軸距 ${hp.wheelbase.toFixed(2)}m · ${tp.label} (${effMuG.toFixed(2)}G 側向抓地) · 車重 ${hp.weightKg}kg`;
         }
 
         if (stripEl) {
@@ -577,7 +603,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                 <div class="tag">2-LAP GT3 GRID CHAMPIONSHIP</div>
                 <div class="ttl">與電腦競賽 (AI Race)</div>
                 <div class="dsc">
-                  與 3 位具備尾流超車與心理壓力失誤機制的 AI 車手進行 <strong>2 圈爭先錦標賽</strong>！逼近對手車尾可觸發尾流加速並施壓迫使對手鎖死外拋。
+                  與 3 位具備尾流超車與真實剛體碰撞防線的零失誤 GT3 AI 車手進行 <strong>2 圈爭先錦標賽</strong>！貼近卡位、輪對輪碰撞皆真實反映物理動量，考驗純粹走線與防守實力。
                 </div>
                 <div class="af-diff-row" data-stop-prop="1">
                   <button type="button" class="af-diff ${diff < 0.96 ? 'is-active' : ''}" data-aidiff="0.92">俱樂部級 (入門)</button>

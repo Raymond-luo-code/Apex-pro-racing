@@ -976,12 +976,14 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       const skidMarksGroup = new THREE.Group();
       scene.add(skidMarksGroup);
       const skidMeshes = [];
-      const MAX_SKIDS = 140;
-      const skidGeo = new THREE.PlaneGeometry(0.95, 2.4);
+      const MAX_SKIDS = 260;
+      // Local +X = tire rolling length (1.45m), Local +Y (rotated flat to XZ) = real 0.28m GT3 tire width
+      const skidGeo = new THREE.PlaneGeometry(1.45, 0.28);
       const skidMat = new THREE.MeshBasicMaterial({
-        color: 0x090b10,
+        color: 0x0b0d13,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.42,
+        depthWrite: false,
         side: THREE.DoubleSide
       });
 
@@ -991,11 +993,13 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           m = skidMeshes.shift();
         } else {
           m = new THREE.Mesh(skidGeo, skidMat);
+          m.rotation.order = 'YXZ';
           m.rotation.x = -Math.PI / 2;
           skidMarksGroup.add(m);
         }
-        m.position.set(x, y + 0.06, z);
-        m.rotation.z = -heading;
+        m.position.set(x, y + 0.04, z);
+        m.rotation.y = -heading;
+        m.rotation.z = 0;
         skidMeshes.push(m);
       }
 
@@ -1006,11 +1010,30 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       const smokeMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.45 });
       const nosFlameMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
       const backfireMat = new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.92 });
+      const sparkMat = new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.95 });
 
       function spawnTireSmoke(x, y, z, type = 'smoke') {
-        if (smokeParticles.length > 48) return;
-        const mat = type === 'nos' ? nosFlameMat : (type === 'backfire' ? backfireMat : smokeMat);
+        if (smokeParticles.length > 56) return;
+        const isSpark = (type === 'spark');
+        const mat = isSpark
+          ? sparkMat
+          : (type === 'nos' ? nosFlameMat : (type === 'backfire' ? backfireMat : smokeMat));
         const mesh = new THREE.Mesh(smokeGeo, mat.clone());
+        if (isSpark) {
+          mesh.scale.set(0.22, 0.22, 0.22);
+          mesh.position.set(x + (Math.random() - 0.5) * 0.25, y + 0.35 + Math.random() * 0.25, z + (Math.random() - 0.5) * 0.25);
+          smokeGroup.add(mesh);
+          smokeParticles.push({
+            mesh,
+            life: 0.26 + Math.random() * 0.14,
+            isFlame: true,
+            isSpark: true,
+            vx: (Math.random() - 0.5) * 11.0,
+            vy: 2.2 + Math.random() * 4.5,
+            vz: (Math.random() - 0.5) * 11.0
+          });
+          return;
+        }
         if (type !== 'smoke') mesh.scale.set(0.65, 0.65, 0.65);
         mesh.position.set(
           x + (Math.random() - 0.5) * (type !== 'smoke' ? 0.4 : 1.2),
@@ -1018,7 +1041,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           z + (Math.random() - 0.5) * (type !== 'smoke' ? 0.4 : 1.2)
         );
         smokeGroup.add(mesh);
-        smokeParticles.push({ mesh, life: type !== 'smoke' ? 0.20 : 0.55, isFlame: type !== 'smoke' });
+        smokeParticles.push({ mesh, life: type !== 'smoke' ? 0.20 : 0.55, isFlame: type !== 'smoke', isSpark: false });
       }
 
       function updateSmokeParticles(dt) {
@@ -1029,11 +1052,19 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             smokeGroup.remove(p.mesh);
             smokeParticles.splice(i, 1);
           } else {
-            if (!p.isFlame) {
-              p.mesh.position.y += 1.4 * dt;
-              p.mesh.scale.addScalar(2.2 * dt);
+            if (p.isSpark) {
+              p.mesh.position.x += p.vx * dt;
+              p.mesh.position.y += p.vy * dt;
+              p.mesh.position.z += p.vz * dt;
+              p.vy -= 14.0 * dt;
+              p.mesh.material.opacity = Math.min(1.0, p.life * 3.8);
+            } else {
+              if (!p.isFlame) {
+                p.mesh.position.y += 1.4 * dt;
+                p.mesh.scale.addScalar(2.2 * dt);
+              }
+              p.mesh.material.opacity = p.life * (p.isFlame ? 3.5 : 0.7);
             }
-            p.mesh.material.opacity = p.life * (p.isFlame ? 3.5 : 0.7);
           }
         }
       }
@@ -2539,11 +2570,12 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           let hDelta = simState.heading - chaseCamRig.camHeading;
           while (hDelta > Math.PI) hDelta -= Math.PI * 2;
           while (hDelta < -Math.PI) hDelta += Math.PI * 2;
-          if (Math.abs(hDelta) > 0.75) {
-            // Instant snap on track recovery / reset
+          if (simState._snapCameraNow) {
+            // Instant snap ONLY on explicit reset / track recovery
             chaseCamRig.camHeading = simState.heading;
+            simState._snapCameraNow = false;
           } else {
-            chaseCamRig.camHeading += hDelta * (1.0 - Math.exp(-18.5 * dtCam));
+            chaseCamRig.camHeading += hDelta * (1.0 - Math.exp(-15.5 * dtCam));
           }
           const targetApexRad = Math.max(-0.026, Math.min(0.026,
             simState.steerInput * 0.018 + Math.max(-0.5, Math.min(0.5, simState.yawRate)) * 0.016
@@ -2807,21 +2839,20 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
               const sx = (pos.x * 0.5 + 0.5) * w;
               const sy = (-pos.y * 0.5 + 0.5) * h;
               if (sx > 60 && sx < w - 60 && sy > 60 && sy < h - 80) {
-                fxCtx.fillStyle = 'rgba(11, 15, 25, 0.78)';
-                fxCtx.fillRect(sx - 68, sy - 22, 136, 30);
-                fxCtx.strokeStyle = ai.stress > 75 ? '#ef4444' : '#f59e0b';
+                const accentHex = '#' + (ai.color || 0xf59e0b).toString(16).padStart(6, '0');
+                fxCtx.fillStyle = 'rgba(11, 15, 25, 0.80)';
+                fxCtx.fillRect(sx - 72, sy - 20, 144, 22);
+                fxCtx.strokeStyle = accentHex;
                 fxCtx.lineWidth = 1.2;
-                fxCtx.strokeRect(sx - 68, sy - 22, 136, 30);
+                fxCtx.strokeRect(sx - 72, sy - 20, 144, 22);
+
+                fxCtx.fillStyle = accentHex;
+                fxCtx.fillRect(sx - 72, sy - 20, 4, 22);
 
                 fxCtx.fillStyle = '#ffffff';
                 fxCtx.font = '700 10px "JetBrains Mono", monospace';
                 fxCtx.textAlign = 'center';
-                fxCtx.fillText(`${ai.name} [${ai.stateLabel}]`, sx, sy - 10);
-
-                fxCtx.fillStyle = '#1e293b';
-                fxCtx.fillRect(sx - 56, sy - 2, 112, 4);
-                fxCtx.fillStyle = ai.stress > 75 ? '#ef4444' : '#f59e0b';
-                fxCtx.fillRect(sx - 56, sy - 2, (ai.stress / 100) * 112, 4);
+                fxCtx.fillText(`${ai.name} · ${ai.stateLabel}`, sx + 2, sy - 6);
               }
             }
           });

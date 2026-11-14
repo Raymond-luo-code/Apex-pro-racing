@@ -50,6 +50,7 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
             const noiseBuf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
             const out = noiseBuf.getChannelData(0);
             for (let i = 0; i < bufSize; i++) out[i] = Math.random() * 2 - 1;
+            this.noiseBuffer = noiseBuf;
 
             this.squealNode = this.ctx.createBufferSource();
             this.squealNode.buffer = noiseBuf;
@@ -162,6 +163,151 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
           const now = this.ctx.currentTime;
           this.rpmOsc1.frequency.setValueAtTime(240, now);
           this.rpmOsc1.frequency.exponentialRampToValueAtTime(140, now + 0.09);
+        },
+
+        // Phase 2: Muted Pneumatic Sequential Paddle-Shift Clunk + ignition-cut dip
+        triggerShiftClunk(isUpshift = true) {
+          if (!this.started || !this.enabled || !this.ctx) return;
+          try {
+            const now = this.ctx.currentTime;
+            if (isUpshift && this.engineGain) {
+              this.engineGain.gain.setValueAtTime(0.025, now);
+              this.engineGain.gain.linearRampToValueAtTime(0.085, now + 0.08);
+            }
+            const osc = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(isUpshift ? 165 : 140, now);
+            osc.frequency.exponentialRampToValueAtTime(48, now + 0.055);
+            g.gain.setValueAtTime(isUpshift ? 0.095 : 0.075, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+            osc.connect(g);
+            g.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.07);
+
+            if (this.noiseBuffer) {
+              const src = this.ctx.createBufferSource();
+              src.buffer = this.noiseBuffer;
+              const lp = this.ctx.createBiquadFilter();
+              lp.type = 'lowpass';
+              lp.frequency.setValueAtTime(isUpshift ? 460 : 380, now);
+              lp.Q.value = 1.0;
+              const ng = this.ctx.createGain();
+              ng.gain.setValueAtTime(isUpshift ? 0.055 : 0.04, now);
+              ng.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+              src.connect(lp);
+              lp.connect(ng);
+              ng.connect(this.ctx.destination);
+              src.start(now);
+              src.stop(now + 0.05);
+            }
+          } catch (e) { }
+        },
+
+        // Phase 2: Warm Low-Mid Turbo Blow-Off Valve (BOV) surge flutter (tamed non-piercing)
+        triggerTurboFlutter() {
+          if (!this.started || !this.enabled || !this.ctx || !this.noiseBuffer) return;
+          try {
+            const now = this.ctx.currentTime;
+            [0, 0.072, 0.145].forEach((off, idx) => {
+              const src = this.ctx.createBufferSource();
+              src.buffer = this.noiseBuffer;
+              const bp = this.ctx.createBiquadFilter();
+              bp.type = 'bandpass';
+              const fStart = 1150 - idx * 180;
+              bp.frequency.setValueAtTime(fStart, now + off);
+              bp.frequency.exponentialRampToValueAtTime(Math.max(420, fStart * 0.58), now + off + 0.06);
+              bp.Q.value = 2.1;
+              const g = this.ctx.createGain();
+              const amp = 0.045 * Math.pow(0.65, idx);
+              g.gain.setValueAtTime(0.001, now + off);
+              g.gain.linearRampToValueAtTime(amp, now + off + 0.015);
+              g.gain.exponentialRampToValueAtTime(0.001, now + off + 0.065);
+              src.connect(bp);
+              bp.connect(g);
+              g.connect(this.ctx.destination);
+              src.start(now + off);
+              src.stop(now + off + 0.07);
+            });
+          } catch (e) { }
+        },
+
+        // Deep Low-Passed Motorsport Exhaust Burble/Thump (zero harsh upper harmonics)
+        triggerBackfire() {
+          if (!this.started || !this.enabled || !this.ctx) return;
+          try {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(92, now);
+            osc.frequency.exponentialRampToValueAtTime(36, now + 0.085);
+            g.gain.setValueAtTime(0.001, now);
+            g.gain.linearRampToValueAtTime(0.085, now + 0.008);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+            osc.connect(g);
+            g.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.10);
+
+            if (this.noiseBuffer) {
+              const src = this.ctx.createBufferSource();
+              src.buffer = this.noiseBuffer;
+              const lp = this.ctx.createBiquadFilter();
+              lp.type = 'lowpass';
+              lp.frequency.setValueAtTime(390, now);
+              lp.frequency.exponentialRampToValueAtTime(160, now + 0.09);
+              lp.Q.value = 0.8;
+              const ng = this.ctx.createGain();
+              ng.gain.setValueAtTime(0.001, now);
+              ng.gain.linearRampToValueAtTime(0.065, now + 0.006);
+              ng.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+              src.connect(lp);
+              lp.connect(ng);
+              ng.connect(this.ctx.destination);
+              src.start(now);
+              src.stop(now + 0.105);
+            }
+          } catch (e) { }
+        },
+
+        // Phase 2: Heavy Low-Mid Chassis Impact Thud & Carbon Scrape
+        triggerCollision(intensity = 0.5) {
+          if (!this.started || !this.enabled || !this.ctx) return;
+          try {
+            const now = this.ctx.currentTime;
+            const amp = Math.max(0.15, Math.min(1.0, intensity));
+            const osc = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(88 + amp * 28, now);
+            osc.frequency.exponentialRampToValueAtTime(30, now + 0.16);
+            g.gain.setValueAtTime(0.16 * amp, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+            osc.connect(g);
+            g.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.19);
+
+            if (this.noiseBuffer) {
+              const src = this.ctx.createBufferSource();
+              src.buffer = this.noiseBuffer;
+              const lp = this.ctx.createBiquadFilter();
+              lp.type = 'lowpass';
+              lp.frequency.setValueAtTime(340 + amp * 220, now);
+              lp.frequency.exponentialRampToValueAtTime(140, now + 0.14);
+              lp.Q.value = 0.9;
+              const ng = this.ctx.createGain();
+              ng.gain.setValueAtTime(0.12 * amp, now);
+              ng.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+              src.connect(lp);
+              lp.connect(ng);
+              ng.connect(this.ctx.destination);
+              src.start(now);
+              src.stop(now + 0.16);
+            }
+          } catch (e) { }
         },
 
         playCountdownBeep(isGo = false) {

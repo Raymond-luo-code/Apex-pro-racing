@@ -195,6 +195,19 @@ simState.bestLapTime = PRO_LAP_TIME;
           drawMinimap();
         }
 
+        const tireBadgeEl = document.getElementById('hud-tire-badge');
+        if (tireBadgeEl && typeof getCurrentTireProfile === 'function') {
+          const tp = getCurrentTireProfile();
+          const tireCodeEl = document.getElementById('hud-tire-code');
+          const tireLabelEl = document.getElementById('hud-tire-label');
+          if (tireCodeEl) {
+            tireCodeEl.textContent = tp.code;
+            tireCodeEl.style.color = tp.color;
+          }
+          if (tireLabelEl) tireLabelEl.textContent = tp.enLabel;
+          tireBadgeEl.style.borderColor = tp.color;
+        }
+
         if (simState.mode === 'ai_race') {
           updateAIRaceHUD();
         } else {

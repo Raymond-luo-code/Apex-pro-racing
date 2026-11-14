@@ -74,6 +74,55 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         return CAR_HANDLING_PROFILES[id] || CAR_HANDLING_PROFILES.procedural;
       }
 
+      // Phase 2: Three GT3 Racing Tire Compounds (Soft / Medium / Hard)
+      const TIRE_COMPOUNDS = {
+        soft: {
+          id: 'soft',
+          code: 'S',
+          label: 'Soft 軟胎',
+          enLabel: 'SOFT',
+          color: '#ef4444',
+          peakMuG: 1.65,
+          slipWidthMult: 0.90,
+          brakeBonus: 1.04,
+          accelMult: 1.04,
+          summary: '1.65G 極致抓地・排位單圈進彎犀利'
+        },
+        medium: {
+          id: 'medium',
+          code: 'M',
+          label: 'Medium 中性胎',
+          enLabel: 'MEDIUM',
+          color: '#f59e0b',
+          peakMuG: 1.52,
+          slipWidthMult: 1.00,
+          brakeBonus: 1.00,
+          accelMult: 1.00,
+          summary: '1.52G 全能均衡・正賽長距離首選'
+        },
+        hard: {
+          id: 'hard',
+          code: 'H',
+          label: 'Hard 硬胎',
+          enLabel: 'HARD',
+          color: '#f8fafc',
+          peakMuG: 1.42,
+          slipWidthMult: 1.25,
+          brakeBonus: 0.97,
+          accelMult: 0.98,
+          summary: '1.42G 耐操穩定・高容錯漸進滑動區間'
+        }
+      };
+
+      function getCurrentTireProfile() {
+        return TIRE_COMPOUNDS[simState.tireCompound] || TIRE_COMPOUNDS.medium;
+      }
+
+      function setTireCompound(compoundId) {
+        if (!TIRE_COMPOUNDS[compoundId]) return;
+        simState.tireCompound = compoundId;
+      }
+
 
       const GEAR_RATIOS = [0, 3.35, 2.32, 1.74, 1.36, 1.10, 0.90];
       const GEAR_MAX_SPEED = [0, 68, 118, 166, 214, 258, 305];
@@ -182,7 +231,17 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
         // Phase 1: Progressive 3-Tier Track & HUD Driving Guidance
         drivingCue: 'none', // 'none' | 'lift' | 'trail' | 'heavy'
-        cueTargetKmh: 300
+        cueTargetKmh: 300,
+
+        // Phase 2: Tire Compound, Ignition Cut & Rigid-Body Collision State
+        tireCompound: 'medium',
+        ignitionCutTimer: 0,
+        _autoShiftCooldown: 0,
+        _backfireCooldown: 0,
+        colLatVel: 0,
+        _inCollisionContact: 0,
+        _snapCameraNow: true,
+        _lastCollisionFxMs: 0
       };
 
       const aiCars = [
@@ -195,14 +254,17 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           speedMs: 28,
           lap: 1,
           basePace: 1.045,
-          stress: 12,
           stateLabel: 'OPTIMAL LINE',
-          mistakeTimer: 0,
-          mistakeType: null,
           reactionTimer: 0,
           throttleInput: 0,
           brakeInput: 0,
           steerInput: 0,
+          heading: 0,
+          yawRate: 0,
+          vLat: 0,
+          spinTimer: 0,
+          colVelD: 0,
+          colHeadingOffset: 0,
           mesh: null
         },
         {
@@ -214,14 +276,17 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           speedMs: 27,
           lap: 1,
           basePace: 1.032,
-          stress: 18,
           stateLabel: 'OPTIMAL LINE',
-          mistakeTimer: 0,
-          mistakeType: null,
           reactionTimer: 0,
           throttleInput: 0,
           brakeInput: 0,
           steerInput: 0,
+          heading: 0,
+          yawRate: 0,
+          vLat: 0,
+          spinTimer: 0,
+          colVelD: 0,
+          colHeadingOffset: 0,
           mesh: null
         },
         {
@@ -233,14 +298,17 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           speedMs: 26,
           lap: 1,
           basePace: 1.018,
-          stress: 20,
           stateLabel: 'OPTIMAL LINE',
-          mistakeTimer: 0,
-          mistakeType: null,
           reactionTimer: 0,
           throttleInput: 0,
           brakeInput: 0,
           steerInput: 0,
+          heading: 0,
+          yawRate: 0,
+          vLat: 0,
+          spinTimer: 0,
+          colVelD: 0,
+          colHeadingOffset: 0,
           mesh: null
         }
       ];
@@ -343,6 +411,13 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.gantryStage = 0;
         simState.drivingCue = 'none';
         simState.cueTargetKmh = 300;
+        simState.ignitionCutTimer = 0;
+        simState._autoShiftCooldown = 0;
+        simState._backfireCooldown = 0;
+        simState.colLatVel = 0;
+        simState._inCollisionContact = 0;
+        simState._snapCameraNow = true;
+        simState._lastCollisionFxMs = 0;
 
         const startOverlay = document.getElementById('start-lights-overlay');
         if (triggerCountdown && !simState.inShowcaseMode) {
@@ -365,16 +440,19 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           ai.d = (idx % 2 === 0) ? -3.0 : 3.0;
           ai.speedMs = 0; // Standing start on the grid waiting for Lights Out!
           ai.lap = 1;
-          ai.stress = 15;
-          ai.mistakeTimer = 0;
-          ai.mistakeType = null;
           ai.reactionTimer = 0.04 + Math.random() * 0.14;
           ai.throttleInput = 0;
           ai.brakeInput = 0;
           ai.steerInput = 0;
+          ai.yawRate = 0;
+          ai.vLat = 0;
+          ai.spinTimer = 0;
+          ai.colVelD = 0;
+          ai.colHeadingOffset = 0;
           ai.stateLabel = 'GRID READY';
           ai.mesh.visible = (!simState.inShowcaseMode && simState.mode === 'ai_race');
           const w = sdToWorld(ai.s, ai.d);
+          ai.heading = w.heading;
           ai.mesh.position.set(w.x, w.y, w.z);
           ai.mesh.rotation.y = -w.heading;
         });
@@ -561,8 +639,13 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         if (simState.paused || simState.inShowcaseMode) return;
         const isReal = (simState.edition === 'realistic');
         simState.backfireFlameTimer = Math.max(0, (simState.backfireFlameTimer || 0) - dt);
+        simState.ignitionCutTimer = Math.max(0, (simState.ignitionCutTimer || 0) - dt);
+        simState._autoShiftCooldown = Math.max(0, (simState._autoShiftCooldown || 0) - dt);
+        simState._backfireCooldown = Math.max(0, (simState._backfireCooldown || 0) - dt);
+        simState._inCollisionContact = Math.max(0, (simState._inCollisionContact || 0) - dt);
         const prevThr = simState.throttleInput;
         const carProfile = getCurrentCarHandling();
+        const tireProfile = getCurrentTireProfile();
 
         if (!manualThrottleDrag || !manualBrakeDrag) {
           const tempState = {
@@ -745,13 +828,33 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
               }
             } else {
               simState.reverseHoldTimer = 0;
-              for (let g = 6; g >= 1; g--) {
-                if (simState.speedKmh >= GEAR_MAX_SPEED[g - 1] * 0.90) {
-                  if (simState.gear !== g) {
-                    simState.gear = g;
-                    document.getElementById('hud-gear').textContent = String(g);
-                    simState.backfireFlameTimer = 0.13;
-                    if (soundEngine && typeof soundEngine.triggerBackfire === 'function') {
+              if ((simState._autoShiftCooldown || 0) <= 0) {
+                let targetGear = simState.gear;
+                // Wide hysteresis band between upshift (92% gear max) and downshift (78% lower gear max)
+                // prevents high-frequency gear hunting during 0.08s ignition cut or cornering drag
+                while (targetGear < 6 && simState.speedKmh >= GEAR_MAX_SPEED[targetGear] * 0.92) {
+                  targetGear++;
+                }
+                while (targetGear > 1 && simState.speedKmh < GEAR_MAX_SPEED[targetGear - 1] * 0.78) {
+                  targetGear--;
+                }
+                if (targetGear !== simState.gear) {
+                  const isUpshift = (targetGear > simState.gear && simState.gear >= 1);
+                  simState.gear = targetGear;
+                  simState._autoShiftCooldown = 0.25;
+                  document.getElementById('hud-gear').textContent = String(targetGear);
+                  if (isUpshift) {
+                    simState.ignitionCutTimer = 0.08;
+                  }
+                  if (typeof soundEngine !== 'undefined' && soundEngine) {
+                    if (typeof soundEngine.triggerShiftClunk === 'function') soundEngine.triggerShiftClunk(isUpshift);
+                    if (!isUpshift && typeof soundEngine.blipShift === 'function') soundEngine.blipShift();
+                  }
+                  // Subtle crisp exhaust pop on downshift or high-load upshift (strictly debounced)
+                  if ((simState._backfireCooldown || 0) <= 0 && (isUpshift ? thr > 0.5 : (simState.speedKmh > 65 && thr < 0.35))) {
+                    simState._backfireCooldown = 0.28;
+                    simState.backfireFlameTimer = 0.11;
+                    if (typeof soundEngine !== 'undefined' && soundEngine && typeof soundEngine.triggerBackfire === 'function') {
                       soundEngine.triggerBackfire();
                     }
                     const wPos = sdToWorld(simState.s, simState.d);
@@ -762,7 +865,6 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
                       'backfire'
                     );
                   }
-                  break;
                 }
               }
             }
@@ -800,11 +902,11 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           simState.rpm = Math.round(1150 + normRpm * 7650);
           const revLimiterCut = (!simState.autoTransmission && simState.rpm > 8780) ? 0.10 : 1.0;
 
-          // Calibrated 0-100 km/h (3.48s) and 0-300 km/h (~40s) Power & Drag Model + Per-Chassis Multipliers
+          // Calibrated 0-100 km/h (3.48s) and 0-300 km/h (~40s) Power & Drag Model + Per-Chassis & Tire Multipliers
           const vEff = Math.max(vMs, 12.5);
-          const accelMult = carProfile.accelFactor || 1.0;
+          const accelMult = (carProfile.accelFactor || 1.0) * (tireProfile.accelMult || 1.0);
           const dragMult = carProfile.aeroDragFactor || 1.0;
-          const brakeMult = carProfile.brakeFactor || 1.0;
+          const brakeMult = (carProfile.brakeFactor || 1.0) * (tireProfile.brakeBonus || 1.0);
           const maxMechanicalGripAccel = 8.25 * accelMult;
           const specificPower = 338.0 * accelMult;
           const rawEngineAccel = Math.min(maxMechanicalGripAccel, specificPower / vEff);
@@ -823,15 +925,18 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             ? 12.8 * simState.surfaceGrip
             : brk * 19.2 * simState.surfaceGrip) * brakeMult;
 
-          // High-RPM throttle lift-off exhaust pop & flame
-          if (prevThr > 65 && simState.throttleInput <= 25 && simState.speedKmh > 115 && (simState.backfireFlameTimer || 0) <= 0) {
+          // High-RPM throttle lift-off turbo blow-off flutter & exhaust pop (strictly debounced)
+          if (prevThr > 65 && simState.throttleInput <= 25 && simState.speedKmh > 115 && (simState._backfireCooldown || 0) <= 0) {
+            simState._backfireCooldown = 0.28;
             simState.backfireFlameTimer = 0.11;
-            if (soundEngine && typeof soundEngine.triggerBackfire === 'function') {
-              soundEngine.triggerBackfire();
+            if (typeof soundEngine !== 'undefined' && soundEngine) {
+              if (typeof soundEngine.triggerTurboFlutter === 'function') soundEngine.triggerTurboFlutter();
+              if (typeof soundEngine.triggerBackfire === 'function') soundEngine.triggerBackfire();
             }
           }
 
-          const driveAccel = thr * rawEngineAccel * revLimiterCut * simState.surfaceGrip;
+          const shiftCutMult = (simState.ignitionCutTimer > 0) ? 0.12 : 1.0;
+          const driveAccel = thr * rawEngineAccel * revLimiterCut * shiftCutMult * simState.surfaceGrip;
           const nosBoostAccel = simState.isNosActive ? 4.8 : 0;
           const engineBraking = (thr < 0.05 && vMs > 1) ? 0.65 : 0;
 
@@ -882,7 +987,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         const throttleWeightTransfer = 1.0 - thrLoad * steerLoad * chassisPowerPush;
         const lockupPenalty = simState.isBrakeLockup ? 0.30 : 1.0;
 
-        const baseMuLat = isReal ? carProfile.baseMuLat : (carProfile.baseMuLat * 1.48);
+        const baseMuLat = (isReal ? carProfile.baseMuLat : (carProfile.baseMuLat * 1.48)) * (tireProfile.peakMuG / 1.52);
         const aeroBonusG = (simState.downforceKgf / carProfile.weightKg) * 0.45;
         const maxLatG = (baseMuLat + aeroBonusG) * simState.surfaceGrip * trailBrakeBonus * throttleWeightTransfer * lockupPenalty;
         const maxLatAccelMs2 = maxLatG * 9.81;
@@ -912,15 +1017,17 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.isOversteer = false;
         let actualCurvature = linearCurvature;
 
-        // Gradual Peak Slip Plateau: eliminates the abrupt 0.88 understeer cliff when brushing 100% lateral grip
+        // Gradual Peak Slip Plateau scaled by tire compound slip window
         if (desiredLatAccel > maxLatAccelMs2 && vMs > 10.0) {
           const overRatio = desiredLatAccel / Math.max(0.1, maxLatAccelMs2);
+          const plateauSpan = 0.25 * (tireProfile.slipWidthMult || 1.0);
           let slipPlateau = 0.98;
           if (isReal) {
-            if (overRatio <= 1.25) {
-              slipPlateau = 1.0 - ((overRatio - 1.0) / 0.25) * 0.03;
+            if (overRatio <= 1.0 + plateauSpan) {
+              slipPlateau = 1.0 - ((overRatio - 1.0) / plateauSpan) * 0.03;
             } else {
-              slipPlateau = Math.max(0.90, 0.97 - (overRatio - 1.25) * 0.18);
+              const dropSlope = 0.18 / Math.max(0.75, tireProfile.slipWidthMult || 1.0);
+              slipPlateau = Math.max(0.90, 0.97 - (overRatio - (1.0 + plateauSpan)) * dropSlope);
             }
           }
           actualCurvature = Math.sign(linearCurvature) * gripLimitedCurvature * slipPlateau;
@@ -967,8 +1074,16 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           : 0;
         targetYawRate += offTrackPullYaw;
 
-        // Vehicle rotational moment of inertia (smooth transition, removes jerky yaw jumps)
-        simState.yawRate += (targetYawRate - simState.yawRate) * Math.min(1.0, 22.0 * dt);
+        // Vehicle rotational moment of inertia; allow door-alignment torque while tires damp excessive runaway yaw spikes
+        const yawDeviation = Math.abs(simState.yawRate - targetYawRate);
+        const yawTrackRate = ((simState._inCollisionContact || 0) > 0)
+          ? (yawDeviation > 0.85 ? 18.0 : 8.5)
+          : 22.0;
+        simState.yawRate += (targetYawRate - simState.yawRate) * Math.min(1.0, yawTrackRate * dt);
+        if (Math.abs(simState.colLatVel || 0) > 3.2 || (Math.abs(headingDiff) > 0.35 && Math.abs(simState.yawRate) > 0.75)) {
+          simState.isOversteer = true;
+          if (Math.random() < 0.04) simState.oversteerCount++;
+        }
 
         const reverseYawFactor = (simState.gear === -1) ? -1 : 1;
         simState.heading += simState.yawRate * reverseYawFactor * dt;
@@ -990,26 +1105,28 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
         // Dual rear-wheel & front-wheel independent ground smoke and twin tire skid marks!
         if (simState.isBrakeLockup || simState.isDrifting || simState.isUndersteer || simState.tireSlipRatio > 0.96) {
-          const rlX = wPos.x - fwdX * 1.36 - rightX * 0.84;
-          const rlZ = wPos.z - fwdZ * 1.36 - rightZ * 0.84;
-          const rrX = wPos.x - fwdX * 1.36 + rightX * 0.84;
-          const rrZ = wPos.z - fwdZ * 1.36 + rightZ * 0.84;
+          const rlX = wPos.x - fwdX * 1.36 - rightX * 0.78;
+          const rlZ = wPos.z - fwdZ * 1.36 - rightZ * 0.78;
+          const rrX = wPos.x - fwdX * 1.36 + rightX * 0.78;
+          const rrZ = wPos.z - fwdZ * 1.36 + rightZ * 0.78;
 
-          if (Math.random() < 0.65) {
+          if (simState.isDrifting || simState.tireSlipRatio > 0.96) {
             spawnSkidMark(rlX, wPos.y, rlZ, carYaw);
             spawnSkidMark(rrX, wPos.y, rrZ, carYaw);
+          }
+          if (simState.isBrakeLockup || simState.isUndersteer) {
+            const flX = wPos.x + fwdX * 1.38 - rightX * 0.78;
+            const flZ = wPos.z + fwdZ * 1.38 - rightZ * 0.78;
+            const frX = wPos.x + fwdX * 1.38 + rightX * 0.78;
+            const frZ = wPos.z + fwdZ * 1.38 + rightZ * 0.78;
+            spawnSkidMark(flX, wPos.y, flZ, carYaw);
+            spawnSkidMark(frX, wPos.y, frZ, carYaw);
+            spawnTireSmoke(flX, wPos.y, flZ, 'smoke');
+            spawnTireSmoke(frX, wPos.y, frZ, 'smoke');
           }
           if (simState.isDrifting || simState.tireSlipRatio > 0.98) {
             spawnTireSmoke(rlX, wPos.y, rlZ, 'smoke');
             spawnTireSmoke(rrX, wPos.y, rrZ, 'smoke');
-          }
-          if (simState.isBrakeLockup || simState.isUndersteer) {
-            const flX = wPos.x + fwdX * 1.38 - rightX * 0.84;
-            const flZ = wPos.z + fwdZ * 1.38 - rightZ * 0.84;
-            const frX = wPos.x + fwdX * 1.38 + rightX * 0.84;
-            const frZ = wPos.z + fwdZ * 1.38 + rightZ * 0.84;
-            spawnTireSmoke(flX, wPos.y, flZ, 'smoke');
-            spawnTireSmoke(frX, wPos.y, frZ, 'smoke');
           }
         }
         if (simState.isNosActive) {
@@ -1052,7 +1169,9 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.isWrongWay = (simState.gear !== -1 && simState.speedKmh > 20 && forwardDot < -0.3);
 
         const ds = vMs_motion * Math.cos(relAngle) * dt;
-        const dd = vMs_motion * Math.sin(relAngle) * dt;
+        const dd = vMs_motion * Math.sin(relAngle) * dt + (simState.colLatVel || 0) * dt;
+        simState.colLatVel = (simState.colLatVel || 0) * Math.exp(-6.0 * dt);
+        if (Math.abs(simState.colLatVel) < 0.02) simState.colLatVel = 0;
 
         const prevS = simState.s;
 
@@ -1201,36 +1320,521 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
         if (simState.mode === 'ai_race') {
           stepAIRivals(dt);
+          if (!simState.countdownActive) {
+            resolveVehicleCollisions(dt);
+          }
+        }
+      }
+
+      function shortestTrackDelta(fromS, toS) {
+        let ds = toS - fromS;
+        if (ds > totalTrackLength * 0.5) ds -= totalTrackLength;
+        if (ds < -totalTrackLength * 0.5) ds += totalTrackLength;
+        return ds;
+      }
+
+      function wrapAngle(a) {
+        while (a > Math.PI) a -= Math.PI * 2;
+        while (a < -Math.PI) a += Math.PI * 2;
+        return a;
+      }
+
+      // Sutherland-Hodgman segment clip against half-plane dot(p, n) <= d
+      function clipSegmentToLine(p0, p1, nx, nz, d) {
+        const out = [];
+        const dist0 = p0.x * nx + p0.z * nz - d;
+        const dist1 = p1.x * nx + p1.z * nz - d;
+        if (dist0 <= 0) out.push(p0);
+        if (dist1 <= 0) out.push(p1);
+        if ((dist0 > 0 && dist1 < 0) || (dist0 < 0 && dist1 > 0)) {
+          const t = dist0 / (dist0 - dist1);
+          out.push({
+            x: p0.x + (p1.x - p0.x) * t,
+            z: p0.z + (p1.z - p0.z) * t
+          });
+        }
+        return out;
+      }
+
+      // 2D SAT + 2-Point Clipped Edge Contact Manifold Solver for GT3 rigid bodies (4.7m x 2.0m)
+      function testOBBOverlap(a, b) {
+        const dx = b.x - a.x;
+        const dz = b.z - a.z;
+        const aFx = Math.cos(a.heading), aFz = Math.sin(a.heading);
+        const aRx = -aFz, aRz = aFx;
+        const bFx = Math.cos(b.heading), bFz = Math.sin(b.heading);
+        const bRx = -bFz, bRz = bFx;
+
+        const axes = [
+          [aFx, aFz],
+          [aRx, aRz],
+          [bFx, bFz],
+          [bRx, bRz]
+        ];
+
+        let minOverlap = Infinity;
+        let minNx = 0;
+        let minNz = 0;
+        let fastApproachOverlap = Infinity;
+        let fastApproachScore = Infinity;
+        let fastNx = 0;
+        let fastNz = 0;
+
+        const rvx = (b.vx || 0) - (a.vx || 0);
+        const rvz = (b.vz || 0) - (a.vz || 0);
+
+        for (let i = 0; i < 4; i++) {
+          let ax = axes[i][0];
+          let az = axes[i][1];
+          const dist = Math.abs(dx * ax + dz * az);
+          const projA = a.halfLen * Math.abs(aFx * ax + aFz * az) + a.halfWid * Math.abs(aRx * ax + aRz * az);
+          const projB = b.halfLen * Math.abs(bFx * ax + bFz * az) + b.halfWid * Math.abs(bRx * ax + bRz * az);
+          const overlap = projA + projB - dist;
+          if (overlap <= 0) return null;
+
+          // Orient axis strictly from A -> B
+          if (dx * ax + dz * az < 0) {
+            ax = -ax;
+            az = -az;
+          }
+
+          if (overlap < minOverlap) {
+            minOverlap = overlap;
+            minNx = ax;
+            minNz = az;
+          }
+
+          const closing = -(rvx * ax + rvz * az);
+          if (closing > 8.0) {
+            const tPen = overlap / closing;
+            if (tPen < fastApproachScore) {
+              fastApproachScore = tPen;
+              fastApproachOverlap = overlap;
+              fastNx = ax;
+              fastNz = az;
+            }
+          }
+        }
+
+        // Default to pure geometric Minimum Translation Vector (prevents side-by-side longitudinal snapping).
+        // Only switch to the high-speed approach face when extreme telescoping occurred (> 0.85m min overlap).
+        const useFastFace = (minOverlap > 0.85 && fastApproachScore < 0.16);
+        const bestOverlap = useFastFace ? fastApproachOverlap : minOverlap;
+        const bestNx = useFastFace ? fastNx : minNx;
+        const bestNz = useFastFace ? fastNz : minNz;
+
+        // Build 2-Point Clipped Contact Manifold (Reference Box vs Incident Box)
+        const aAlignF = Math.abs(bestNx * aFx + bestNz * aFz);
+        const aAlignR = Math.abs(bestNx * aRx + bestNz * aRz);
+        const bAlignF = Math.abs(bestNx * bFx + bestNz * bFz);
+        const bAlignR = Math.abs(bestNx * bRx + bestNz * bRz);
+        const maxA = Math.max(aAlignF, aAlignR);
+        const maxB = Math.max(bAlignF, bAlignR);
+
+        const aIsRef = (maxA >= maxB);
+        const ref = aIsRef ? a : b;
+        const inc = aIsRef ? b : a;
+        const refFx = aIsRef ? aFx : bFx, refFz = aIsRef ? aFz : bFz;
+        const refRx = aIsRef ? aRx : bRx, refRz = aIsRef ? aRz : bRz;
+        const incFx = aIsRef ? bFx : aFx, incFz = aIsRef ? bFz : aFz;
+        const incRx = aIsRef ? bRx : aRx, incRz = aIsRef ? bRz : aRz;
+        const nRefOutX = aIsRef ? bestNx : -bestNx;
+        const nRefOutZ = aIsRef ? bestNz : -bestNz;
+
+        // Pick reference face edge
+        let rFaceNx, rFaceNz, rHalfN, rHalfT;
+        if (Math.abs(nRefOutX * refFx + nRefOutZ * refFz) >= Math.abs(nRefOutX * refRx + nRefOutZ * refRz)) {
+          const sgn = (nRefOutX * refFx + nRefOutZ * refFz) >= 0 ? 1 : -1;
+          rFaceNx = sgn * refFx; rFaceNz = sgn * refFz;
+          rHalfN = ref.halfLen; rHalfT = ref.halfWid;
+        } else {
+          const sgn = (nRefOutX * refRx + nRefOutZ * refRz) >= 0 ? 1 : -1;
+          rFaceNx = sgn * refRx; rFaceNz = sgn * refRz;
+          rHalfN = ref.halfWid; rHalfT = ref.halfLen;
+        }
+        const rTanX = -rFaceNz;
+        const rTanZ = rFaceNx;
+
+        // Pick incident face most anti-parallel to reference outward normal
+        const incFaces = [
+          { nx: incFx, nz: incFz, hN: inc.halfLen, hT: inc.halfWid },
+          { nx: -incFx, nz: -incFz, hN: inc.halfLen, hT: inc.halfWid },
+          { nx: incRx, nz: incRz, hN: inc.halfWid, hT: inc.halfLen },
+          { nx: -incRx, nz: -incRz, hN: inc.halfWid, hT: inc.halfLen }
+        ];
+        let bestInc = incFaces[0];
+        let minDot = Infinity;
+        for (let k = 0; k < 4; k++) {
+          const d = incFaces[k].nx * rFaceNx + incFaces[k].nz * rFaceNz;
+          if (d < minDot) { minDot = d; bestInc = incFaces[k]; }
+        }
+        const incCx = inc.x + bestInc.nx * bestInc.hN;
+        const incCz = inc.z + bestInc.nz * bestInc.hN;
+        const incTx = -bestInc.nz;
+        const incTz = bestInc.nx;
+        let clipped = [
+          { x: incCx - incTx * bestInc.hT, z: incCz - incTz * bestInc.hT },
+          { x: incCx + incTx * bestInc.hT, z: incCz + incTz * bestInc.hT }
+        ];
+
+        // Clip incident edge against side planes of reference face
+        const refProjT = ref.x * rTanX + ref.z * rTanZ;
+        clipped = clipSegmentToLine(clipped[0], clipped[1], rTanX, rTanZ, refProjT + rHalfT);
+        if (clipped.length >= 2) {
+          clipped = clipSegmentToLine(clipped[0], clipped[1], -rTanX, -rTanZ, -refProjT + rHalfT);
+        }
+
+        const refPlaneDist = ref.x * rFaceNx + ref.z * rFaceNz + rHalfN;
+        const contacts = [];
+        for (let k = 0; k < clipped.length; k++) {
+          const p = clipped[k];
+          const pen = refPlaneDist - (p.x * rFaceNx + p.z * rFaceNz);
+          if (pen >= -0.05) {
+            contacts.push({ x: p.x, z: p.z, pen: Math.max(0, pen) });
+          }
+        }
+
+        if (contacts.length === 0) {
+          const aExtF = a.halfLen * (aFx * bestNx + aFz * bestNz >= 0 ? 1 : -1);
+          const aExtR = a.halfWid * (aRx * bestNx + aRz * bestNz >= 0 ? 1 : -1);
+          const bExtF = b.halfLen * (-bestNx * bFx - bestNz * bFz >= 0 ? 1 : -1);
+          const bExtR = b.halfWid * (-bestNx * bRx - bestNz * bRz >= 0 ? 1 : -1);
+          contacts.push({
+            x: ((a.x + aFx * aExtF + aRx * aExtR) + (b.x + bFx * bExtF + bRx * bExtR)) * 0.5,
+            z: ((a.z + aFz * aExtF + aRz * aExtR) + (b.z + bFz * bExtF + bRz * bExtR)) * 0.5,
+            pen: bestOverlap
+          });
+        }
+
+        let sumX = 0, sumZ = 0;
+        for (let k = 0; k < contacts.length; k++) {
+          sumX += contacts[k].x;
+          sumZ += contacts[k].z;
+        }
+        return {
+          overlap: bestOverlap,
+          nx: bestNx,
+          nz: bestNz,
+          cx: sumX / contacts.length,
+          cz: sumZ / contacts.length,
+          contacts
+        };
+      }
+
+      function resolveVehicleCollisions(dt) {
+        const halfW = TRACK_WIDTH * 0.5;
+        const maxRunoffD = halfW + 10.5;
+        const carProfile = getCurrentCarHandling();
+        const playerMass = carProfile.weightKg || 1290;
+        const HL = 2.35; // 4.7m GT3 chassis
+        const HW = 1.00; // 2.0m GT3 track width
+
+        const makeBody = (isPlayer, ref, s, d, heading, yawRate, vLong, vLatCar, mass) => {
+          const w = sdToWorld(s, d);
+          const fwdX = Math.cos(heading);
+          const fwdZ = Math.sin(heading);
+          const rightX = -fwdZ;
+          const rightZ = fwdX;
+          return {
+            isPlayer,
+            ref,
+            s,
+            d,
+            x: w.x,
+            y: w.y,
+            z: w.z,
+            heading,
+            yawRate: yawRate || 0,
+            vx: fwdX * vLong + rightX * vLatCar,
+            vz: fwdZ * vLong + rightZ * vLatCar,
+            mass,
+            invMass: 1.0 / mass,
+            invIzz: 12.0 / (mass * (4.7 * 4.7 + 2.0 * 2.0) * 1.18),
+            halfLen: HL,
+            halfWid: HW
+          };
+        };
+
+        const pSignedSpd = (simState.gear === -1) ? -simState.speedMs : simState.speedMs;
+        const pNode = sampleTrackAtS(simState.s);
+        // Convert track-right colLatVel roughly to car-local lateral vel
+        const pRightX = -Math.sin(simState.heading), pRightZ = Math.cos(simState.heading);
+        const pInitVLat = (simState.colLatVel || 0) * (pNode.rightX * pRightX + pNode.rightZ * pRightZ);
+        const bodies = [
+          makeBody(true, simState, simState.s, simState.d, simState.heading, simState.yawRate || 0, pSignedSpd, pInitVLat, playerMass)
+        ];
+        aiCars.forEach(ai => {
+          const wAi = sampleTrackAtS(ai.s);
+          const aiH = (ai.heading != null) ? ai.heading : wAi.heading;
+          bodies.push(makeBody(false, ai, ai.s, ai.d, aiH, ai.yawRate || 0, ai.speedMs, ai.vLat || 0, 1300));
+        });
+
+        let strongestImpact = 0;
+        let maxScrapeSpeed = 0;
+        let fxCx = 0, fxCy = 0, fxCz = 0;
+        let playerInvolvedInFx = false;
+
+        for (let i = 0; i < bodies.length; i++) {
+          for (let j = i + 1; j < bodies.length; j++) {
+            const A = bodies[i];
+            const B = bodies[j];
+            if (Math.abs(shortestTrackDelta(A.s, B.s)) > 9.0) continue;
+
+            const hit = testOBBOverlap(A, B);
+            if (!hit) continue;
+
+            const { overlap, nx, nz, cx, cz, contacts } = hit;
+            if (A.isPlayer || B.isPlayer) {
+              simState._inCollisionContact = 0.08;
+            }
+
+            const totalInvMass = A.invMass + B.invMass;
+            // Progressive compliant separation (Baumgarte ERP + per-frame cap) prevents 1-frame visual teleporting
+            const slop = 0.015;
+            const erpSep = Math.max(0, overlap - slop) * 0.36;
+            const sepFactor = Math.min(0.24, erpSep);
+            const sepA = sepFactor * (A.invMass / totalInvMass);
+            const sepB = sepFactor * (B.invMass / totalInvMass);
+
+            const applyTrackSeparation = (body, dispX, dispZ) => {
+              const node = sampleTrackAtS(body.s);
+              const fwdX = Math.cos(node.heading);
+              const fwdZ = Math.sin(node.heading);
+              const dsSep = dispX * fwdX + dispZ * fwdZ;
+              const ddSep = dispX * node.rightX + dispZ * node.rightZ;
+              const nextS = body.s + dsSep;
+              if (nextS >= 0 && nextS < totalTrackLength) {
+                body.s = nextS;
+              } else {
+                body.s = Math.max(0.05, Math.min(totalTrackLength - 0.05, nextS));
+              }
+              body.d = Math.max(-maxRunoffD, Math.min(maxRunoffD, body.d + ddSep));
+              const wNew = sdToWorld(body.s, body.d);
+              body.x = wNew.x;
+              body.y = wNew.y;
+              body.z = wNew.z;
+            };
+
+            applyTrackSeparation(A, -nx * sepA, -nz * sepA);
+            applyTrackSeparation(B, nx * sepB, nz * sepB);
+
+            const tx = -nz;
+            const tz = nx;
+            const nPts = contacts.length;
+            const e = 0.08;
+            const muMetal = 0.42;
+            const dtSafe = Math.max(0.004, Math.min(0.04, dt || 0.016));
+
+            let pairMaxClosing = 0;
+            let pairMaxScrape = 0;
+            let rearHitImpulseA = 0;
+            let rearHitImpulseB = 0;
+            const aFx = Math.cos(A.heading), aFz = Math.sin(A.heading);
+            const bFx = Math.cos(B.heading), bFz = Math.sin(B.heading);
+
+            let totalPen = 0;
+            for (let k = 0; k < nPts; k++) totalPen += Math.max(0.001, contacts[k].pen);
+
+            const aVx0 = A.vx, aVz0 = A.vz, aW0 = A.yawRate;
+            const bVx0 = B.vx, bVz0 = B.vz, bW0 = B.yawRate;
+            let dAvx = 0, dAvz = 0, dAw = 0;
+            let dBvx = 0, dBvz = 0, dBw = 0;
+
+            for (let k = 0; k < nPts; k++) {
+              const pt = contacts[k];
+              const wK = Math.max(0.001, pt.pen) / totalPen;
+              const rAx = pt.x - A.x, rAz = pt.z - A.z;
+              const rBx = pt.x - B.x, rBz = pt.z - B.z;
+
+              // Exact rigid-body contact velocity v_cm + omega x r (Jacobi manifold evaluation)
+              const vAxP = aVx0 - aW0 * rAz;
+              const vAzP = aVz0 + aW0 * rAx;
+              const vBxP = bVx0 - bW0 * rBz;
+              const vBzP = bVz0 + bW0 * rBx;
+
+              const rvx = vBxP - vAxP;
+              const rvz = vBzP - vAzP;
+              const relVn = rvx * nx + rvz * nz;
+
+              const rACrossN = rAx * nz - rAz * nx;
+              const rBCrossN = rBx * nz - rBz * nx;
+              const invKn = Math.max(1e-6, A.invMass + B.invMass + (rACrossN * rACrossN) * A.invIzz + (rBCrossN * rBCrossN) * B.invIzz);
+
+              const rACrossT = rAx * tz - rAz * tx;
+              const rBCrossT = rBx * tz - rBz * tx;
+              const invKt = Math.max(1e-6, A.invMass + B.invMass + (rACrossT * rACrossT) * A.invIzz + (rBCrossT * rBCrossT) * B.invIzz);
+
+              // Rigid-body normal impulse + velocity-clamped Baumgarte contact constraint (prevents penetration without energy blowup)
+              const targetSepVel = Math.min(1.05, Math.max(0, pt.pen - 0.015) * 5.2);
+              const vnDesired = (relVn < 0) ? (-e * relVn) : 0;
+              const vnTarget = Math.max(vnDesired, targetSepVel);
+              const dvN = vnTarget - relVn;
+              const jn = (dvN > 0) ? (dvN / invKn) * wK : 0;
+
+              // Dynamic Coulomb friction at contact manifold point (speed-equalizing + yaw alignment/spin drag)
+              const relVt = rvx * tx + rvz * tz;
+              const rawJt = (-relVt / invKt) * wK;
+              const jnPress = Math.min(260, Math.max(0, 6200 * Math.max(0, pt.pen - 0.008) * dtSafe)) * wK;
+              const totalNormalLoad = Math.max(jn, jn + jnPress * 0.5);
+              const jtLimit = muMetal * totalNormalLoad;
+              const jt = Math.max(-jtLimit, Math.min(jtLimit, rawJt));
+
+              // Accumulate consistent linear + rotational impulse strictly from real (jn, jt)
+              const impX = nx * jn + tx * jt;
+              const impZ = nz * jn + tz * jt;
+
+              dAvx -= impX * A.invMass;
+              dAvz -= impZ * A.invMass;
+              dBvx += impX * B.invMass;
+              dBvz += impZ * B.invMass;
+
+              const tauA = -(rAx * impZ - rAz * impX);
+              const tauB = (rBx * impZ - rBz * impX);
+              dAw += tauA * A.invIzz;
+              dBw += tauB * B.invIzz;
+
+              // Track rear-quarter destabilizing impulse behind center of mass (PIT maneuver trigger)
+              const rALong = rAx * aFx + rAz * aFz;
+              const rBLong = rBx * bFx + rBz * bFz;
+              if (rALong < -0.42 && pt.pen > 0.025) rearHitImpulseA += Math.abs(tauA) * A.invIzz;
+              if (rBLong < -0.42 && pt.pen > 0.025) rearHitImpulseB += Math.abs(tauB) * B.invIzz;
+
+              if (-relVn > pairMaxClosing) pairMaxClosing = -relVn;
+              if (Math.abs(relVt) > pairMaxScrape && totalNormalLoad > 12) pairMaxScrape = Math.abs(relVt);
+            }
+
+            A.vx += dAvx;
+            A.vz += dAvz;
+            B.vx += dBvx;
+            B.vz += dBvz;
+            const cappedDAw = Math.max(-0.62, Math.min(0.62, dAw));
+            const cappedDBw = Math.max(-0.62, Math.min(0.62, dBw));
+            A.yawRate = Math.max(-3.0, Math.min(3.0, A.yawRate + cappedDAw));
+            B.yawRate = Math.max(-3.0, Math.min(3.0, B.yawRate + cappedDBw));
+
+            // Write back linear + angular states to Player & AI bodies
+            const syncBody = (body, rearShock) => {
+              const fwdX = Math.cos(body.heading);
+              const fwdZ = Math.sin(body.heading);
+              const rightX = -fwdZ;
+              const rightZ = fwdX;
+              const vLong = body.vx * fwdX + body.vz * fwdZ;
+              const vCarLat = body.vx * rightX + body.vz * rightZ;
+
+              if (body.isPlayer) {
+                if (simState.gear !== -1) {
+                  simState.speedMs = Math.max(0, Math.min(110, vLong));
+                  simState.speedKmh = simState.speedMs * 3.6;
+                }
+                const node = sampleTrackAtS(body.s);
+                const worldLatX = body.vx - fwdX * vLong;
+                const worldLatZ = body.vz - fwdZ * vLong;
+                simState.colLatVel = Math.max(-18, Math.min(18, worldLatX * node.rightX + worldLatZ * node.rightZ));
+                simState.yawRate = Math.max(-1.55, Math.min(1.55, body.yawRate));
+              } else {
+                body.ref.speedMs = Math.max(-55, Math.min(105, vLong));
+                body.ref.vLat = Math.max(-28, Math.min(28, vCarLat));
+                body.ref.yawRate = Math.max(-3.0, Math.min(3.0, body.yawRate));
+                const bNode = sampleTrackAtS(body.s);
+                const excessYawShock = Math.abs(body.ref.yawRate - (bNode.curvature || 0) * body.ref.speedMs);
+                // Only trigger rear-axle breakaway spinout from true rear-quarter PIT impulse or severe lateral shock
+                if (rearShock > 0.25 || excessYawShock > 2.15 || Math.abs(body.ref.vLat) > 6.2) {
+                  body.ref.spinTimer = Math.max(body.ref.spinTimer || 0, (rearShock > 0.25 || excessYawShock > 2.15) ? 1.55 : 1.15);
+                }
+              }
+            };
+
+            syncBody(A, rearHitImpulseA);
+            syncBody(B, rearHitImpulseB);
+
+            const fxStrength = Math.max(pairMaxClosing, pairMaxScrape * 0.45);
+            if (fxStrength > strongestImpact) {
+              strongestImpact = fxStrength;
+              maxScrapeSpeed = pairMaxScrape;
+              fxCx = cx;
+              fxCy = (A.y + B.y) * 0.5;
+              fxCz = cz;
+              playerInvolvedInFx = (A.isPlayer || B.isPlayer);
+            }
+
+            const commitSD = (body) => {
+              if (body.isPlayer) {
+                simState.s = body.s;
+                simState.d = body.d;
+              } else {
+                body.ref.s = body.s;
+                body.ref.d = body.d;
+              }
+            };
+            commitSD(A);
+            commitSD(B);
+          }
+        }
+
+        // Sync AI meshes after collision separation
+        aiCars.forEach(ai => {
+          const w = sdToWorld(ai.s, ai.d);
+          const aiH = (ai.heading != null) ? ai.heading : w.heading;
+          ai.mesh.position.set(w.x, w.y, w.z);
+          ai.mesh.rotation.y = -aiH;
+        });
+
+        // Contact sparks, metallic collision/scrape audio & gamepad dual-rumble pulse
+        if (strongestImpact > 1.2 || maxScrapeSpeed > 2.0) {
+          const nowMs = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+          if (!simState._lastCollisionFxMs || (nowMs - simState._lastCollisionFxMs) > 95) {
+            simState._lastCollisionFxMs = nowMs;
+            const intensity = Math.min(1.0, Math.max(strongestImpact, maxScrapeSpeed * 0.5) / 22.0);
+            const sparkCount = Math.min(5, Math.max(2, Math.round(2 + intensity * 3)));
+            for (let k = 0; k < sparkCount; k++) {
+              spawnTireSmoke(fxCx, fxCy, fxCz, 'spark');
+            }
+            if (typeof soundEngine !== 'undefined' && soundEngine && typeof soundEngine.triggerCollision === 'function') {
+              soundEngine.triggerCollision(intensity);
+            }
+            if (playerInvolvedInFx && typeof window.triggerGamepadRumble === 'function') {
+              window.triggerGamepadRumble(0.45 * intensity, 0.78 * intensity, 115);
+            }
+          }
         }
       }
 
       function stepAIRivals(dt) {
         const diff = simState.aiDifficulty || 1.0;
+        const halfW = TRACK_WIDTH * 0.5;
+        const maxAiD = halfW + 9.5;
+
         aiCars.forEach(ai => {
+          const node = sampleTrackAtS(ai.s);
+          if (ai.heading === undefined || ai.heading === null) ai.heading = node.heading;
+          if (ai.yawRate === undefined) ai.yawRate = 0;
+          if (ai.vLat === undefined) ai.vLat = 0;
+          if (ai.spinTimer === undefined) ai.spinTimer = 0;
+
           // Hold stationary on grid during FIA 5-Red-Light sequence
           if (simState.countdownActive) {
             ai.speedMs = 0;
+            ai.yawRate = 0;
+            ai.vLat = 0;
+            ai.heading = node.heading;
             ai.stateLabel = 'GRID HOLD';
             ai.throttleInput = 45;
             ai.brakeInput = 100;
             const w = sdToWorld(ai.s, ai.d);
             ai.mesh.position.set(w.x, w.y, w.z);
-            ai.mesh.rotation.y = -w.heading;
+            ai.mesh.rotation.y = -ai.heading;
             if (ai.mesh.userData.tailLight) setSlotBrakeLight(ai.mesh, true, 0xff2222, 0x550000);
             return;
           }
-          if ((ai.reactionTimer || 0) > 0) {
+          if ((ai.reactionTimer || 0) > 0 && ai.speedMs < 2.0) {
             ai.reactionTimer -= dt;
             ai.stateLabel = 'LAUNCH PREP';
             return;
           }
-
-          const node = sampleTrackAtS(ai.s);
-          const apexLook = sampleTrackAtS(ai.s + 24);
           const lookNode = sampleTrackAtS(ai.s + 95);
           const proRef = getProProfileAtDistance(ai.s);
 
-          // Elevate AI cornering apex grip above conservative 1.42G baseline (~1.56G-1.62G human pace)
+          // Pure competitive zero-mistake pace (~1.56G-1.62G clinical execution)
           const absCurv = Math.abs(node.curvature || 0);
           const apexGripBonus = absCurv > 0.0020 ? (1.06 + Math.max(0, (diff - 0.92) * 0.25)) : 1.0;
           const isCornerExit = (absCurv > 0.0020 && Math.abs(lookNode.curvature || 0) < 0.0025);
@@ -1242,13 +1846,13 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           const gapMeters = aiTotalS - playerTotalS;
 
           let targetD = proRef.optimalD;
-          ai.stateLabel = proRef.brake > 20 ? 'BRAKING ZONE' : (isCornerExit ? 'EXIT SURGE' : 'FULL PACE');
+          ai.stateLabel = proRef.brake > 20 ? 'BRAKING ZONE' : (isCornerExit ? 'EXIT SURGE' : 'OPTIMAL LINE');
 
-          // Trailing Player: Straight Slipstream Slingshot OR Aggressive Late-Braking Dive
+          // Trailing Player: Straight Slipstream Slingshot OR Clinical Late-Braking Dive
           if (gapMeters < -3 && gapMeters > -62) {
             if (Math.abs(node.curvature) < 0.0025) {
               if (gapMeters > -18) {
-                targetD = simState.d > 0 ? simState.d - 3.8 : simState.d + 3.8;
+                targetD = simState.d > 0 ? simState.d - 3.6 : simState.d + 3.6;
                 ai.stateLabel = 'SLINGSHOT PASS';
               } else {
                 targetD = simState.d;
@@ -1261,94 +1865,139 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
               targetV *= 1.07;
               ai.stateLabel = 'LATE BRAKE DIVE';
             }
-          }
-
-          // Leading Player Under Pressure: Smart Defense & Realistic Micro-Mistake (no artificial 28% crash)
-          if (gapMeters > 0 && gapMeters < 42) {
-            const pressureGain = gapMeters < 18 ? 14 * dt : 5 * dt;
-            ai.stress = Math.min(100, ai.stress + pressureGain);
-
+          } else if (gapMeters > 0 && gapMeters < 32) {
+            // Leading Player cleanly: hold defensive inside line without fake pressure mistakes
             if (Math.abs(lookNode.curvature) > 0.004) {
               const insideSign = Math.sign(lookNode.curvature || 1);
-              targetD = insideSign * 5.0;
+              targetD = insideSign * 4.8;
               ai.stateLabel = 'DEFENSIVE LINE';
             } else {
-              targetD = simState.d * 0.65;
+              targetD = simState.d * 0.60;
               ai.stateLabel = 'DEFENDING';
             }
-
-            if (ai.stress > 86 && ai.mistakeTimer <= 0 && Math.abs(lookNode.curvature) > 0.0068) {
-              if (Math.random() < 0.18 * dt) {
-                ai.mistakeTimer = 0.85;
-                ai.mistakeType = Math.random() < 0.5 ? 'MISSED APEX' : 'SLIGHT LOCKUP';
-                ai.stress = 42;
-              }
-            }
-          } else {
-            ai.stress = Math.max(8, ai.stress - 6 * dt);
           }
 
-          if (ai.mistakeTimer > 0) {
-            ai.mistakeTimer -= dt;
-            ai.stateLabel = `⚠ ${ai.mistakeType}`;
-            const outsideSign = -Math.sign(node.curvature || 1);
-            targetD += outsideSign * 1.45;
-            targetV *= 0.94;
-            const wAi = sdToWorld(ai.s, ai.d);
-            spawnTireSmoke(wAi.x, wAi.y, wAi.z, 'smoke');
-          }
-
-          if (Math.abs(gapMeters) < 6.5 && Math.abs(ai.d - simState.d) < 2.8) {
-            targetD += (ai.d >= simState.d ? 2.8 : -2.8);
-          }
-
-          // AI-to-AI lateral spacing
+          // Smooth look-ahead racecraft around other AI ahead (no instant teleport offsets)
           aiCars.forEach(other => {
             if (other === ai) return;
             const otherTotalS = (other.lap - 1) * totalTrackLength + other.s;
-            if (Math.abs(aiTotalS - otherTotalS) < 6.5 && Math.abs(ai.d - other.d) < 2.5) {
-              targetD += (ai.d >= other.d ? 1.8 : -1.8);
+            const aheadDist = otherTotalS - aiTotalS;
+            if (aheadDist > 2.5 && aheadDist < 16.0 && Math.abs(targetD - other.d) < 2.6) {
+              targetD = (other.d >= 0) ? Math.max(-halfW + 1.5, other.d - 3.2) : Math.min(halfW - 1.5, other.d + 3.2);
             }
           });
 
-          // Drive AI actuators through shared progressive Input Translation Layer
-          const targetMs = targetV / 3.6;
-          const speedErrMs = targetMs - ai.speedMs;
-          const aiRawBrake = (speedErrMs < -4.5 || (proRef.brake > 68 && speedErrMs < -1.5));
-          const aiRawTrail = (!aiRawBrake && (speedErrMs < -0.9 || (proRef.brake > 22 && speedErrMs < 0)));
-          const aiRawThrottle = (!aiRawBrake && !aiRawTrail && speedErrMs > -0.4);
-          const aiThrCap = (absCurv > 0.0055 && !isCornerExit) ? 78 : 100;
+          // True 2D Planar Rigid-Body Spinout & Oversteer Recovery Physics
+          ai.spinTimer = Math.max(0, ai.spinTimer - dt);
+          const hDiff = wrapAngle(ai.heading - node.heading);
+          const beta = Math.atan2(ai.vLat || 0, Math.max(4.0, Math.abs(ai.speedMs)));
+          const trackYaw = (node.curvature || 0) * ai.speedMs;
+          const excessYaw = ai.yawRate - trackYaw;
+          const isOutOfControl = (ai.spinTimer > 0) || Math.abs(hDiff) > 0.48 || Math.abs(beta) > 0.32;
+          const offAsphalt = Math.abs(ai.d) > (halfW + 0.8);
+          const surfGrip = offAsphalt ? 0.45 : 1.0;
 
           if (ai.throttleInput === undefined) ai.throttleInput = 0;
           if (ai.brakeInput === undefined) ai.brakeInput = 0;
-          translateAnalogPedals(ai, aiRawThrottle, aiRawBrake, aiRawTrail, dt, aiThrCap);
 
-          const aiThr = ai.throttleInput / 100;
-          const aiBrk = ai.brakeInput / 100;
-          const vEff = Math.max(ai.speedMs, 11.5);
-          const aiDriveAccel = aiThr * Math.min(9.0, 358.0 / vEff) * ai.basePace * diff;
-          const aiBrakeDecel = aiBrk * 19.2;
-          const aiDrag = 0.00054 * ai.speedMs * ai.speedMs + 0.14;
-          const aiEngineBrk = (aiThr < 0.05 && ai.speedMs > 1.0) ? 0.65 : 0;
-          const aiNetAccel = aiDriveAccel - aiBrakeDecel - aiDrag - aiEngineBrk;
-          ai.speedMs = Math.max(0, ai.speedMs + aiNetAccel * dt);
+          if (isOutOfControl) {
+            const deepSpin = Math.abs(hDiff) > 0.62 || Math.abs(excessYaw) > 1.55;
+            translateAnalogPedals(ai, false, deepSpin, !deepSpin, dt, 0);
+            ai.stateLabel = deepSpin ? 'LOST CONTROL' : 'CATCHING SLIDE';
 
-          // Speed-sensitive lateral lane transition matching vehicle dynamic steering ratio
-          const aiMaxDeg = getDynamicMaxSteerDeg(ai.speedMs * 3.6, CAR_HANDLING_PROFILES.procedural, true);
-          const aiMaxLatSpeed = Math.max(1.8, ai.speedMs * Math.sin((aiMaxDeg * Math.PI) / 180) * 0.48);
-          const desiredLatVel = (targetD - ai.d) * 3.2;
-          const clampedLatVel = Math.max(-aiMaxLatSpeed, Math.min(aiMaxLatSpeed, desiredLatVel));
-          ai.d += clampedLatVel * dt;
+            const aiBrk = ai.brakeInput / 100;
+            const oldH = ai.heading;
+            const cosOld = Math.cos(oldH), sinOld = Math.sin(oldH);
+            const vxWorld = cosOld * ai.speedMs - sinOld * ai.vLat;
+            const vzWorld = sinOld * ai.speedMs + cosOld * ai.vLat;
 
-          ai.s += ai.speedMs * dt;
+            // Tire yaw torque saturates once rear slip exceeds peak angle or immediately after rear-axle shock -> authentic PIT spinout
+            const peakSlipSaturated = (ai.spinTimer > 0.70 || Math.abs(beta) > 0.16 || Math.abs(hDiff) > 0.24);
+            const maxCounterYawAccel = (peakSlipSaturated ? 0.95 : 2.1) * surfGrip;
+            const desiredYaw = Math.max(-1.65, Math.min(1.65, trackYaw - hDiff * 1.5));
+            const yawErr = desiredYaw - ai.yawRate;
+            const yawStep = Math.max(-maxCounterYawAccel * dt, Math.min(maxCounterYawAccel * dt, yawErr));
+            ai.yawRate += yawStep;
+            ai.heading = wrapAngle(oldH + ai.yawRate * dt);
+
+            const cosNew = Math.cos(ai.heading), sinNew = Math.sin(ai.heading);
+            const vLongProj = vxWorld * cosNew + vzWorld * sinNew;
+            const vLatProj = -vxWorld * sinNew + vzWorld * cosNew;
+
+            const longDecel = (Math.sign(vLongProj) * (aiBrk * 16.5 * surfGrip + (offAsphalt ? 3.2 : 0.35)) + 0.00054 * vLongProj * Math.abs(vLongProj));
+            ai.speedMs = Math.max(-45, Math.min(105, vLongProj - longDecel * dt));
+
+            const lateralGripMult = peakSlipSaturated ? 0.68 : 1.05;
+            const maxLatScrubAccel = 1.52 * 9.81 * surfGrip * lateralGripMult;
+            const latDrop = Math.min(Math.abs(vLatProj), maxLatScrubAccel * dt);
+            ai.vLat = vLatProj - Math.sign(vLatProj) * latDrop;
+
+            const wCur = sdToWorld(ai.s, ai.d);
+            if (Math.abs(ai.vLat) > 2.2 || Math.abs(hDiff) > 0.35) {
+              if (Math.random() < 0.6) spawnTireSmoke(wCur.x, wCur.y, wCur.z, 'smoke');
+              if (Math.random() < 0.55) {
+                const rX = -Math.sin(ai.heading), rZ = Math.cos(ai.heading);
+                spawnSkidMark(wCur.x - rX * 0.78, wCur.y, wCur.z - rZ * 0.78, ai.heading);
+                spawnSkidMark(wCur.x + rX * 0.78, wCur.y, wCur.z + rZ * 0.78, ai.heading);
+              }
+            }
+
+            const vxOut = cosNew * ai.speedMs - sinNew * ai.vLat;
+            const vzOut = sinNew * ai.speedMs + cosNew * ai.vLat;
+            ai.s += (vxOut * node.dirX + vzOut * node.dirZ) * dt;
+            ai.d = Math.max(-maxAiD, Math.min(maxAiD, ai.d + (vxOut * node.rightX + vzOut * node.rightZ) * dt));
+          } else {
+            const targetMs = targetV / 3.6;
+            const speedErrMs = targetMs - ai.speedMs;
+            const aiRawBrake = (speedErrMs < -4.5 || (proRef.brake > 68 && speedErrMs < -1.5));
+            const aiRawTrail = (!aiRawBrake && (speedErrMs < -0.9 || (proRef.brake > 22 && speedErrMs < 0)));
+            const aiRawThrottle = (!aiRawBrake && !aiRawTrail && speedErrMs > -0.4);
+            const aiThrCap = (absCurv > 0.0055 && !isCornerExit) ? 78 : 100;
+
+            translateAnalogPedals(ai, aiRawThrottle, aiRawBrake, aiRawTrail, dt, aiThrCap);
+
+            const aiThr = ai.throttleInput / 100;
+            const aiBrk = ai.brakeInput / 100;
+            const vEff = Math.max(Math.abs(ai.speedMs), 11.5);
+            const aiDriveAccel = aiThr * Math.min(9.0, 358.0 / vEff) * ai.basePace * diff;
+            const aiBrakeDecel = aiBrk * 19.2;
+            const aiDrag = 0.00054 * ai.speedMs * Math.abs(ai.speedMs) + 0.14;
+            const aiEngineBrk = (aiThr < 0.05 && ai.speedMs > 1.0) ? 0.65 : 0;
+            const aiNetAccel = aiDriveAccel - aiBrakeDecel - aiDrag - aiEngineBrk;
+            ai.speedMs = Math.max(0, ai.speedMs + aiNetAccel * dt);
+
+            const aiMaxDeg = getDynamicMaxSteerDeg(ai.speedMs * 3.6, CAR_HANDLING_PROFILES.procedural, true);
+            const aiMaxLatSpeed = Math.max(1.8, ai.speedMs * Math.sin((aiMaxDeg * Math.PI) / 180) * 0.48);
+            const desiredLatVel = (targetD - ai.d) * 3.2;
+            const clampedLatVel = Math.max(-aiMaxLatSpeed, Math.min(aiMaxLatSpeed, desiredLatVel));
+
+            const desiredSteerAngle = Math.atan2(clampedLatVel, Math.max(8.0, ai.speedMs));
+            const desiredHeading = wrapAngle(node.heading + desiredSteerAngle);
+            const headErr = wrapAngle(desiredHeading - ai.heading);
+            ai.yawRate = Math.max(-2.2, Math.min(2.2, headErr * 8.5));
+            ai.heading = wrapAngle(ai.heading + ai.yawRate * dt);
+            ai.vLat *= Math.exp(-8.0 * dt);
+
+            const hNowDiff = wrapAngle(ai.heading - node.heading);
+            const vxOut = node.dirX * (ai.speedMs * Math.cos(hNowDiff) - ai.vLat * Math.sin(hNowDiff))
+                        + node.rightX * (ai.speedMs * Math.sin(hNowDiff) + ai.vLat * Math.cos(hNowDiff));
+            const vzOut = node.dirZ * (ai.speedMs * Math.cos(hNowDiff) - ai.vLat * Math.sin(hNowDiff))
+                        + node.rightZ * (ai.speedMs * Math.sin(hNowDiff) + ai.vLat * Math.cos(hNowDiff));
+            ai.s += (vxOut * node.dirX + vzOut * node.dirZ) * dt;
+            ai.d = Math.max(-maxAiD, Math.min(maxAiD, ai.d + (vxOut * node.rightX + vzOut * node.rightZ) * dt));
+          }
+
           if (ai.s >= totalTrackLength) {
             ai.s -= totalTrackLength;
             ai.lap++;
+          } else if (ai.s < 0) {
+            ai.s += totalTrackLength;
           }
 
           const w = sdToWorld(ai.s, ai.d);
           ai.mesh.position.set(w.x, w.y, w.z);
-          ai.mesh.rotation.y = -w.heading;
+          ai.mesh.rotation.y = -ai.heading;
+          ai.colHeadingOffset = wrapAngle(ai.heading - w.heading);
 
           // Illuminate AI brake tail-lights strictly from real translated brake pressure
           if (ai.mesh.userData.tailLight) {
@@ -1359,6 +2008,9 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
 window.CAR_HANDLING_PROFILES = CAR_HANDLING_PROFILES;
 window.getCurrentCarHandling = getCurrentCarHandling;
+window.TIRE_COMPOUNDS = TIRE_COMPOUNDS;
+window.getCurrentTireProfile = getCurrentTireProfile;
+window.setTireCompound = setTireCompound;
 window.GEAR_RATIOS = GEAR_RATIOS;
 window.GEAR_MAX_SPEED = GEAR_MAX_SPEED;
 window.simState = simState;
@@ -1369,6 +2021,8 @@ window.translateAnalogPedals = translateAnalogPedals;
 window.getDynamicMaxSteerDeg = getDynamicMaxSteerDeg;
 window.stepAnalogSteering = stepAnalogSteering;
 window.computeDrivingCue = computeDrivingCue;
+window.testOBBOverlap = testOBBOverlap;
+window.resolveVehicleCollisions = resolveVehicleCollisions;
 window.stepPhysics = stepPhysics;
 window.stepAIRivals = stepAIRivals;
 if (window.__apexTrace) window.__apexTrace('physics.js', 'OK');

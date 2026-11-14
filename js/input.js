@@ -76,20 +76,28 @@ if (window.__apexTrace) window.__apexTrace('input.js', 'START');
           nextGear = 6;
         }
         if (nextGear !== simState.gear) {
+          const isUpshift = (nextGear > simState.gear && simState.gear >= 1);
           if (delta < 0) soundEngine.blipShift();
+          if (isUpshift) simState.ignitionCutTimer = 0.08;
+          if (soundEngine && typeof soundEngine.triggerShiftClunk === 'function') {
+            soundEngine.triggerShiftClunk(isUpshift);
+          }
           simState.gear = nextGear;
-          simState.backfireFlameTimer = 0.13;
-          if (soundEngine && typeof soundEngine.triggerBackfire === 'function') {
-            soundEngine.triggerBackfire();
+          if ((simState._backfireCooldown || 0) <= 0) {
+            simState._backfireCooldown = 0.25;
+            simState.backfireFlameTimer = 0.11;
+            if (soundEngine && typeof soundEngine.triggerBackfire === 'function') {
+              soundEngine.triggerBackfire();
+            }
+            const wPos = sdToWorld(simState.s, simState.d);
+            const backX = wPos.x - Math.cos(simState.heading) * 2.3;
+            const backZ = wPos.z - Math.sin(simState.heading) * 2.3;
+            spawnTireSmoke(backX, wPos.y, backZ, 'backfire');
           }
           const gearText = simState.gear === -1 ? 'R' : String(simState.gear);
           document.getElementById('hud-gear').textContent = gearText;
           const topGearEl = document.getElementById('hud-top-gear');
           if (topGearEl) topGearEl.textContent = simState.gear === -1 ? 'R檔(MT)' : `${simState.gear}檔(MT)`;
-          const wPos = sdToWorld(simState.s, simState.d);
-          const backX = wPos.x - Math.cos(simState.heading) * 2.3;
-          const backZ = wPos.z - Math.sin(simState.heading) * 2.3;
-          spawnTireSmoke(backX, wPos.y, backZ, 'backfire');
         }
       }
 
@@ -102,6 +110,8 @@ if (window.__apexTrace) window.__apexTrace('input.js', 'START');
         simState.heading = node.heading;
         simState.yawRate = 0;
         simState.driftAngle = 0;
+        simState.colLatVel = 0;
+        simState._snapCameraNow = true;
         simState.speedMs = Math.min(simState.speedMs, 22);
         simState.speedKmh = simState.speedMs * 3.6;
         simState.isWrongWay = false;

@@ -514,6 +514,23 @@ Script error. at module(main.js:START):0:0
 
 ---
 
+## 🕒 2026-11-14 18:21 ~ 18:22 // 微調收斂動態彎心預瞄幅度 (`chaseCamRig`)
+
+### 🎯 用戶回饋
+- 用戶反映追尾/車內動態彎心預瞄幅度偏大、地平線轉動較晃，不易習慣。
+
+### 🔧 修改明細
+1. **`js/render.js` (`update3DSceneAndVisualFX`)**
+   - 將追尾視角 `targetApexRad` 上限由 `±0.095 rad`（約 `5.4°`）大幅收斂為極微幅 **`±0.026 rad`（約 `1.5°`）**（`steerInput * 0.018 + yawRate * 0.016`）。
+   - 收緊追尾航向阻尼係數（`13.5 -> 18.5`）並恢復 `apexLookNode` 混合比為 `0.18`。
+   - 駕駛艙與引擎蓋視角移除額外 `apexOffsetRad` 轉角，保持車頭正前方穩定參考線。
+
+### ✅ 驗證結果（編修後全套實測）
+- `scratch/check_syntax.py`：7 / 7 OK；`scratch/test_proposal.py`：**29 / 29** 通過；`scratch/test_physics_math.py`：**26 / 26** 通過；`scratch/test_rfc_improvements.py`：**38 / 38** 通過。
+- **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於本地待用戶測試確認後推送。
+
+---
+
 ## 🕒 2026-11-14 18:17 ~ 18:19 // 修正 3D 煞車距離指示牌水平鏡像問題
 
 ### 🎯 問題原因
@@ -523,6 +540,23 @@ Script error. at module(main.js:START):0:0
 1. **`js/render.js` (`rebuild3DCircuitScene`)**
    - 將 `signHolder.rotation.y` 修正為 `-boardNode.heading - Math.PI / 2`，使指示牌正面朝向迎面車手且局部 `+X` 對齊行車左至右方向。
    - 將看板材質改為 `THREE.FrontSide`，並於背面 `z = -0.02` 增加深鐵灰背板 `backMesh`（旋轉 `Math.PI`），避免從背面穿視反字。
+
+### ✅ 驗證結果（編修後全套實測）
+- `scratch/check_syntax.py`：7 / 7 OK；`scratch/test_proposal.py`：**29 / 29** 通過；`scratch/test_physics_math.py`：**26 / 26** 通過；`scratch/test_rfc_improvements.py`：**38 / 38** 通過。
+- **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於本地待用戶測試確認後推送。
+
+---
+
+## 🕒 2026-11-14 18:21 ~ 18:22 // 微調收斂動態彎心預瞄幅度 (`chaseCamRig`)
+
+### 🎯 用戶回饋
+- 用戶反映追尾/車內動態彎心預瞄幅度偏大、地平線轉動較晃，不易習慣。
+
+### 🔧 修改明細
+1. **`js/render.js` (`update3DSceneAndVisualFX`)**
+   - 將追尾視角 `targetApexRad` 上限由 `±0.095 rad`（約 `5.4°`）大幅收斂為極微幅 **`±0.026 rad`（約 `1.5°`）**（`steerInput * 0.018 + yawRate * 0.016`）。
+   - 收緊追尾航向阻尼係數（`13.5 -> 18.5`）並恢復 `apexLookNode` 混合比為 `0.18`。
+   - 駕駛艙與引擎蓋視角移除額外 `apexOffsetRad` 轉角，保持車頭正前方穩定參考線。
 
 ### ✅ 驗證結果（編修後全套實測）
 - `scratch/check_syntax.py`：7 / 7 OK；`scratch/test_proposal.py`：**29 / 29** 通過；`scratch/test_physics_math.py`：**26 / 26** 通過；`scratch/test_rfc_improvements.py`：**38 / 38** 通過。

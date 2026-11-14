@@ -706,3 +706,30 @@ Script error. at module(main.js:START):0:0
 - `scratch/test_physics_math.py`：**26 / 26 PASSED**
 - `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
 - **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼維持於本地待用戶測試確認後推送。
+
+---
+
+## 🕒 2026-11-14 21:25 // Phase 3 實作：同圈速三風格 AI 車手原型與多路線攻防狀態機 (`AI_DRIVER_ARCHETYPES` + `stepAIRivals`)
+
+### 🎯 任務核心
+依用戶核准之 AI 運行與風格化升級方案，解決先前 AI 過於單線、僅依 `basePace`（`1.045 / 1.032 / 1.018`）硬性拉開名次，以及直線貼身防守／並排過彎行為單一的問題，實作「**同圈速基準、不同駕駛性格與區間強弱分配**」及「**FIA 一動防守（One-Move Rule）與並排安全走廊**」。
+
+### 🔧 主要修改明細（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)）
+1. **三種同圈速（`basePace: 1.034`）分化駕駛風格原型 (`AI_DRIVER_ARCHETYPES`)**：
+   - **`K. TAKAHASHI #7`（`smooth_apex`／高彎心動量流）**：外進內出寬入路線（`entryOutsideBias: 0.85m`, `apexInsideBias: 0.40m`），彎心最低速 `+2.8%`（`cornerApexMult: 1.028`），擅長在外線遭遇強攻時執行 **Switchback 交叉切線回擊**（`SWITCHBACK PREP` / `SWITCHBACK`）。
+   - **`M. VERSTAPPEN #1`（`late_braker`／晚煞車 V 字路線）**：深踩煞車進攻入彎（`entrySpeedMult: 1.028`, `brakeThresh = -5.2`, 制動力提升 `20.6`），但彎心速度略低（`cornerApexMult: 0.982`）；最積極啟動防禦（`defendTriggerGap: 38.0m`），偏愛直線鎖定一動阻擋（`ONE-MOVE BLOCK`）、彎前卡死內線（`PROTECT INSIDE`）與晚煞內線抽頭（`LATE BRAKE DIVE`）。
+   - **`L. NORRIS #4`（`exit_surge`／晚 APEX 牽引力與直線加速型）**：提早穩車轉向、出彎猛給油（`exitSpeedMult: 1.028`, `straightMult: 1.010`, `drivePowerMult: 1.015`），進彎節奏較保守（`entrySpeedMult: 0.982`）；擅長在直線尾流執行 **假動作變線超車**（`FEINT & PASS` / `SLINGSHOT PASS`）與中線擠壓防禦（`SQUEEZE DEFENSE`）。
+2. **動態多路線攻防狀態機（`stepAIRivals`）**：
+   - **並排兩車安全走廊（Two-Wide Racing Room）**：當兩車縱向實際重疊（`|gapMeters| <= 3.5`）時維持 `minClearance = 2.24m` 車距（`SIDE BY SIDE` / `SWITCHBACK`），避免彎中無視並排車直接砍回賽車線；實際發生車門物理碰撞期間（`simState._inCollisionContact`）則穩定持線交由 2D 剛體摩擦求解器處理，防止雙重疊加偏航。
+   - **FIA 一動規則鎖定防禦（`defendLockTimer` / `defendCooldownTimer`）**：玩家於直道快速逼近（`effectiveGap < defendTriggerGap`）時，AI 依自身風格做單次明確路線表態並鎖定 `2.8s`（含 `4.6s` 冷卻），不隨玩家左右搖擺蛇行；若即將進彎則轉為主動佔據內線防禦（`PROTECT INSIDE`）。
+   - **AI 對 AI 多線對戰與交錯超車**：三台同配速 AI 車手之間同樣套用兩車並排安全距與自動挑選潔淨超車道（`chooseOvertakeLaneD`），彼此會在彎前晚煞、彎中 Switchback 與直線尾流反覆纏鬥。
+
+### ✅ 驗證結果（Chrome Headless V8 全套實測）
+1. **`scratch/check_syntax.py`**：**7 / 7 OK**
+2. **`scratch/test_proposal.py`**：**42 / 42 PASSED**（包含完整 `index.html` 啟動零崩潰）
+   - **Test 23（同圈速三風格獨立測試）**：Fuji 賽道 30 秒獨立遙測圈段總里程差僅 **`0.93%`**，且精確呈現段速風格特徵：入彎進攻速 `late_braker (161.6 km/h) > exit_surge (154.2 km/h)`、彎心Apex速 `smooth_apex (105.3 km/h) > late_braker (100.8 km/h)`、出彎／直道極速 `exit_surge (188.2 km/h) > smooth_apex (186.7 km/h)`。
+   - **Test 24（動態攻防狀態機實測）**：通過直線 FIA 一動防禦鎖定不蛇行（`oneMoveLock=true`）、彎前卡內線防守（`protectInside=true`）與並排讓出一車寬度走廊（`twoWideGap=2.19m`）。
+   - 原有碰撞測試全面穩定：並排對齊（`gap=3.2°` / 速差 `0.5 m/s`）、PIT 追尾甩尾（`39.8°`）、錯位並排轉向抗過度旋轉（`30.5°`, `maxYr=1.55 rad/s`）。
+3. **`scratch/test_physics_math.py`**：**26 / 26 PASSED**
+4. **`scratch/test_rfc_improvements.py`**：**38 / 38 PASSED**
+5. **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`js/physics.js`）維持於本地工作區等待用戶實測確認「推送」後再行推送。

@@ -137,21 +137,12 @@ simState.bestLapTime = PRO_LAP_TIME;
         const jumpEl = document.getElementById('alert-jump-start');
         if (jumpEl) jumpEl.classList.toggle('hidden', !simState.hasJumpStarted);
 
-        // Phase 1: Dynamic Multi-Tier Braking & Lift Guidance
+        // Subtle Lift & Trail Braking Guidance (Heavy Brake red popup warning removed per user request)
         const cueEl = document.getElementById('alert-brake-now');
         if (cueEl) {
-          const cueTier = simState.drivingCue || (simState.brakeNowWarning ? 'heavy' : 'none');
+          const cueTier = simState.drivingCue || 'none';
           const tgtKmh = simState.cueTargetKmh || cornerLimitKmh;
-          if (cueTier === 'heavy') {
-            cueEl.classList.remove('hidden');
-            if (brkPct > 84) {
-              cueEl.className = 'px-3 py-0.5 rounded-full bg-orange-600 text-white font-mono-tech text-[11px] font-extrabold shadow-lg';
-              cueEl.textContent = `⚠ 漸放煞車防鎖死 · 目標彎速 ${tgtKmh} km/h`;
-            } else {
-              cueEl.className = 'px-3 py-0.5 rounded-full bg-red-600 text-white font-mono-tech text-[11px] font-extrabold shadow-lg';
-              cueEl.textContent = `🛑 HEAVY BRAKE · 重煞降至 ${tgtKmh} km/h ➔ 準備放煞開油`;
-            }
-          } else if (cueTier === 'trail') {
+          if (cueTier === 'trail') {
             cueEl.classList.remove('hidden');
             cueEl.className = 'px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono-tech text-[11px] font-extrabold shadow-lg';
             cueEl.textContent = `🟡 TRAIL BRAKE · 輕含煞車 (25%~40%) 目標 ${tgtKmh} km/h — 嚴禁踩死`;
@@ -173,7 +164,7 @@ simState.bestLapTime = PRO_LAP_TIME;
 
         const edgeEl = document.getElementById('edge-feedback');
         if (edgeEl) {
-          const highAlert = simState.isBrakeLockup || simState.isOversteer || simState.isUndersteer || simState.brakeNowWarning;
+          const highAlert = simState.isBrakeLockup || simState.isOversteer || simState.isUndersteer;
           const nearGripEdge = (simState.tireSlipRatio > 0.85 || brkPct > 84);
           if (highAlert) {
             edgeEl.style.boxShadow = 'inset 0 0 120px rgba(239, 68, 68, 0.65)';

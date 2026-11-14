@@ -283,6 +283,10 @@ window.formatLapTime = formatLapTime;
         };
       }
 
+      function getCornerLineCutFactor() {
+        return TRACK_WIDTH >= 22.0 ? 0.68 : 0.72;
+      }
+
       function getUpcomingCornerMaxSpeedKmh(s) {
         let maxCurv = 0;
         for (let offset = 0; offset <= 95; offset += 15) {
@@ -290,7 +294,7 @@ window.formatLapTime = formatLapTime;
           if (Math.abs(n.curvature) > maxCurv) maxCurv = Math.abs(n.curvature);
         }
         if (maxCurv < 0.0018) return 300;
-        const effectiveCurv = Math.max(0.0008, maxCurv * 0.62);
+        const effectiveCurv = Math.max(0.0008, maxCurv * getCornerLineCutFactor());
         const vMsMax = Math.sqrt((1.48 * 9.81) / effectiveCurv);
         return Math.min(300, Math.max(60, Math.round(vMsMax * 3.6)));
       }
@@ -320,8 +324,9 @@ window.formatLapTime = formatLapTime;
             if (c > maxCurv) maxCurv = c;
           }
           const cornerLimitKmh = getUpcomingCornerMaxSpeedKmh(s - 15);
+          const lineCut = getCornerLineCutFactor();
           const localMaxKmh = maxCurv > 0.0018
-            ? Math.min(node.vTarget, cornerLimitKmh, Math.sqrt((1.42 * 9.81) / (maxCurv * 0.62)) * 3.6)
+            ? Math.min(node.vTarget, cornerLimitKmh, Math.sqrt((1.42 * 9.81) / (maxCurv * lineCut)) * 3.6)
             : Math.min(298, node.vTarget);
           vLimitMs[i] = Math.max(62 / 3.6, localMaxKmh / 3.6);
         }
@@ -353,7 +358,7 @@ window.formatLapTime = formatLapTime;
             const dragDecel = 0.000557 * vCurr * vCurr + 0.14;
             // Reduce longitudinal acceleration when cornering (traction circle sharing)
             const curv = Math.abs(nodes[i].curvature);
-            const latG = (vCurr * vCurr * curv * 0.62) / 9.81;
+            const latG = (vCurr * vCurr * curv * getCornerLineCutFactor()) / 9.81;
             const tractionFactor = Math.max(0.25, 1.0 - (latG / 1.65) * 0.65);
             const netAccel = Math.max(0.2, engineAccel * tractionFactor - dragDecel);
             const vNextMax = Math.sqrt(vCurr * vCurr + 2 * netAccel * stepM);

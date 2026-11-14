@@ -500,15 +500,18 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
       function stepAnalogSteering(currentSteer, rawLeft, rawRight, spdKmh, dt, carProfile, isReal) {
         const speedNorm = Math.min(1.0, Math.max(0.0, (Math.abs(spdKmh) - 30) / 210));
-        const steerRate = carProfile.steerRampRate * (1.0 - speedNorm * 0.28);
+        const baseRate = carProfile.steerRampRate * 1.15 * (1.0 - speedNorm * 0.26);
         let steer = currentSteer;
         if (rawLeft) {
-          steer = Math.max(-1.0, steer - steerRate * dt);
+          // Counter-steer agility boost when rapidly changing direction (e.g. chicanes / S-bends)
+          const rate = (steer > 0.03) ? baseRate * 1.95 : baseRate;
+          steer = Math.max(-1.0, steer - rate * dt);
         } else if (rawRight) {
-          steer = Math.min(1.0, steer + steerRate * dt);
+          const rate = (steer < -0.03) ? baseRate * 1.95 : baseRate;
+          steer = Math.min(1.0, steer + rate * dt);
         } else {
-          // Adaptive Self-Aligning Torque proportional to vehicle speed (caster trail)
-          const casterRate = (1.6 + (Math.abs(spdKmh) / 24.0) * 1.15) * (isReal ? 1.0 : 1.15);
+          // Damped Self-Aligning Torque: gentle return (~150-220ms half-life) allows smooth keyboard/touch tapping
+          const casterRate = (1.9 + Math.min(2.5, (Math.abs(spdKmh) / 100.0) * 1.25)) * (isReal ? 1.0 : 1.12);
           steer *= Math.exp(-casterRate * dt);
           if (Math.abs(steer) < 0.003) steer = 0;
         }
@@ -542,11 +545,12 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         const reqDecel = (vNow > vTgt) ? (vNow * vNow - vTgt * vTgt) / (2 * Math.max(16, distToMin)) : 0;
 
         let tier = 'none';
-        if (reqDecel > 6.5 || (currSpeedKmh > minTargetKmh + 34 && minTargetKmh < 145) || proAhead.brake > 62) {
+        // Trigger braking/lift cues strictly by actual deceleration demand ahead (no early distance false positives)
+        if (reqDecel > 6.8 || proAhead.brake > 62) {
           tier = (currSpeedKmh > minTargetKmh + 8) ? 'heavy' : 'trail';
-        } else if (reqDecel > 2.3 || (currSpeedKmh > minTargetKmh + 14 && minTargetKmh < 185) || (proAhead.brake > 32 && proAhead.brake <= 62)) {
+        } else if (reqDecel > 2.6 || (proAhead.brake > 32 && proAhead.brake <= 62)) {
           tier = (currSpeedKmh > minTargetKmh + 5) ? 'trail' : (maxCurvAhead > 0.0018 && thrNorm > 0.60 ? 'lift' : 'none');
-        } else if (reqDecel > 0.55 || (currSpeedKmh > minTargetKmh + 2 && maxCurvAhead > 0.0015 && thrNorm > 0.60) || (proAhead.brake >= 12 && currSpeedKmh > minTargetKmh + 2)) {
+        } else if (reqDecel > 0.65 || (currSpeedKmh > minTargetKmh + 2 && maxCurvAhead > 0.0015 && thrNorm > 0.60) || (proAhead.brake >= 12 && currSpeedKmh > minTargetKmh + 2)) {
           tier = 'lift';
         }
 
@@ -865,42 +869,61 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.tireLoads.rl = Math.round(Math.max(80, baseWeightKg * 0.26 - longShiftKg * 0.5 + latShiftKg * 0.5));
         simState.tireLoads.rr = Math.round(Math.max(80, baseWeightKg * 0.26 - longShiftKg * 0.5 - latShiftKg * 0.5));
 
-        // Realistic Tire Traction Circle & Inertia Cornering Limit
-        const trailBrakeBonus = (brk > 0.10 && brk <= 0.82) ? 1.12 : 1.0;
-        const fullThrottleUndersteerPenalty = (thr > 0.75 && Math.abs(simState.steerInput) > 0.25) ? 0.78 : 1.0;
+        // Realistic Tire Traction Circle & Smooth Load-Transfer Cornering Limit
+        const trailBlend = (brk > 0.04 && brk <= 0.84)
+          ? Math.min(1.0, (brk - 0.04) / 0.18) * (brk > 0.65 ? Math.max(0, 1.0 - (brk - 0.65) / 0.19) : 1.0)
+          : 0;
+        const trailBrakeBonus = 1.0 + trailBlend * 0.12;
+
+        // Smooth longitudinal-to-lateral weight transfer (replaces hard 0.78 step switch at 75% throttle)
+        const thrLoad = Math.max(0, (thr - 0.35) / 0.65);
+        const steerLoad = Math.min(1.0, Math.abs(simState.steerInput) / 0.55);
+        const chassisPowerPush = (carProfile.understeerCoeff || 0.001) * 75.0; // ~6.2% (911) to ~9.2% (AMG)
+        const throttleWeightTransfer = 1.0 - thrLoad * steerLoad * chassisPowerPush;
         const lockupPenalty = simState.isBrakeLockup ? 0.30 : 1.0;
 
         const baseMuLat = isReal ? carProfile.baseMuLat : (carProfile.baseMuLat * 1.48);
         const aeroBonusG = (simState.downforceKgf / carProfile.weightKg) * 0.45;
-        const maxLatG = (baseMuLat + aeroBonusG) * simState.surfaceGrip * trailBrakeBonus * fullThrottleUndersteerPenalty * lockupPenalty;
+        const maxLatG = (baseMuLat + aeroBonusG) * simState.surfaceGrip * trailBrakeBonus * throttleWeightTransfer * lockupPenalty;
         const maxLatAccelMs2 = maxLatG * 9.81;
 
-        // Proposal Sec. 4: Speed-Sensitive Dynamic Steering Ratio + S-Curve High-Speed Response
-        // 0-45 km/h: up to 32 deg; 80-180 km/h: ~14-18 deg; >180 km/h: ~8.2-13.8 deg
+        // Grip-Aware Progressive Steering Mapping (eliminates cubic S-curve deadzone & early 5G saturation)
         const dynMaxSteerDeg = getDynamicMaxSteerDeg(simState.speedKmh, carProfile, isReal);
         const maxFrontWheelRad = (dynMaxSteerDeg * Math.PI) / 180;
         const absSteer = Math.abs(simState.steerInput);
-        const highSpeedBlend = Math.min(1.0, Math.max(0.0, (Math.abs(simState.speedKmh) - 140) / 80));
-        const sCurveNorm = absSteer * (1.0 - highSpeedBlend) + (absSteer * absSteer * (3 - 2 * absSteer)) * highSpeedBlend;
-        const shapedSteerInput = Math.sign(simState.steerInput) * sCurveNorm;
-        const frontWheelAngle = shapedSteerInput * maxFrontWheelRad;
+        const highSpeedBlend = Math.min(1.0, Math.max(0.0, (Math.abs(simState.speedKmh) - 100) / 120));
+        const shapedNorm = absSteer * (1.0 - highSpeedBlend) + Math.pow(absSteer, 1.18) * highSpeedBlend;
+        const frontWheelAngle = Math.sign(simState.steerInput) * shapedNorm * maxFrontWheelRad;
 
         const understeerDamping = 1.0 + (carProfile.understeerCoeff || 0.001) * vMs * vMs;
-        const linearCurvature = (Math.tan(frontWheelAngle) / carProfile.wheelbase) / understeerDamping;
+        const rawLinearCurv = (Math.tan(frontWheelAngle) / carProfile.wheelbase) / understeerDamping;
+        const rawFullLockCurv = (Math.tan(maxFrontWheelRad) / carProfile.wheelbase) / understeerDamping;
 
-        // High speed turning is physically capped by tire friction circle: kappa_grip = a_y / v^2
+        // High speed turning is physically bounded by tire friction circle: kappa_grip = a_y / v^2
         const vEff = Math.max(vMs, 2.0);
         const gripLimitedCurvature = maxLatAccelMs2 / (vEff * vEff);
+        let linearCurvature = rawLinearCurv;
+        if (vMs > 14.0 && !manualSteerDrag && rawFullLockCurv > gripLimitedCurvature * 1.26) {
+          linearCurvature = Math.sign(simState.steerInput) * shapedNorm * (gripLimitedCurvature * 1.26);
+        }
         const desiredLatAccel = vMs * vMs * Math.abs(linearCurvature);
 
         simState.isUndersteer = false;
         simState.isOversteer = false;
         let actualCurvature = linearCurvature;
 
-        // When centrifugal demand exceeds tire lateral grip capacity:
+        // Gradual Peak Slip Plateau: eliminates the abrupt 0.88 understeer cliff when brushing 100% lateral grip
         if (desiredLatAccel > maxLatAccelMs2 && vMs > 10.0) {
-          const slidingEfficiency = isReal ? 0.88 : 0.96;
-          actualCurvature = Math.sign(linearCurvature) * gripLimitedCurvature * slidingEfficiency;
+          const overRatio = desiredLatAccel / Math.max(0.1, maxLatAccelMs2);
+          let slipPlateau = 0.98;
+          if (isReal) {
+            if (overRatio <= 1.25) {
+              slipPlateau = 1.0 - ((overRatio - 1.0) / 0.25) * 0.03;
+            } else {
+              slipPlateau = Math.max(0.90, 0.97 - (overRatio - 1.25) * 0.18);
+            }
+          }
+          actualCurvature = Math.sign(linearCurvature) * gripLimitedCurvature * slipPlateau;
         }
 
         // Understeer alert ONLY triggers when player carries excessive corner speed into a turn
@@ -919,11 +942,12 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
         let targetYawRate = 0;
         if (isReal) {
-          const straightCentering = (!simState.offTrack && absSteer < 0.04 && Math.abs(trackNode.curvature) < 0.002)
-            ? -headingDiff * 1.1
+          const straightCentering = (!simState.offTrack && absSteer < 0.025 && Math.abs(simState.yawRate) < 0.04 && Math.abs(trackNode.curvature) < 0.0014 && Math.abs(headingDiff) < 0.10)
+            ? -headingDiff * 0.38
             : 0;
-          // Turn-in agility boost when initiating cornering (clean grip without artificial rear slip rotation):
-          const turnInBonus = (vMs > 3 && vMs < 35) ? carProfile.turnInAgility : 1.0;
+          // Smooth speed-tapered turn-in agility (eliminates hard step discontinuity at 35 m/s = 126 km/h)
+          const lowSpdBlend = 1.0 - smoothstepBand(75, 195, simState.speedKmh);
+          const turnInBonus = (vMs > 2.5) ? (1.0 + (carProfile.turnInAgility - 1.0) * lowSpdBlend) : 1.0;
           targetYawRate = actualCurvature * vMs * turnInBonus + straightCentering;
           simState.driftAngle *= Math.pow(0.01, dt);
         } else {
@@ -951,11 +975,11 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         simState.latG = (vMs * simState.yawRate) / 9.81;
         simState.tireSlipRatio = Math.min(1.35, Math.hypot(simState.latG / maxLatG, simState.longG / 2.2));
 
-        // Phase 1: Three-Tier Progressive Driving Guidance (Lift & Coast -> Light Trail Brake -> Heavy Brake)
+        // Phase 1: Progressive Driving Cue computation (tarmac line & subtle guidance; Heavy Brake HUD popup removed per user feedback)
         const cueRes = computeDrivingCue(simState.s, simState.speedKmh, brk, thr);
         simState.drivingCue = cueRes.tier;
         simState.cueTargetKmh = cueRes.targetKmh;
-        simState.brakeNowWarning = (cueRes.tier === 'heavy' && brk < 0.25);
+        simState.brakeNowWarning = false;
 
         const wPos = sdToWorld(simState.s, simState.d);
         const carYaw = simState.heading + simState.driftAngle;

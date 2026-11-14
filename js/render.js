@@ -889,10 +889,11 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         const brakePostMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.6 });
         const brakeSignGeo = new THREE.PlaneGeometry(2.8, 1.4);
 
+        const brakeSignBackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7, metalness: 0.4 });
         heavyBrakeApexes.forEach(apexS => {
           [150, 100, 50].forEach((distM, idx) => {
             const boardNode = sampleTrackAtS(apexS - distM);
-            const signMat = new THREE.MeshBasicMaterial({ map: brakeSignTextures[idx], side: THREE.DoubleSide });
+            const signMat = new THREE.MeshBasicMaterial({ map: brakeSignTextures[idx], side: THREE.FrontSide });
 
             [-1, 1].forEach(side => {
               const offset = side * (TRACK_WIDTH * 0.5 + 3.2);
@@ -901,6 +902,11 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
               const signMesh = new THREE.Mesh(brakeSignGeo, signMat);
               signMesh.position.y = 1.7;
               signHolder.add(signMesh);
+
+              const backMesh = new THREE.Mesh(brakeSignGeo, brakeSignBackMat);
+              backMesh.position.set(0, 1.7, -0.02);
+              backMesh.rotation.y = Math.PI;
+              signHolder.add(backMesh);
 
               const postMesh = new THREE.Mesh(brakePostGeo, brakePostMat);
               postMesh.position.y = 1.2;
@@ -911,7 +917,8 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
                 boardNode.y,
                 boardNode.z + boardNode.rightZ * offset
               );
-              signHolder.rotation.y = -boardNode.heading + Math.PI / 2;
+              // Face oncoming drivers (-dirX, -dirZ) with local +X pointing left-to-right (+rightX, +rightZ)
+              signHolder.rotation.y = -boardNode.heading - Math.PI / 2;
               circuitSceneryGroup.add(signHolder);
             });
           });
@@ -2487,6 +2494,13 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       const fxCanvas = document.getElementById('fx-overlay-canvas');
       const fxCtx = fxCanvas.getContext('2d');
 
+      const chaseCamRig = {
+        initialized: false,
+        camHeading: 0,
+        apexOffsetRad: 0,
+        lastSec: 0
+      };
+
       function update3DSceneAndVisualFX(nowSec) {
         const pWorld = sdToWorld(simState.s, simState.d);
         playerCarGroup.position.set(pWorld.x, pWorld.y, pWorld.z);
@@ -2512,6 +2526,30 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
         const cosH = Math.cos(simState.heading);
         const sinH = Math.sin(simState.heading);
+
+        const dtCam = Math.min(0.05, Math.max(0.001, nowSec - (chaseCamRig.lastSec || nowSec)));
+        chaseCamRig.lastSec = nowSec;
+        if (simState.inShowcaseMode) {
+          chaseCamRig.initialized = false;
+        } else if (!chaseCamRig.initialized) {
+          chaseCamRig.camHeading = simState.heading;
+          chaseCamRig.apexOffsetRad = 0;
+          chaseCamRig.initialized = true;
+        } else {
+          let hDelta = simState.heading - chaseCamRig.camHeading;
+          while (hDelta > Math.PI) hDelta -= Math.PI * 2;
+          while (hDelta < -Math.PI) hDelta += Math.PI * 2;
+          if (Math.abs(hDelta) > 0.75) {
+            // Instant snap on track recovery / reset
+            chaseCamRig.camHeading = simState.heading;
+          } else {
+            chaseCamRig.camHeading += hDelta * (1.0 - Math.exp(-18.5 * dtCam));
+          }
+          const targetApexRad = Math.max(-0.026, Math.min(0.026,
+            simState.steerInput * 0.018 + Math.max(-0.5, Math.min(0.5, simState.yawRate)) * 0.016
+          ));
+          chaseCamRig.apexOffsetRad += (targetApexRad - chaseCamRig.apexOffsetRad) * (1.0 - Math.exp(-11.0 * dtCam));
+        }
 
         const apexLookNode = sampleTrackAtS(simState.s + 35);
         const lookX = pWorld.x + cosH * 34 + (apexLookNode.x - pWorld.x) * 0.18;
@@ -2631,16 +2669,21 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             camera.up.set(0, 1, 0);
             camera.lookAt(lookX, pWorld.y + 0.85, lookZ);
           } else {
-            // Chase View: direct noise removed
+            // Chase View: smooth yaw lag + Dynamic Look-Into-Apex for natural corner sightlines
             playerExteriorMesh.visible = true;
             cockpitGroup.visible = false;
+            const cosChase = Math.cos(chaseCamRig.camHeading);
+            const sinChase = Math.sin(chaseCamRig.camHeading);
+            const chaseLookHeading = simState.heading + chaseCamRig.apexOffsetRad;
+            const chaseLookX = pWorld.x + Math.cos(chaseLookHeading) * 34 + (apexLookNode.x - pWorld.x) * 0.18;
+            const chaseLookZ = pWorld.z + Math.sin(chaseLookHeading) * 34 + (apexLookNode.z - pWorld.z) * 0.18;
             camera.position.set(
-              pWorld.x - cosH * 6.8,
-              pWorld.y + 2.48,
-              pWorld.z - sinH * 6.8
+              pWorld.x - cosChase * 6.8,
+              pWorld.y + 2.45,
+              pWorld.z - sinChase * 6.8
             );
             camera.up.set(0, 1, 0);
-            camera.lookAt(lookX, pWorld.y + 0.9, lookZ);
+            camera.lookAt(chaseLookX, pWorld.y + 0.9, chaseLookZ);
           }
         }
 

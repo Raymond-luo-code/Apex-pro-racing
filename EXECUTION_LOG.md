@@ -657,3 +657,33 @@ Script error. at module(main.js:START):0:0
 ### ✅ 驗證結果
 - `scratch/check_syntax.py`：**7 / 7 OK**；`scratch/test_proposal.py`：**36 / 36 PASSED**；`scratch/test_physics_math.py`：**26 / 26 PASSED**；`scratch/test_rfc_improvements.py`：**38 / 38 PASSED**。
 - **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼維持於本地待用戶測試確認後推送。
+
+---
+
+## 🕒 2026-11-14 19:45 // Phase 2.5 真實二維剛體碰撞、庫侖摩擦、並排對齊與失控打滑物理實作
+
+### 🔍 需求與物理架構
+- 依用戶核准之擬真碰撞與失控物理計畫，解決兩大車身接觸行為：
+  1. **側邊並排斜角擦撞＆持續靠攏對齊**：當玩家帶轉向角斜向靠上 AI 車門時，透過雙點裁剪接觸流形與鈑金庫侖摩擦產生穩定轉正力矩與速度耦合，使兩車自然貼齊同向並排。
+  2. **非並排側撞車尾（PIT Maneuver）與真實失控（`LOST CONTROL`）**：當車頭斜切前車後四分之一車尾時，真實旋轉有效質量 $K_n$ 結合二維世界座標慣性動量積分與飽和後輪反打力矩，使前車真實側滑甩尾 `35°–120°+` 並產生煞車救車／煙霧與雙輪胎痕，不再強制瞬間擺正或切換平滑攝影機突跳。
+
+### 🔧 實作明細
+1. **[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)**
+   - **`testOBBOverlap` + `clipSegmentToLine`**：升級為 **2D SAT + Sutherland-Hodgman 雙點裁剪接觸流形**（`contacts[]`），精確輸出多接觸點位置與個別貫入深度。
+   - **`resolveVehicleCollisions`**：
+     - 改用**穿透加權 Jacobi 接觸點流形衝量solver**（$\mathbf{v}_P = \mathbf{v}_{CM} + \boldsymbol{\omega}\times\mathbf{r}$），搭配**速度鉗制 Baumgarte 接觸約束**、金屬低反彈係數 `e = 0.08` 與連續側壓庫侖切向摩擦（`muMetal = 0.42`），避免序貫邊角反彈假力矩。
+     - 以質心後側衝量（`rLong < -0.42`）精確區分「並排擦撞（AI 保持抓地循跡）」與「後輪側後方 PIT 撞擊（觸發 `spinTimer` 進入失控）」。
+   - **`stepAIRivals`**：新增 `heading`、`yawRate`、`vLat`、`spinTimer` 全二維平面世界動量積分；當後輪滑移角飽和時，AI 進入真實反打救車／失控狀態（`LOST CONTROL` / `CATCHING SLIDE`），並保留彎道曲率前饋與僅限靜止起跑（`speedMs < 2.0`）的 `reactionTimer` 防護。
+   - **`stepPhysics`**：接觸瞬間（`simState._inCollisionContact`）將輪胎強迫 yaw 覆寫率自 `22.0` 放鬆至 `7.5`，讓鈑金力矩自然將車身貼齊並排。
+2. **[`js/input.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/input.js) 與 [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)**
+   - 僅於 `recoverToTrackCenter()` 觸發 `simState._snapCameraNow = true`；移除 `chaseCamRig` 在大角度打滑時的鏡頭硬跳切，保留平滑動態追蹤。
+
+### ✅ 驗證結果（實車模擬 Chrome V8 全套實測）
+- `scratch/check_syntax.py`：**7 / 7 OK**
+- `scratch/test_proposal.py`：**39 / 39 PASSED**
+  - 新增 **Test 19**：`12°` 斜角側門並排靠攏，兩車方向對齊收斂至 **`gap = 2.9°`** 且庫侖摩擦將速度差由 `12.0 m/s` 收斂至 **`1.4 m/s`**。
+  - 新增 **Test 20**：車頭斜切前車後尾（PIT Maneuver），AI 成功進入失控並偏航 **`59.4°`**（`CATCHING SLIDE` -> `LOST CONTROL`）。
+  - 新增 **Test 21**：連續 30 幀並排碰撞單幀最大修正位移 **`0.0524m`**，零閃現。
+- `scratch/test_physics_math.py`：**26 / 26 PASSED**
+- `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
+- **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`js/physics.js`、`js/input.js`、`js/render.js`）維持於本地待用戶實車試駕確認後推送。

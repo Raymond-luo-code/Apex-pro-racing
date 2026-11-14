@@ -21,7 +21,7 @@ window.formatLapTime = formatLapTime;
           badgeText: 'MONZA ★☆☆',
           difficultyStars: '★☆☆',
           width: 24.0,
-          proLapTime: 68.420,
+          proLapTime: 80.456,
           elevationAmp1: 2.2,
           elevationAmp2: 1.0,
           theme: {
@@ -61,7 +61,7 @@ window.formatLapTime = formatLapTime;
           badgeText: 'FUJI GP ★★★',
           difficultyStars: '★★★',
           width: 20.0,
-          proLapTime: 74.850,
+          proLapTime: 86.379,
           elevationAmp1: 5.5,
           elevationAmp2: 2.8,
           theme: {
@@ -105,7 +105,7 @@ window.formatLapTime = formatLapTime;
           badgeText: 'HAKONE ★★★★★',
           difficultyStars: '★★★★★',
           width: 16.5,
-          proLapTime: 81.600,
+          proLapTime: 95.171,
           elevationAmp1: 12.5,
           elevationAmp2: 6.4,
           theme: {
@@ -235,6 +235,48 @@ window.formatLapTime = formatLapTime;
         const last = rawPts[TRACK_SAMPLES - 1];
         const first = rawPts[0];
         totalTrackLength = cumS + Math.hypot(first.x - last.x, first.z - last.z);
+
+        // Multi-pass Out-In-Out (外-內-外) Optimal Racing Line Solver (true arc-length meters):
+        // Swings wide to outside kerb (-sign(k)*maxD) on corner entry (65m-135m before apex),
+        // clips inside kerb (+sign(k)*maxD) at apex, and tracks out to outside kerb on exit.
+        const maxD = TRACK_WIDTH * 0.38;
+        const dRaw = new Float64Array(TRACK_SAMPLES);
+        for (let i = 0; i < TRACK_SAMPLES; i++) {
+          const s = trackNodes[i].s;
+          let localPeak = 0.0020;
+          for (let ds = -150; ds <= 150; ds += 10) {
+            const cAbs = Math.abs(sampleTrackAtS(s + ds).curvature);
+            if (cAbs > localPeak) localPeak = cAbs;
+          }
+          let kApex = 0;
+          for (let ds = -10; ds <= 10; ds += 5) {
+            kApex += sampleTrackAtS(s + ds).curvature;
+          }
+          kApex /= 5.0;
+          let kEntry = 0, kExit = 0;
+          for (let ds = 65; ds <= 135; ds += 10) {
+            kEntry += sampleTrackAtS(s + ds).curvature;
+            kExit += sampleTrackAtS(s - ds).curvature;
+          }
+          kEntry /= 8.0;
+          kExit /= 8.0;
+          const kApexEff = kApex * Math.pow(Math.min(1.0, Math.abs(kApex) / localPeak), 1.15);
+          const normVal = (2.40 * kApexEff - 1.35 * kEntry - 1.25 * kExit) / localPeak;
+          dRaw[i] = Math.max(-maxD, Math.min(maxD, normVal * maxD));
+        }
+        let dSmooth = Array.from(dRaw);
+        for (let pass = 0; pass < 6; pass++) {
+          const nextD = new Array(TRACK_SAMPLES);
+          for (let i = 0; i < TRACK_SAMPLES; i++) {
+            nextD[i] = 0.25 * dSmooth[(i - 2 + TRACK_SAMPLES) % TRACK_SAMPLES]
+                     + 0.50 * dSmooth[i]
+                     + 0.25 * dSmooth[(i + 2) % TRACK_SAMPLES];
+          }
+          dSmooth = nextD;
+        }
+        for (let i = 0; i < TRACK_SAMPLES; i++) {
+          trackNodes[i].optimalD = dSmooth[i];
+        }
       }
 
       function sampleTrackAtS(s) {
@@ -284,19 +326,20 @@ window.formatLapTime = formatLapTime;
       }
 
       function getCornerLineCutFactor() {
-        return TRACK_WIDTH >= 22.0 ? 0.68 : 0.72;
+        return TRACK_WIDTH >= 22.0 ? 0.62 : (TRACK_WIDTH >= 19.0 ? 0.70 : 0.85);
       }
 
       function getUpcomingCornerMaxSpeedKmh(s) {
         let maxCurv = 0;
-        for (let offset = 0; offset <= 95; offset += 15) {
+        for (let offset = -10; offset <= 20; offset += 5) {
           const n = sampleTrackAtS(s + offset);
           if (Math.abs(n.curvature) > maxCurv) maxCurv = Math.abs(n.curvature);
         }
-        if (maxCurv < 0.0018) return 300;
-        const effectiveCurv = Math.max(0.0008, maxCurv * getCornerLineCutFactor());
-        const vMsMax = Math.sqrt((1.48 * 9.81) / effectiveCurv);
-        return Math.min(300, Math.max(60, Math.round(vMsMax * 3.6)));
+        const effectiveCurv = maxCurv * getCornerLineCutFactor();
+        if (effectiveCurv < 0.00155) return 300;
+        const gLat = effectiveCurv < 0.0032 ? 1.56 : (effectiveCurv < 0.0075 ? 1.46 : 1.24);
+        const vMsMax = Math.sqrt((gLat * 9.81) / effectiveCurv);
+        return Math.min(300, Math.max(64, Math.round(vMsMax * 3.6)));
       }
 
       // --------------------------------------------------------------------------
@@ -312,29 +355,19 @@ window.formatLapTime = formatLapTime;
         const nodes = [];
         const vLimitMs = new Array(numSteps);
 
-        // Step 1: Compute true physical cornering speed limit at every 10m point (1.42G tire friction circle)
+        // Step 1: Compute true physical cornering speed limit directly from Out-In-Out curvature
+        // (no artificial waypoint vTarget cap on straights or flat-out sweepers)
         for (let i = 0; i < numSteps; i++) {
           const s = i * stepM;
           const node = sampleTrackAtS(s);
           nodes.push(node);
-          // Look around local apex window (-15m to +25m) to get true corner curvature
-          let maxCurv = Math.abs(node.curvature);
-          for (let off = -15; off <= 25; off += 10) {
-            const c = Math.abs(sampleTrackAtS(s + off).curvature);
-            if (c > maxCurv) maxCurv = c;
-          }
-          const cornerLimitKmh = getUpcomingCornerMaxSpeedKmh(s - 15);
-          const lineCut = getCornerLineCutFactor();
-          const localMaxKmh = maxCurv > 0.0018
-            ? Math.min(node.vTarget, cornerLimitKmh, Math.sqrt((1.42 * 9.81) / (maxCurv * lineCut)) * 3.6)
-            : Math.min(298, node.vTarget);
-          vLimitMs[i] = Math.max(62 / 3.6, localMaxKmh / 3.6);
+          const localMaxKmh = getUpcomingCornerMaxSpeedKmh(s);
+          vLimitMs[i] = Math.max(64 / 3.6, localMaxKmh / 3.6);
         }
 
-        // Step 2: Backward Pass — Enforce realistic braking deceleration (a_brake = 16.2 m/s^2)
-        // PRO car MUST brake 120m-160m before every hairpin/corner just like the player!
+        // Step 2: Backward Pass — Enforce realistic GT3 braking deceleration (a_brake = 17.2 m/s^2)
         const vProfileMs = vLimitMs.slice();
-        const maxBrakeDecel = 16.2; // ~1.65G threshold + trail braking deceleration
+        const maxBrakeDecel = 17.2; // ~1.75G GT3 aero + mechanical braking
         for (let pass = 0; pass < 2; pass++) {
           for (let i = numSteps - 1; i >= 0; i--) {
             const nextIdx = (i + 1) % numSteps;
@@ -346,50 +379,72 @@ window.formatLapTime = formatLapTime;
           }
         }
 
-        // Step 3: Forward Pass — Enforce realistic GT3 standing-start 0-100 (3.5s) / 0-300 (40s) acceleration curve
-        vProfileMs[0] = Math.min(vProfileMs[0], 14.0); // Realistic launch speed across line
+        // Step 3A: Closed-Loop Flying Pass (for spatial target lookup getProProfileAtDistance)
+        // Matches Player's exact engine curve, 0.08s upshift ignition-cut efficiency (0.955), and latG * 0.38 corner scrub
+        const vFlyingMs = vProfileMs.slice();
         for (let pass = 0; pass < 2; pass++) {
           for (let i = 0; i < numSteps; i++) {
-            if (pass === 1 && i === 0) continue; // Keep standing start for Lap 1
             const nextIdx = (i + 1) % numSteps;
-            const vCurr = vProfileMs[i];
+            const vCurr = vFlyingMs[i];
             const vEff = Math.max(vCurr, 12.5);
-            const engineAccel = Math.min(8.25, 338.0 / vEff);
-            const dragDecel = 0.000557 * vCurr * vCurr + 0.14;
-            // Reduce longitudinal acceleration when cornering (traction circle sharing)
+            const shiftEff = (vCurr * 3.6 < 252) ? 0.955 : 1.0;
+            const engineAccel = Math.min(8.25, 338.0 / vEff) * shiftEff;
             const curv = Math.abs(nodes[i].curvature);
             const latG = (vCurr * vCurr * curv * getCornerLineCutFactor()) / 9.81;
-            const tractionFactor = Math.max(0.25, 1.0 - (latG / 1.65) * 0.65);
-            const netAccel = Math.max(0.2, engineAccel * tractionFactor - dragDecel);
+            const dragDecel = 0.000557 * vCurr * vCurr + 0.14 + latG * 0.38;
+            const tractionFactor = Math.max(0.28, 1.0 - Math.max(0, (latG - 0.30) / 1.35) * 0.68);
+            const netAccel = Math.max(0.22, engineAccel * tractionFactor - dragDecel);
             const vNextMax = Math.sqrt(vCurr * vCurr + 2 * netAccel * stepM);
-            if (vProfileMs[nextIdx] > vNextMax) {
-              vProfileMs[nextIdx] = vNextMax;
+            if (vFlyingMs[nextIdx] > vNextMax) {
+              vFlyingMs[nextIdx] = vNextMax;
             }
           }
         }
 
+        // Step 3B: Standing-Start Lap 1 Pass for PRO Benchmark Ghost (0 km/h launch + 0.35s throttle ramp)
+        for (let i = 0; i < numSteps; i++) vProfileMs[i] = vFlyingMs[i];
+        vProfileMs[0] = 0.0;
+        for (let i = 0; i < numSteps - 1; i++) {
+          const vCurr = vProfileMs[i];
+          const vEff = Math.max(vCurr, 12.5);
+          const launchRamp = (i === 0) ? 0.78 : (i === 1 ? 0.94 : 1.0);
+          const shiftEff = (vCurr * 3.6 < 252) ? 0.955 : 1.0;
+          const engineAccel = Math.min(8.25, 338.0 / vEff) * launchRamp * shiftEff;
+          const curv = Math.abs(nodes[i].curvature);
+          const latG = (vCurr * vCurr * curv * getCornerLineCutFactor()) / 9.81;
+          const dragDecel = 0.000557 * vCurr * vCurr + 0.14 + latG * 0.38;
+          const tractionFactor = Math.max(0.28, 1.0 - Math.max(0, (latG - 0.30) / 1.35) * 0.68);
+          const netAccel = Math.max(0.22, engineAccel * tractionFactor - dragDecel);
+          const vNextMax = Math.sqrt(vCurr * vCurr + 2 * netAccel * stepM);
+          if (vProfileMs[i + 1] > vNextMax) {
+            vProfileMs[i + 1] = vNextMax;
+          }
+        }
+
         // Step 4: Integrate exact physical lap time & pedal telemetry traces
-        let simTime = 0;
+        // Includes 0.22s human visual reaction delay at Lights Out (s = 0)
+        let simTime = 0.22;
+        const proPaceFactor = currentCircuit.id === 'monza' ? 1.005 : (currentCircuit.id === 'fuji' ? 0.996 : 0.980);
         for (let i = 0; i < numSteps; i++) {
           const nextIdx = (i + 1) % numSteps;
           const s = i * stepM;
           const node = nodes[i];
           const vCurr = vProfileMs[i];
-          const vNext = vProfileMs[nextIdx];
-          const vAvg = Math.max(10.0, 0.5 * (vCurr + vNext));
-          const dt = stepM / vAvg;
-          const longAccel = (vNext * vNext - vCurr * vCurr) / (2 * stepM);
+          const vNext = (i === numSteps - 1) ? vFlyingMs[0] : vProfileMs[nextIdx];
+          const vAvg = (i === 0) ? Math.max(5.9, 0.55 * vNext) : Math.max(10.0, 0.5 * (vCurr + vNext));
+          const dt = (i === 0) ? (stepM / vAvg) : (stepM / (vAvg * proPaceFactor));
+          const fCurr = vFlyingMs[i];
+          const fNext = vFlyingMs[nextIdx];
+          const longAccel = (fNext * fNext - fCurr * fCurr) / (2 * stepM);
 
           let throttle = 0;
           let brake = 0;
           if (longAccel < -1.2) {
-            // PRO Ghost is actively braking into the corner!
             brake = Math.min(86, Math.max(15, Math.round((-longAccel / maxBrakeDecel) * 84)));
             throttle = 0;
-          } else if (Math.abs(node.curvature) > 0.0045 && longAccel < 1.5) {
-            // Mid-corner partial throttle modulation
-            throttle = Math.max(35, Math.min(78, Math.round(55 + longAccel * 12)));
-            brake = longAccel < -0.4 ? 18 : 0;
+          } else if (Math.abs(node.curvature) * getCornerLineCutFactor() > 0.0045 && longAccel < 1.0) {
+            throttle = Math.max(45, Math.min(85, Math.round(62 + longAccel * 14)));
+            brake = 0;
           } else {
             throttle = 100;
             brake = 0;
@@ -401,13 +456,14 @@ window.formatLapTime = formatLapTime;
 
           proTelemetrySamples.push({
             s,
-            t: simTime,
+            t: (i === 0) ? 0 : simTime,
             d,
             x: world.x,
             y: world.y,
             z: world.z,
             heading: world.heading,
             speed: vCurr * 3.6,
+            refSpeed: fCurr * 3.6,
             throttle,
             brake,
             steer: Math.round(steerDeg),
@@ -456,8 +512,10 @@ window.formatLapTime = formatLapTime;
         const a = proTelemetrySamples[idx];
         const b = proTelemetrySamples[idx + 1];
         const f = Math.max(0, Math.min(1, (normS - a.s) / Math.max(1, b.s - a.s)));
+        const spdA = (a.refSpeed !== undefined) ? a.refSpeed : a.speed;
+        const spdB = (b.refSpeed !== undefined) ? b.refSpeed : b.speed;
         return {
-          speedKmh: a.speed + (b.speed - a.speed) * f,
+          speedKmh: spdA + (spdB - spdA) * f,
           brake: a.brake + (b.brake - a.brake) * f,
           optimalD: a.d + (b.d - a.d) * f
         };
@@ -482,8 +540,10 @@ window.sampleTrackAtS = sampleTrackAtS;
 window.sdToWorld = sdToWorld;
 window.buildTrackGeometryData = buildTrackGeometryData;
 window.generateProBenchmarkLap = generateProBenchmarkLap;
+window.sampleGhostAtTime = sampleGhostAtTime;
 window.proTelemetrySamples = proTelemetrySamples;
 window.PRO_LAP_TIME = PRO_LAP_TIME;
+window.getCornerLineCutFactor = getCornerLineCutFactor;
 window.getUpcomingCornerMaxSpeedKmh = getUpcomingCornerMaxSpeedKmh;
 window.getProProfileAtDistance = getProProfileAtDistance;
 window.getProTimeAtDistance = getProTimeAtDistance;

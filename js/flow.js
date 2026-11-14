@@ -606,9 +606,9 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                   與 3 位具備尾流超車與真實剛體碰撞防線的零失誤 GT3 AI 車手進行 <strong>2 圈爭先錦標賽</strong>！貼近卡位、輪對輪碰撞皆真實反映物理動量，考驗純粹走線與防守實力。
                 </div>
                 <div class="af-diff-row" data-stop-prop="1">
-                  <button type="button" class="af-diff ${diff < 0.96 ? 'is-active' : ''}" data-aidiff="0.92">俱樂部級 (入門)</button>
-                  <button type="button" class="af-diff ${diff >= 0.96 && diff <= 1.04 ? 'is-active' : ''}" data-aidiff="1.0">PRO 職業級</button>
-                  <button type="button" class="af-diff ${diff > 1.04 ? 'is-active' : ''}" data-aidiff="1.10">Alien 外星人</button>
+                  <button type="button" class="af-diff ${diff < 0.96 ? 'is-active' : ''}" data-aidiff="0.92">業餘 (新手友善)</button>
+                  <button type="button" class="af-diff ${diff >= 0.96 && diff <= 1.04 ? 'is-active' : ''}" data-aidiff="1.0">專業 (標準 PRO AI)</button>
+                  <button type="button" class="af-diff ${diff > 1.04 ? 'is-active' : ''}" data-aidiff="1.10">頂尖 (極限挑戰)</button>
                 </div>
                 <div class="go">進入賽道選擇 ➔</div>
               </div>

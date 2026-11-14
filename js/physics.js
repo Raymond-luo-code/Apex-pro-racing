@@ -244,18 +244,63 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         _lastCollisionFxMs: 0
       };
 
+      const AI_DRIVER_ARCHETYPES = {
+        smooth_apex: {
+          style: 'smooth_apex',
+          label: 'APEX FLOW',
+          entrySpeedMult: 0.990,
+          cornerApexMult: 1.028,
+          exitSpeedMult: 0.994,
+          straightMult: 0.998,
+          drivePowerMult: 0.994,
+          entryOutsideBias: 0.85,
+          apexInsideBias: 0.40,
+          defendTriggerGap: 30.0
+        },
+        late_braker: {
+          style: 'late_braker',
+          label: 'LATE BRAKE',
+          entrySpeedMult: 1.028,
+          cornerApexMult: 0.982,
+          exitSpeedMult: 1.012,
+          straightMult: 0.998,
+          drivePowerMult: 0.998,
+          entryOutsideBias: -0.55,
+          apexInsideBias: 0.25,
+          defendTriggerGap: 38.0
+        },
+        exit_surge: {
+          style: 'exit_surge',
+          label: 'EXIT SURGE',
+          entrySpeedMult: 0.982,
+          cornerApexMult: 0.994,
+          exitSpeedMult: 1.046,
+          straightMult: 1.022,
+          drivePowerMult: 1.006,
+          entryOutsideBias: 0.35,
+          apexInsideBias: -0.25,
+          defendTriggerGap: 33.0
+        }
+      };
+
       const aiCars = [
         {
           id: 'ai-1',
           name: 'K. TAKAHASHI #7',
+          style: 'smooth_apex',
           color: 0xf59e0b,
           s: 42,
           d: -2.0,
           speedMs: 28,
           lap: 1,
-          basePace: 1.045,
-          stateLabel: 'OPTIMAL LINE',
+          basePace: 1.034,
+          stateLabel: 'APEX FLOW',
           reactionTimer: 0,
+          defendLockTimer: 0,
+          defendCooldownTimer: 0,
+          defendTargetD: -2.0,
+          defendLockLabel: 'DEFENSIVE LINE',
+          overtakeTargetD: -2.0,
           throttleInput: 0,
           brakeInput: 0,
           steerInput: 0,
@@ -270,14 +315,20 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         {
           id: 'ai-2',
           name: 'M. VERSTAPPEN #1',
+          style: 'late_braker',
           color: 0x3b82f6,
           s: 26,
           d: 2.2,
           speedMs: 27,
           lap: 1,
-          basePace: 1.032,
-          stateLabel: 'OPTIMAL LINE',
+          basePace: 1.034,
+          stateLabel: 'LATE BRAKE',
           reactionTimer: 0,
+          defendLockTimer: 0,
+          defendCooldownTimer: 0,
+          defendTargetD: 2.2,
+          defendLockLabel: 'ONE-MOVE BLOCK',
+          overtakeTargetD: 2.2,
           throttleInput: 0,
           brakeInput: 0,
           steerInput: 0,
@@ -292,14 +343,20 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         {
           id: 'ai-3',
           name: 'L. NORRIS #4',
+          style: 'exit_surge',
           color: 0xa855f7,
           s: 12,
           d: -2.4,
           speedMs: 26,
           lap: 1,
-          basePace: 1.018,
-          stateLabel: 'OPTIMAL LINE',
+          basePace: 1.034,
+          stateLabel: 'EXIT SURGE',
           reactionTimer: 0,
+          defendLockTimer: 0,
+          defendCooldownTimer: 0,
+          defendTargetD: -2.4,
+          defendLockLabel: 'SQUEEZE DEFENSE',
+          overtakeTargetD: -2.4,
           throttleInput: 0,
           brakeInput: 0,
           steerInput: 0,
@@ -434,13 +491,21 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           if (startOverlay) startOverlay.classList.add('hidden');
         }
 
-        const gridOffsets = [26, 17, 8];
+        const gridOffsets = [15, 10, 5];
         aiCars.forEach((ai, idx) => {
           ai.s = gridOffsets[idx];
           ai.d = (idx % 2 === 0) ? -3.0 : 3.0;
           ai.speedMs = 0; // Standing start on the grid waiting for Lights Out!
           ai.lap = 1;
-          ai.reactionTimer = 0.04 + Math.random() * 0.14;
+          ai.reactionTimer = 0.22 + idx * 0.04 + Math.random() * 0.06;
+          ai.gear = 1;
+          ai.ignitionCutTimer = 0;
+          ai._autoShiftCooldown = 0;
+          ai.defendLockTimer = 0;
+          ai.defendCooldownTimer = 0;
+          ai.defendTargetD = ai.d;
+          ai.defendLockLabel = 'ONE-MOVE BLOCK';
+          ai.overtakeTargetD = ai.d;
           ai.throttleInput = 0;
           ai.brakeInput = 0;
           ai.steerInput = 0;
@@ -601,7 +666,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
       // to prevent panic stomping that induces ABS lockup and corner-exit speed loss.
       function computeDrivingCue(s, currSpeedKmh, brkNorm, thrNorm) {
         if (currSpeedKmh < 45) return { tier: 'none', targetKmh: 300, reqDecel: 0 };
-        const maxScan = Math.min(165, Math.max(55, currSpeedKmh * 0.68));
+        const maxScan = Math.min(165, Math.max(145, currSpeedKmh * 0.75));
         let minTargetKmh = 300;
         let distToMin = maxScan;
         let maxCurvAhead = 0;
@@ -620,6 +685,9 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         const proAhead = getProProfileAtDistance(s + 22);
         const vNow = currSpeedKmh / 3.6;
         const vTgt = minTargetKmh / 3.6;
+        if (currSpeedKmh <= minTargetKmh + 2) {
+          return { tier: 'none', targetKmh: Math.round(minTargetKmh), reqDecel: 0 };
+        }
         const reqDecel = (vNow > vTgt) ? (vNow * vNow - vTgt * vTgt) / (2 * Math.max(16, distToMin)) : 0;
 
         let tier = 'none';
@@ -1799,6 +1867,29 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         }
       }
 
+      function clampAiTrackD(d, halfW, margin = 1.4) {
+        return Math.max(-halfW + margin, Math.min(halfW - margin, d));
+      }
+
+      function enforceRacingRoomD(targetD, aiD, oppD, halfW) {
+        const minClearance = 2.24;
+        const side = (aiD >= oppD - 0.05) ? 1 : -1;
+        const safeD = clampAiTrackD(oppD + side * minClearance, halfW, 1.3);
+        return side > 0 ? Math.max(targetD, safeD) : Math.min(targetD, safeD);
+      }
+
+      function chooseOvertakeLaneD(oppD, nextCurv, halfW) {
+        const cAbs = Math.abs(nextCurv || 0);
+        if (cAbs > 0.0028) {
+          const insideSign = Math.sign(nextCurv || 1);
+          if (oppD * insideSign < (halfW - 4.8)) {
+            return clampAiTrackD(oppD + insideSign * 3.6, halfW, 1.4);
+          }
+        }
+        const wideDir = oppD >= 0 ? -1 : 1;
+        return clampAiTrackD(oppD + wideDir * 3.6, halfW, 1.4);
+      }
+
       function stepAIRivals(dt) {
         const diff = simState.aiDifficulty || 1.0;
         const halfW = TRACK_WIDTH * 0.5;
@@ -1816,9 +1907,12 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             ai.speedMs = 0;
             ai.yawRate = 0;
             ai.vLat = 0;
+            ai.gear = 1;
+            ai.ignitionCutTimer = 0;
+            ai._autoShiftCooldown = 0;
             ai.heading = node.heading;
             ai.stateLabel = 'GRID HOLD';
-            ai.throttleInput = 45;
+            ai.throttleInput = 0;
             ai.brakeInput = 100;
             const w = sdToWorld(ai.s, ai.d);
             ai.mesh.position.set(w.x, w.y, w.z);
@@ -1828,64 +1922,159 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           }
           if ((ai.reactionTimer || 0) > 0 && ai.speedMs < 2.0) {
             ai.reactionTimer -= dt;
+            ai.throttleInput = 0;
+            ai.brakeInput = 0;
             ai.stateLabel = 'LAUNCH PREP';
             return;
           }
+          const arch = AI_DRIVER_ARCHETYPES[ai.style] || AI_DRIVER_ARCHETYPES.smooth_apex;
           const lookNode = sampleTrackAtS(ai.s + 95);
+          const midLookNode = sampleTrackAtS(ai.s + 25);
+          const farLookNode = sampleTrackAtS(ai.s + 165);
           const proRef = getProProfileAtDistance(ai.s);
+          const proBrakeRef = getProProfileAtDistance(ai.s + Math.max(8.0, ai.speedMs * 0.16));
+          const steerPreviewDist = Math.max(14.0, Math.min(32.0, ai.speedMs * 0.42));
+          const proSteerRef = getProProfileAtDistance(ai.s + steerPreviewDist);
 
-          // Pure competitive zero-mistake pace (~1.56G-1.62G clinical execution)
+          // Style-differentiated equal-pace execution grounded on true Out-In-Out physical profile
           const absCurv = Math.abs(node.curvature || 0);
-          const apexGripBonus = absCurv > 0.0020 ? (1.06 + Math.max(0, (diff - 0.92) * 0.25)) : 1.0;
-          const isCornerExit = (absCurv > 0.0020 && Math.abs(lookNode.curvature || 0) < 0.0025);
-          const exitSurge = isCornerExit ? 1.055 : 1.0;
-          let targetV = Math.min(306, proRef.speedKmh * apexGripBonus * exitSurge * ai.basePace * diff);
+          const midAbsCurv = Math.abs(midLookNode.curvature || 0);
+          const lookAbsCurv = Math.abs(lookNode.curvature || 0);
+          const isBrakingOrEntry = (proRef.brake > 15 || proBrakeRef.brake > 20 || (absCurv < 0.0022 && lookAbsCurv > 0.0030));
+          const isMidCorner = (!isBrakingOrEntry && absCurv >= 0.0022 && midAbsCurv >= 0.0018);
+          const isCornerExit = (!isBrakingOrEntry && !isMidCorner && absCurv >= 0.0018 && lookAbsCurv < 0.0025);
+          const styleSpeedMult = isBrakingOrEntry
+            ? arch.entrySpeedMult
+            : (isMidCorner ? arch.cornerApexMult : (isCornerExit ? arch.exitSpeedMult : arch.straightMult));
+          // Three-tier pace calibration:
+          // - 業餘 (0.92): ~13-16s slower than PRO (Monza ~94s, Fuji ~100s, Hakone ~111s) — beginner-friendly
+          // - 專業 (1.00): Standard PRO AI matching PRO_LAP_TIME (Monza ~80.5s, Fuji ~86.4s, Hakone ~95.2s)
+          // - 頂尖 (1.10): ~6-8s faster than PRO (Monza ~74.4s, Fuji ~79.7s, Hakone ~87.0s) — elite challenge
+          const isAmateurTier = (diff < 0.96);
+          const isTopTier = (diff > 1.04);
+          const tierSpeedMult = isAmateurTier ? 0.735 : (isTopTier ? 1.015 : 0.922);
+          const tierPowerMult = isAmateurTier ? 0.635 : (isTopTier ? 1.085 : 1.000);
+          const tierTopCapKmh = isAmateurTier ? 232 : (isTopTier ? 310 : 286);
+          const diffPaceMult = tierSpeedMult * ai.basePace;
+          const refKmh = Math.min(proRef.speedKmh, proBrakeRef.speedKmh);
+          let targetV = Math.min(tierTopCapKmh, refKmh * styleSpeedMult * diffPaceMult);
+
+          // True Out-In-Out (外-內-外) lookahead targetD with style bias
+          let targetD = 0.35 * proRef.optimalD + 0.65 * proSteerRef.optimalD;
+          if (isBrakingOrEntry && lookAbsCurv > 0.0025) {
+            const cSign = Math.sign(lookNode.curvature || 1);
+            targetD = clampAiTrackD(targetD - cSign * arch.entryOutsideBias, halfW, 1.5);
+          } else if (isMidCorner && absCurv > 0.0025) {
+            const cSign = Math.sign(node.curvature || 1);
+            targetD = clampAiTrackD(targetD + cSign * arch.apexInsideBias, halfW, 1.4);
+          }
+          ai.stateLabel = isBrakingOrEntry
+            ? (ai.style === 'late_braker' ? 'LATE BRAKE' : 'BRAKING ZONE')
+            : (isMidCorner ? (ai.style === 'smooth_apex' ? 'APEX FLOW' : 'OPTIMAL LINE')
+            : (isCornerExit ? 'EXIT SURGE' : 'OPTIMAL LINE'));
+
+          ai.defendLockTimer = Math.max(0, (ai.defendLockTimer || 0) - dt);
+          ai.defendCooldownTimer = Math.max(0, (ai.defendCooldownTimer || 0) - dt);
 
           const playerTotalS = (simState.lap - 1) * totalTrackLength + simState.s;
           const aiTotalS = (ai.lap - 1) * totalTrackLength + ai.s;
           const gapMeters = aiTotalS - playerTotalS;
+          const closingRate = (simState.speedMs || 0) - ai.speedMs;
+          const effectiveGap = gapMeters - Math.max(0, closingRate) * 1.35;
 
-          let targetD = proRef.optimalD;
-          ai.stateLabel = proRef.brake > 20 ? 'BRAKING ZONE' : (isCornerExit ? 'EXIT SURGE' : 'OPTIMAL LINE');
-
-          // Trailing Player: Straight Slipstream Slingshot OR Clinical Late-Braking Dive
-          if (gapMeters < -3 && gapMeters > -62) {
-            if (Math.abs(node.curvature) < 0.0025) {
-              if (gapMeters > -18) {
-                targetD = simState.d > 0 ? simState.d - 3.6 : simState.d + 3.6;
-                ai.stateLabel = 'SLINGSHOT PASS';
-              } else {
+          // Multi-line racecraft FSM: Two-Wide Corridor / Trailing Overtake / FIA One-Move Defense
+          const isPlayerAlongside = Math.abs(gapMeters) <= 3.5 && (Math.abs(ai.d - simState.d) >= 1.35 || Math.abs(gapMeters) <= 2.4);
+          if (isPlayerAlongside) {
+            targetD = simState._inCollisionContact
+              ? clampAiTrackD(ai.d, halfW, 1.3)
+              : enforceRacingRoomD(targetD, ai.d, simState.d, halfW);
+            const cornerCurv = lookAbsCurv > 0.0030 ? lookNode.curvature : node.curvature;
+            const isOuterSwitchback = (ai.style === 'smooth_apex' && (absCurv > 0.0025 || lookAbsCurv > 0.0030) &&
+              (ai.d - simState.d) * Math.sign(cornerCurv || 1) < -0.5);
+            if (isOuterSwitchback) {
+              targetV *= 1.025;
+              ai.stateLabel = 'SWITCHBACK';
+            } else {
+              ai.stateLabel = 'SIDE BY SIDE';
+            }
+          } else if (gapMeters < -3.5 && gapMeters > -62) {
+            if (absCurv < 0.0025 && lookAbsCurv <= 0.0032) {
+              targetV *= 1.015;
+              if (gapMeters < -20) {
                 targetD = simState.d;
                 ai.stateLabel = 'SLIPSTREAMING';
+              } else if (gapMeters <= -14 && ai.style === 'exit_surge') {
+                const openDir = simState.d >= 0 ? -1 : 1;
+                targetD = clampAiTrackD(simState.d - openDir * 1.6, halfW, 1.6);
+                ai.stateLabel = 'FEINT & PASS';
+              } else {
+                targetD = chooseOvertakeLaneD(simState.d, farLookNode.curvature || lookNode.curvature, halfW);
+                ai.stateLabel = 'SLINGSHOT PASS';
               }
-              targetV *= 1.08;
-            } else if (gapMeters > -22 && Math.abs(lookNode.curvature) > 0.0035) {
-              const insideSign = Math.sign(lookNode.curvature || 1);
-              targetD = insideSign * 5.0;
-              targetV *= 1.07;
-              ai.stateLabel = 'LATE BRAKE DIVE';
+            } else if (gapMeters > -26 && (lookAbsCurv > 0.0032 || absCurv > 0.0032)) {
+              const cornerCurv = lookAbsCurv > 0.0032 ? lookNode.curvature : node.curvature;
+              const insideSign = Math.sign(cornerCurv || 1);
+              if (ai.style === 'smooth_apex' && Math.abs(simState.d - insideSign * 4.2) < 2.2) {
+                targetD = clampAiTrackD(-insideSign * 3.4, halfW, 1.5);
+                targetV *= 1.015;
+                ai.stateLabel = 'SWITCHBACK';
+              } else {
+                targetD = clampAiTrackD(insideSign * (ai.style === 'late_braker' ? 5.2 : 4.6), halfW, 1.4);
+                targetV *= (ai.style === 'late_braker' ? 1.028 : 1.020);
+                ai.stateLabel = 'LATE BRAKE DIVE';
+              }
             }
-          } else if (gapMeters > 0 && gapMeters < 32) {
-            // Leading Player cleanly: hold defensive inside line without fake pressure mistakes
-            if (Math.abs(lookNode.curvature) > 0.004) {
-              const insideSign = Math.sign(lookNode.curvature || 1);
-              targetD = insideSign * 4.8;
-              ai.stateLabel = 'DEFENSIVE LINE';
-            } else {
-              targetD = simState.d * 0.60;
-              ai.stateLabel = 'DEFENDING';
+          } else if (gapMeters > 3.5 && gapMeters < 44 && effectiveGap < arch.defendTriggerGap) {
+            if (lookAbsCurv > 0.0030 || absCurv > 0.0030) {
+              const cornerCurv = lookAbsCurv > 0.0030 ? lookNode.curvature : node.curvature;
+              const insideSign = Math.sign(cornerCurv || 1);
+              if (ai.style === 'smooth_apex' && Math.abs(simState.d - insideSign * 4.5) < 2.2) {
+                targetD = clampAiTrackD(-insideSign * 3.2, halfW, 1.5);
+                ai.stateLabel = 'SWITCHBACK PREP';
+              } else {
+                targetD = clampAiTrackD(insideSign * (ai.style === 'late_braker' ? 4.8 : 4.2), halfW, 1.4);
+                ai.stateLabel = 'PROTECT INSIDE';
+              }
+            } else if (ai.defendLockTimer > 0) {
+              targetD = ai.defendTargetD;
+              ai.stateLabel = ai.defendLockLabel || 'ONE-MOVE BLOCK';
+            } else if (ai.defendCooldownTimer <= 0 && (gapMeters < 28 || closingRate > 1.5)) {
+              const nextCornerSign = Math.sign(farLookNode.curvature || lookNode.curvature || 1);
+              if (ai.style === 'late_braker') {
+                ai.defendTargetD = clampAiTrackD(simState.d * 0.75 + nextCornerSign * 1.1, halfW, 1.8);
+                ai.defendLockLabel = 'ONE-MOVE BLOCK';
+              } else if (ai.style === 'exit_surge') {
+                ai.defendTargetD = clampAiTrackD(simState.d * 0.65, halfW, 2.0);
+                ai.defendLockLabel = 'SQUEEZE DEFENSE';
+              } else {
+                ai.defendTargetD = clampAiTrackD(simState.d * 0.70, halfW, 1.8);
+                ai.defendLockLabel = 'DEFENSIVE LINE';
+              }
+              ai.defendLockTimer = 2.8;
+              ai.defendCooldownTimer = 4.6;
+              targetD = ai.defendTargetD;
+              ai.stateLabel = ai.defendLockLabel;
             }
           }
 
-          // Smooth look-ahead racecraft around other AI ahead (no instant teleport offsets)
+          // Multi-line racecraft & two-wide corridor against other AI cars
           aiCars.forEach(other => {
             if (other === ai) return;
             const otherTotalS = (other.lap - 1) * totalTrackLength + other.s;
             const aheadDist = otherTotalS - aiTotalS;
-            if (aheadDist > 2.5 && aheadDist < 16.0 && Math.abs(targetD - other.d) < 2.6) {
-              targetD = (other.d >= 0) ? Math.max(-halfW + 1.5, other.d - 3.2) : Math.min(halfW - 1.5, other.d + 3.2);
+            if (Math.abs(aheadDist) <= 3.5 && Math.abs(ai.d - other.d) < 2.35) {
+              targetD = enforceRacingRoomD(targetD, ai.d, other.d, halfW);
+            } else if (aheadDist > 3.5 && aheadDist < 28.0 && Math.abs(targetD - other.d) < 2.6) {
+              targetD = chooseOvertakeLaneD(other.d, lookNode.curvature, halfW);
+              targetV *= 1.015;
             }
           });
+
+          if (isPlayerAlongside) {
+            targetD = simState._inCollisionContact
+              ? clampAiTrackD(ai.d, halfW, 1.3)
+              : enforceRacingRoomD(targetD, ai.d, simState.d, halfW);
+          }
 
           // True 2D Planar Rigid-Body Spinout & Oversteer Recovery Physics
           ai.spinTimer = Math.max(0, ai.spinTimer - dt);
@@ -1947,34 +2136,83 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             ai.s += (vxOut * node.dirX + vzOut * node.dirZ) * dt;
             ai.d = Math.max(-maxAiD, Math.min(maxAiD, ai.d + (vxOut * node.rightX + vzOut * node.rightZ) * dt));
           } else {
+            const effCurvNow = absCurv * getCornerLineCutFactor();
+            const isFlatOutZone = (proRef.brake < 5 && proBrakeRef.brake < 8 && effCurvNow < 0.00165);
             const targetMs = targetV / 3.6;
             const speedErrMs = targetMs - ai.speedMs;
-            const aiRawBrake = (speedErrMs < -4.5 || (proRef.brake > 68 && speedErrMs < -1.5));
-            const aiRawTrail = (!aiRawBrake && (speedErrMs < -0.9 || (proRef.brake > 22 && speedErrMs < 0)));
-            const aiRawThrottle = (!aiRawBrake && !aiRawTrail && speedErrMs > -0.4);
-            const aiThrCap = (absCurv > 0.0055 && !isCornerExit) ? 78 : 100;
+            const brakeThresh = (ai.style === 'late_braker') ? -3.2 : -2.4;
+            const proBrakeGate = (ai.style === 'late_braker') ? 68 : 58;
+            const aiRawBrake = !isFlatOutZone && (speedErrMs < brakeThresh || (proBrakeRef.brake > proBrakeGate && speedErrMs < -0.6));
+            const aiRawTrail = !isFlatOutZone && (!aiRawBrake && ((proBrakeRef.brake > 16 && speedErrMs < -0.4) || speedErrMs < -1.6));
+            const aiRawThrottle = isFlatOutZone || (!aiRawBrake && !aiRawTrail && speedErrMs > -0.6);
+            // Progressive corner-exit throttle modulation (prevents full-throttle surge while still turning)
+            const aiThrCap = (effCurvNow > 0.0055)
+              ? (isCornerExit ? 78 : 66)
+              : ((effCurvNow > 0.0026 && !isFlatOutZone) ? 88 : 100);
 
             translateAnalogPedals(ai, aiRawThrottle, aiRawBrake, aiRawTrail, dt, aiThrCap);
 
+            // Identical 6-speed automatic transmission & 0.08s upshift ignition cut as Player (stepPhysics)
+            ai.ignitionCutTimer = Math.max(0, (ai.ignitionCutTimer || 0) - dt);
+            ai._autoShiftCooldown = Math.max(0, (ai._autoShiftCooldown || 0) - dt);
+            const aiSpdKmh = ai.speedMs * 3.6;
+            if (!ai.gear || ai.gear < 1) ai.gear = 1;
+            if (ai._autoShiftCooldown <= 0) {
+              let tg = ai.gear;
+              while (tg < 6 && aiSpdKmh >= GEAR_MAX_SPEED[tg] * 0.92) tg++;
+              while (tg > 1 && aiSpdKmh < GEAR_MAX_SPEED[tg - 1] * 0.78) tg--;
+              if (tg !== ai.gear) {
+                if (tg > ai.gear) ai.ignitionCutTimer = 0.08;
+                ai.gear = tg;
+                ai._autoShiftCooldown = 0.25;
+              }
+            }
+            const aiShiftCutMult = (ai.ignitionCutTimer > 0) ? 0.12 : 1.0;
+
+            // Physical slipstream wake check (identical to Player stepPhysics L854-862)
+            let aiInSlipstream = false;
+            if (aiSpdKmh > 120) {
+              const pDs = ((simState.s - ai.s) % totalTrackLength + totalTrackLength) % totalTrackLength;
+              if (pDs > 4 && pDs < 56 && Math.abs(simState.d - ai.d) < 3.2) aiInSlipstream = true;
+              if (!aiInSlipstream) {
+                for (let j = 0; j < aiCars.length; j++) {
+                  const other = aiCars[j];
+                  if (other === ai) continue;
+                  const oDs = ((other.s - ai.s) % totalTrackLength + totalTrackLength) % totalTrackLength;
+                  if (oDs > 4 && oDs < 56 && Math.abs(other.d - ai.d) < 3.2) { aiInSlipstream = true; break; }
+                }
+              }
+            }
+
+            // Identical longitudinal powertrain & cornering-induced tire scrub equation as Player (stepPhysics L971-1008)
             const aiThr = ai.throttleInput / 100;
             const aiBrk = ai.brakeInput / 100;
-            const vEff = Math.max(Math.abs(ai.speedMs), 11.5);
-            const aiDriveAccel = aiThr * Math.min(9.0, 358.0 / vEff) * ai.basePace * diff;
-            const aiBrakeDecel = aiBrk * 19.2;
-            const aiDrag = 0.00054 * ai.speedMs * Math.abs(ai.speedMs) + 0.14;
+            const vEff = Math.max(Math.abs(ai.speedMs), 12.5);
+            const rawEngineAccel = Math.min(8.25, 338.0 / vEff);
+            const aiLatG = (ai.speedMs * ai.speedMs * absCurv) / 9.81;
+            const throttleWeightTransfer = (aiThr > 0.35 && absCurv > 0.0015)
+              ? (1.0 - ((aiThr - 0.35) / 0.65) * Math.min(1.0, aiLatG / 1.35) * 0.18)
+              : 1.0;
+            const aiDriveAccel = aiThr * rawEngineAccel * aiShiftCutMult * throttleWeightTransfer * tierPowerMult * arch.drivePowerMult;
+            const aiBrakeDecel = aiBrk * (ai.style === 'late_braker' ? 20.2 : 19.2);
+            const aiAeroCoeff = aiInSlipstream ? 0.00046 : 0.000557;
+            const aiCornerDrag = aiLatG * 0.38;
+            const aiDrag = aiAeroCoeff * ai.speedMs * Math.abs(ai.speedMs) + 0.14 + aiCornerDrag;
             const aiEngineBrk = (aiThr < 0.05 && ai.speedMs > 1.0) ? 0.65 : 0;
             const aiNetAccel = aiDriveAccel - aiBrakeDecel - aiDrag - aiEngineBrk;
             ai.speedMs = Math.max(0, ai.speedMs + aiNetAccel * dt);
 
             const aiMaxDeg = getDynamicMaxSteerDeg(ai.speedMs * 3.6, CAR_HANDLING_PROFILES.procedural, true);
-            const aiMaxLatSpeed = Math.max(1.8, ai.speedMs * Math.sin((aiMaxDeg * Math.PI) / 180) * 0.48);
-            const desiredLatVel = (targetD - ai.d) * 3.2;
+            const aiMaxLatSpeed = Math.max(2.2, ai.speedMs * Math.sin((aiMaxDeg * Math.PI) / 180) * 0.62);
+            const latGain = (ai.stateLabel === 'SIDE BY SIDE') ? 1.65 : 2.8;
+            const desiredLatVel = Math.max(-11.5, Math.min(11.5, (targetD - ai.d) * latGain));
             const clampedLatVel = Math.max(-aiMaxLatSpeed, Math.min(aiMaxLatSpeed, desiredLatVel));
 
             const desiredSteerAngle = Math.atan2(clampedLatVel, Math.max(8.0, ai.speedMs));
             const desiredHeading = wrapAngle(node.heading + desiredSteerAngle);
             const headErr = wrapAngle(desiredHeading - ai.heading);
-            ai.yawRate = Math.max(-2.2, Math.min(2.2, headErr * 8.5));
+            const curvatureFeedforward = (node.curvature || 0) * ai.speedMs * 0.92;
+            ai.yawRate = Math.max(-2.5, Math.min(2.5, curvatureFeedforward + headErr * 9.5));
             ai.heading = wrapAngle(ai.heading + ai.yawRate * dt);
             ai.vLat *= Math.exp(-8.0 * dt);
 

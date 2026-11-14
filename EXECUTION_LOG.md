@@ -733,3 +733,36 @@ Script error. at module(main.js:START):0:0
 3. **`scratch/test_physics_math.py`**：**26 / 26 PASSED**
 4. **`scratch/test_rfc_improvements.py`**：**38 / 38 PASSED**
 5. **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`js/physics.js`）維持於本地工作區等待用戶實測確認「推送」後再行推送。
+
+---
+
+## 🕒 2026-11-14 22:15 // Phase 4 大翻新：真實物理 PRO 基準圈速、外內外（Out-In-Out）幾何走線與小彎全油門 AI 徹底重構
+
+### 🔍 問題根因診斷
+針對用戶回報真實玩家（蒙札 `01:20.914`、富士 `01:26.706`、箱根 `01:35.801`，快同學再快 `3–4s`、新手亦僅慢 `~20s`）遙遙領先原 PRO 基準（`01:51.076 / 02:05.731 / 02:46.973`），且 AI 連小弧度彎道也煞車的三大根因：
+1. **假「中-內-中」走線**：`buildTrackGeometryData()` 舊版僅使用 `curvature * 310` 決定 `optimalD`，進彎前與出彎後未提前拉向路緣外側，無法利用賽道全寬放大過彎半徑。
+2. **`node.vTarget` 人為限速帽**：`generateProBenchmarkLap()` 過去以線性內插航點 `vTarget` 截斷速度上限，導致大直線尾段與高速全油門彎道被迫提前減速，使 PRO 基準與 AI 均比真實物理極限慢 30–71 秒。
+3. **小彎誤煞車與無預瞄轉向**：`stepAIRivals()` 在平順高速小彎仍觸發低門檻減速，且缺乏 `curvatureFeedforward` 曲率前饋與動態入彎/煞車雙前瞻（`proBrakeRef` / `proSteerRef`）。
+
+### 🔧 主要修改明細
+1. **真．外內外（Out-In-Out）弧長求解與物理極速求解器（[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)）**：
+   - **`buildTrackGeometryData()`**：改以真實物理弧長 `sampleTrackAtS(s + ds)` 計算各點前後 `65m–135m` 入／出彎肩部曲率，使賽車於入彎前先切至外側路緣石（`-sign(k)*maxD`）、彎心貼緊內側 Apex（`+sign(k)*maxD`）、出彎順勢外拋，並經 6 回合平滑濾波確保方向轉換柔順。
+   - **`getCornerLineCutFactor()` 與 `getUpcomingCornerMaxSpeedKmh()`**：考量外內外走線放大轉彎半徑（寬賽道係數 `0.62 / 0.70 / 0.85`），當等效曲率 `effectiveCurv < 0.00155` 時直接判定全油門平跑 `300 km/h` 不煞車；中高曲率按真實下壓力與橫向抓地力（`1.56G / 1.46G / 1.24G`）求解。
+   - **`generateProBenchmarkLap()`**：移除 `node.vTarget` 人工限速上限，搭配 `maxBrakeDecel = 17.2 m/s²` 反向煞車曲線與 GT3 加速／牽引圓正向積分，自動算出匹配真實玩家水準的 `PRO_LAP_TIME`。
+2. **AI 全油門小彎守護、雙前瞻參考與曲率前饋轉向（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)）**：
+   - **`stepAIRivals()`**：導入雙前瞻點（煞車前瞻 `proBrakeRef`、`steerPreviewDist` 轉向預瞄 `proSteerRef` 與彎心判斷 `midLookNode`）、平跑區間 `isFlatOutZone`（零誤觸煞車／全油門通過），並加入 `curvatureFeedforward` 曲率前饋偏航控制與重新校準之配速基準 `diffPaceMult = 0.968 * ai.basePace * diff`。
+   - **`computeDrivingCue()`**：補上 `currSpeedKmh <= minTargetKmh + 2` 即清除提示之保護與 `min maxScan = 145m` 掃描下限，消除接近真實全油門彎時的誤報煞車提示。
+
+### ✅ 驗證結果（Chrome Headless V8 全套實測）
+1. **`scratch/check_syntax.py`**：**7 / 7 OK**
+2. **`scratch/test_proposal.py`**：**43 / 43 PASSED**（完整 `index.html` 啟動 `147158 chars`，零 `#apex-crash-banner`）
+   - **Test 23（同圈速三風格獨立遙測）**：`spread = 0.24%`，忠實呈現入彎 `late_braker (225.6) > smooth_apex (219.5) > exit_surge (217.4)`、彎心 `smooth_apex (166.6) > exit_surge (162.7) > late_braker (161.8)`、出彎直道 `exit_surge (219.2) > smooth_apex (218.2)`。
+   - **Test 24（動態多線攻防 FSM）**：`oneMoveLock=true, protectInside=true, twoWideGap=2.20m`。
+   - **Test 25（外內外走線＋高速小彎全油門＋真實 PRO 圈速）**：富士髮夾彎實測外內外橫向座標 `entry=-7.5m / apex=+6.8m / exit=-6.8m`、蒙札高速小彎 `flatOut=true`（`brakeInput===0 && throttleInput>90`），三賽道物理 `PRO_LAP_TIME` 提升至 **`78.0s (Monza) / 82.5s (Fuji) / 89.5s (Hakone)`**。
+3. **V8 全圈單圈 AI 基準實測（三車型同場分級配速）**：
+   - **Monza（PRO `78.042s`）**：Clubman (`0.92`) `77.60–77.96s` / Pro (`1.00`) `75.12–75.44s` / Alien (`1.10`) `72.36–72.68s`
+   - **Fuji（PRO `82.492s`）**：Clubman (`0.92`) `84.32–84.56s` / Pro (`1.00`) `80.68–80.88s` / Alien (`1.10`) `76.76–76.84s`
+   - **Hakone（PRO `89.461s`）**：Clubman (`0.92`) `92.96–93.48s` / Pro (`1.00`) `88.16–88.60s` / Alien (`1.10`) `82.96–83.04s`
+4. **`scratch/test_physics_math.py`**：**26 / 26 PASSED**
+5. **`scratch/test_rfc_improvements.py`**：**38 / 38 PASSED**
+6. **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`js/circuits.js`、`js/physics.js`、`scratch/proposal_runner.html`）保留於本地工作區等待用戶實測確認「推送」後再行推送。

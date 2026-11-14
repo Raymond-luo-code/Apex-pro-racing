@@ -589,3 +589,27 @@ Script error. at module(main.js:START):0:0
 - `scratch/test_physics_math.py`：**26 / 26 PASSED**
 - `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
 - **推送狀態**：僅提交並推送 [`EXECUTION_LOG.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/EXECUTION_LOG.md) 至 `origin/main`；遊戲本體程式碼保留於本地供用戶試駕確認後再推送。
+
+---
+
+## 🕒 2026-11-14 18:59 ~ 19:01 // 修正全油門時異常高頻排氣回火與變速箱拉扯震盪
+
+### 🔍 問題診斷
+- 用戶回報全油門加速期間易觸發高頻連環排氣回火。
+- 檢查 [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js) 後確認根因：
+  1. **自排升/降檔零遲滯帶（Zero Hysteresis）**：原本升檔與降檔共用單一車速門檻（`GEAR_MAX_SPEED[g - 1] * 0.90`）。當全油門行經換檔點並套用 `0.08s` 升檔斷油（`driveAccel × 0.12`）或帶方向盤阻力微幅掉速 `0.2 km/h` 時，次幀立即降檔並再次加速升檔，導致變速箱在臨界時速間以 `15–30 Hz` 來回震盪（Gear Hunting）並每幀重複觸發 `triggerBackfire()` 與火焰特效。
+  2. **缺少回火冷卻去抖（Cooldown Debounce）**：換檔與收油回火未設定最小冷卻間隔。
+
+### 🔧 修改明細
+1. **`js/physics.js` (`stepPhysics`, `resetSession`)**
+   - 建立雙門檻遲滯換檔區間：升檔門檻設為 `GEAR_MAX_SPEED[targetGear] * 0.92`，降檔門檻下移至 `GEAR_MAX_SPEED[targetGear - 1] * 0.78`（提供 `10–36 km/h` 穩定緩衝區間），加上 `0.25s` `_autoShiftCooldown` 冷卻，徹底杜絕全油門換檔震盪。
+   - 新增 `_backfireCooldown`（`0.28s`）全域冷卻去抖，並區分升檔／高負載降檔條件。
+2. **`js/input.js` (`shiftGear`)**
+   - 手排換檔同步遵守 `0.25s` `_backfireCooldown`，避免連按撥片重複疊加爆音與火焰粒子。
+
+### ✅ 驗證結果（編修後全套實測）
+- `scratch/check_syntax.py`：**7 / 7 OK**
+- `scratch/test_proposal.py`：**35 / 35 PASSED**（新增 Test 17：全油門 `0 -> 282.9 km/h` 連續衝刺測試，全段共發生整齊 `5` 次升檔與 `5` 次回火，零變速箱拉扯震盪）
+- `scratch/test_physics_math.py`：**26 / 26 PASSED**
+- `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
+- **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼維持於本地待用戶測試確認後推送。

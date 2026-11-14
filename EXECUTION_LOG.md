@@ -687,3 +687,22 @@ Script error. at module(main.js:START):0:0
 - `scratch/test_physics_math.py`：**26 / 26 PASSED**
 - `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
 - **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼（`js/physics.js`、`js/input.js`、`js/render.js`）維持於本地待用戶實車試駕確認後推送。
+
+---
+
+## 🕒 2026-11-14 20:09 // 修正並排貼身轉向過度旋轉（Yaw Runaway）異常
+
+### 🔍 問題診斷
+- 針對用戶回報「並排貼身轉向時有不正常的過大幅度轉彎的情況」，透過 Chrome V8 多情境參數掃描（含前後錯位 `±0.5m ~ ±3.5m` 並排轉向）定位到原因：
+  1. 當玩家車身略超前 AI（約半個車身 `Δs = +1.5m..+3.5m`）並帶舵角貼靠轉向時，玩家右後車角掃過 AI 左前保桿，因接觸時 `yawTrackRate` 一律降為 `7.5` 且無接地輪胎偏航阻尼與單幀角速度上限，`resolveVehicleCollisions` 連續數幀累積扭矩，使 `simState.yawRate` 失控飆升至上限 `3.60 rad/s`（`206°/s`），導致車身瞬間橫甩 `58°–88°`。
+
+### 🔧 修改明細（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)）
+1. **分層輪胎偏航阻尼（`stepPhysics`）**：接觸期間當偏航差 `|simState.yawRate - targetYawRate| <= 0.85 rad/s` 時保持 `8.5` 讓兩車自然貼齊並排；一旦超出該窗口立即切換為 `18.0` 接地輪胎穩定阻尼，防止異常過轉甩尾。
+2. **接地等效轉動慣量與單幀角衝量上限（`makeBody`, `resolveVehicleCollisions`）**：加入輪胎接地等效旋轉慣量倍數（`* 1.18`）、鉗制單幀接觸角速度衝量於 `±0.62 rad/s`，並將玩家碰撞態 `simState.yawRate` 限幅至合理的 `±1.55 rad/s`（同步按比例調整 `rearShock` PIT 觸發門檻至 `0.25`）。
+
+### ✅ 驗證結果
+- `scratch/check_syntax.py`：**7 / 7 OK**
+- `scratch/test_proposal.py`：**40 / 40 PASSED**（新增 **Test 22**：並排錯位貼身全舵轉向實測 `maxYr = 1.55 rad/s`、最大偏角 `29.4°`，不再暴衝至 `3.60 rad/s` / `58°+`；Test 19 對齊收斂 `gap = 4.2°`、速度差 `0.7 m/s`；Test 20 PIT 甩尾 `57.9°` 亦全數維持通過）
+- `scratch/test_physics_math.py`：**26 / 26 PASSED**
+- `scratch/test_rfc_improvements.py`：**38 / 38 PASSED**
+- **推送狀態**：僅更新並推送本執行日誌至 `origin/main`；遊戲程式碼維持於本地待用戶測試確認後推送。

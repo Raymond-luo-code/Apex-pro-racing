@@ -544,3 +544,18 @@ Script error. at module(main.js:START):0:0
 ### ✅ 驗證結果（編修後全套實測）
 - `scratch/check_syntax.py`：7 / 7 OK；`scratch/test_proposal.py`：**29 / 29** 通過；`scratch/test_physics_math.py`：**26 / 26** 通過；`scratch/test_rfc_improvements.py`：**38 / 38** 通過。
 - **推送狀態**：僅更新並推送本執行日誌至 GitHub；遊戲程式碼變更保留於本地待用戶測試確認後推送。
+
+---
+
+## 🕒 2026-11-14 18:38 ~ 18:41 // 升級優化計畫書至 v3.2：車輛實體剛體碰撞與純粹競技 AI
+
+### 🎯 用戶指導原則
+1. **取消 AI 失誤機制**：移除 `stress` 壓力與 `mistakeTimer` 外拋減速，拒絕消耗玩家熱情的放水機制，維持純粹且強悍的電競級 AI 配速。
+2. **車輛實體剛體碰撞系統**：讓玩家與 AI 賽車具備實體剛體屬性，告別穿模幽靈車，實現真實的貼身肉搏（Trading Paint）、動量守恆衝量撞擊與力矩偏轉。
+
+### 📦 文件產出與更新
+- 更新 [`OPTIMIZATION_PLAN.md`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/OPTIMIZATION_PLAN.md) 至 **v3.2 剛體實體碰撞與純粹競技 AI 版**：
+  - 新增 **「方案 1：車輛實體剛體碰撞與衝量回饋系統」**（OBB 車身包圍盒、法向分離衝量 $J_n$、切向摩擦阻力 $J_t$、撞擊力矩偏轉與火花特效）。
+  - 修訂 **「方案 2：純粹競技 AI」**（徹底刪除壓力值與失誤機制，專注極致走線與防守）。
+  - 調整優先級矩陣，將剛體碰撞與純粹 AI 列為 **Phase 2 雙首發核心任務**。
+- **推送狀態**：依照規範，僅將本執行日誌與計畫書文件提交並推送至 `origin/main`。

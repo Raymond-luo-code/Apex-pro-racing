@@ -831,3 +831,12 @@ Script error. at module(main.js:START):0:0
   - **Monza**: 業餘 `96.20–96.52s` / 專業 `81.40–81.64s` / 頂尖 `78.72–78.88s`
   - **Fuji**: 業餘 `104.60–104.84s` / 專業 `87.16–87.44s` / 頂尖 `83.08–83.20s`
   - **Hakone**: 業餘 `115.60–116.04s` / 專業 `95.32–95.60s` / 頂尖 `89.96–90.08s`
+
+---
+
+## 2026-11-14 — Production Deployment (`8603f9c`)
+
+- Pushed verified production changes (`index.html`, `js/circuits.js`, `js/flow.js`, `js/physics.js`; `4 files changed, 419 insertions(+), 115 deletions(-)`) to `origin/main` in commit `8603f9c`:
+  - Out-In-Out arc-length optimal line overhaul & flat-out sweeper velocity solver
+  - 3-tier AI difficulty rebalance (`業餘 (新手友善)` / `專業 (標準 PRO AI)` / `頂尖 (極限挑戰)`)
+  - Unified Player / PRO Ghost / AI standing-start launch, gearshift cut, and corner-exit physics

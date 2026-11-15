@@ -7,6 +7,8 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
       const CAR_HANDLING_PROFILES = {
         procedural: {
           name: 'APEX GT3 PROTOTYPE',
+          carClass: 'GT3',
+          classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
           wheelbase: 2.56,              // meters (short wheelbase = agile turn-in)
           maxSteerDeg: 23.5,            // front wheel mechanical lock (deg)
           baseMuLat: 1.48,              // baseline mechanical lateral grip
@@ -22,6 +24,8 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         },
         ferrari458: {
           name: 'FERRARI 458 ITALIA GT3',
+          carClass: 'GT3',
+          classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
           wheelbase: 2.65,              // mid-engine balanced wheelbase
           maxSteerDeg: 22.0,            // GT3 homologated mechanical lock
           baseMuLat: 1.46,              // progressive mechanical grip
@@ -37,6 +41,8 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         },
         porsche911: {
           name: 'PORSCHE 911 GT3 R (992)',
+          carClass: 'GT3',
+          classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
           wheelbase: 2.50,              // short rear-engine wheelbase
           maxSteerDeg: 24.0,            // agile steering lock
           baseMuLat: 1.52,
@@ -52,6 +58,8 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         },
         amggt3: {
           name: 'MERCEDES-AMG GT3 EVO',
+          carClass: 'GT3',
+          classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
           wheelbase: 2.66,              // front-mid engine long wheelbase tourer
           maxSteerDeg: 21.5,
           baseMuLat: 1.43,
@@ -64,6 +72,108 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           aeroDragFactor: 0.955,        // highest straight-line top speed
           brakeFactor: 1.015,
           weightKg: 1285
+        },
+        aston_vulcan: {
+          name: 'ASTON MARTIN VULCAN AMR PRO',
+          carClass: 'HYPER',
+          classSpec: { cornerGripMult: 1.06, accelMult: 1.12, brakeDecelMult: 1.06, topSpeedKmh: 322 },
+          wheelbase: 2.79,
+          maxSteerDeg: 22.5,
+          baseMuLat: 1.58,
+          understeerCoeff: 0.00088,
+          turnInAgility: 1.22,
+          highSpeedLockFactor: 0.33,
+          steerRampRate: 2.75,
+          autoCenterDamping: 0.0055,
+          accelFactor: 1.14,
+          aeroDragFactor: 0.92,
+          brakeFactor: 1.07,
+          weightKg: 1350
+        },
+        mclaren_senna: {
+          name: 'MCLAREN SENNA GTR-SPEC',
+          carClass: 'HYPER',
+          classSpec: { cornerGripMult: 1.08, accelMult: 1.14, brakeDecelMult: 1.09, topSpeedKmh: 325 },
+          wheelbase: 2.67,
+          maxSteerDeg: 23.5,
+          baseMuLat: 1.64,
+          understeerCoeff: 0.00078,
+          turnInAgility: 1.30,
+          highSpeedLockFactor: 0.34,
+          steerRampRate: 2.90,
+          autoCenterDamping: 0.005,
+          accelFactor: 1.16,
+          aeroDragFactor: 0.91,
+          brakeFactor: 1.10,
+          weightKg: 1198
+        },
+        zenvo_tsrs: {
+          name: 'ZENVO TSR-S ACTIVE WING',
+          carClass: 'HYPER',
+          classSpec: { cornerGripMult: 1.06, accelMult: 1.15, brakeDecelMult: 1.06, topSpeedKmh: 328 },
+          wheelbase: 2.72,
+          maxSteerDeg: 22.8,
+          baseMuLat: 1.57,
+          understeerCoeff: 0.00085,
+          turnInAgility: 1.24,
+          highSpeedLockFactor: 0.32,
+          steerRampRate: 2.78,
+          autoCenterDamping: 0.0055,
+          accelFactor: 1.18,
+          aeroDragFactor: 0.89,
+          brakeFactor: 1.06,
+          weightKg: 1495
+        },
+        pagani_huayra_r: {
+          name: 'PAGANI HUAYRA R EVO ROADSTER',
+          carClass: 'HYPER',
+          classSpec: { cornerGripMult: 1.09, accelMult: 1.17, brakeDecelMult: 1.09, topSpeedKmh: 332 },
+          wheelbase: 2.79,
+          maxSteerDeg: 23.2,
+          baseMuLat: 1.66,
+          understeerCoeff: 0.00075,
+          turnInAgility: 1.32,
+          highSpeedLockFactor: 0.34,
+          steerRampRate: 2.92,
+          autoCenterDamping: 0.005,
+          accelFactor: 1.19,
+          aeroDragFactor: 0.88,
+          brakeFactor: 1.10,
+          weightKg: 1060
+        },
+        amg_one: {
+          name: 'MERCEDES-AMG ONE F1 E-HYBRID',
+          carClass: 'LMP1',
+          classSpec: { cornerGripMult: 1.12, accelMult: 1.24, brakeDecelMult: 1.12, topSpeedKmh: 345 },
+          wheelbase: 2.72,
+          maxSteerDeg: 23.5,
+          baseMuLat: 1.72,
+          understeerCoeff: 0.00072,
+          turnInAgility: 1.35,
+          highSpeedLockFactor: 0.35,
+          steerRampRate: 2.98,
+          autoCenterDamping: 0.005,
+          accelFactor: 1.25,
+          aeroDragFactor: 0.84,
+          brakeFactor: 1.13,
+          weightKg: 1695
+        },
+        porsche_919_evo: {
+          name: 'PORSCHE 919 HYBRID EVO LMP1',
+          carClass: 'LMP1',
+          classSpec: { cornerGripMult: 1.20, accelMult: 1.35, brakeDecelMult: 1.18, topSpeedKmh: 362 },
+          wheelbase: 2.85,
+          maxSteerDeg: 24.5,
+          baseMuLat: 1.88,
+          understeerCoeff: 0.00062,
+          turnInAgility: 1.48,
+          highSpeedLockFactor: 0.37,
+          steerRampRate: 3.15,
+          autoCenterDamping: 0.0048,
+          accelFactor: 1.36,
+          aeroDragFactor: 0.78,
+          brakeFactor: 1.20,
+          weightKg: 849
         }
       };
       CAR_HANDLING_PROFILES.porsche911_locked = CAR_HANDLING_PROFILES.porsche911;
@@ -372,15 +482,34 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
       aiCars.forEach(ai => {
         ai.mesh = createGT3CarMesh(ai.color, false, 1.0);
+        ai.mesh.rotation.order = 'YXZ';
         scene.add(ai.mesh);
       });
+
+      function syncAiMeshTransform(ai, w) {
+        if (!ai || !ai.mesh || !w) return;
+        const aiH = (ai.heading != null) ? ai.heading : w.heading;
+        const headingDiff = aiH - w.heading;
+        const slopePitch = w.slopePitch || 0;
+        ai.mesh.position.set(w.x, w.y, w.z);
+        ai.mesh.rotation.order = 'YXZ';
+        ai.mesh.rotation.y = -aiH;
+        ai.mesh.rotation.z = slopePitch * Math.cos(headingDiff);
+        ai.mesh.rotation.x = slopePitch * Math.sin(headingDiff);
+      }
 
       function selectCircuit(index) {
         currentCircuitIndex = (index + CIRCUITS.length) % CIRCUITS.length;
         currentCircuit = CIRCUITS[currentCircuitIndex];
+        if (typeof window !== 'undefined') {
+          window.currentCircuitIndex = currentCircuitIndex;
+          window.currentCircuit = currentCircuit;
+        }
 
         buildTrackGeometryData();
-        generateProBenchmarkLap();
+        const activeH = getCurrentCarHandling();
+        window.selectedCarClassSpec = (activeH && activeH.carClass && activeH.carClass !== 'GT3' && activeH.classSpec) ? activeH.classSpec : null;
+        generateProBenchmarkLap(window.selectedCarClassSpec);
         rebuild3DCircuitScene();
 
         simState.bestLapTime = currentCircuit.proLapTime;
@@ -391,12 +520,12 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
         headlightGroup.visible = currentCircuit.theme.isNight;
 
-        [0, 1, 2].forEach(i => {
+        CIRCUITS.forEach((_, i) => {
           const card = document.getElementById(`card-track-${i}`);
           if (!card) return;
-          const borderColors = ['border-emerald-400', 'border-indigo-400', 'border-rose-400'];
+          const borderColors = ['border-emerald-400', 'border-indigo-400', 'border-rose-400', 'border-amber-400', 'border-cyan-400'];
           card.className = (i === currentCircuitIndex)
-            ? `cursor-pointer rounded-xl p-3.5 border-2 ${borderColors[i]} bg-slate-900 transition`
+            ? `cursor-pointer rounded-xl p-3.5 border-2 ${borderColors[i] || 'border-cyan-400'} bg-slate-900 transition`
             : 'cursor-pointer rounded-xl p-3.5 border-2 border-slate-800 bg-slate-900 transition';
         });
 
@@ -518,8 +647,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           ai.mesh.visible = (!simState.inShowcaseMode && simState.mode === 'ai_race');
           const w = sdToWorld(ai.s, ai.d);
           ai.heading = w.heading;
-          ai.mesh.position.set(w.x, w.y, w.z);
-          ai.mesh.rotation.y = -w.heading;
+          syncAiMeshTransform(ai, w);
         });
       }
 
@@ -965,7 +1093,10 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           // ----------------------------------------------------------------------
           // FORWARD GEAR DYNAMICS (Gears 1 - 6)
           // ----------------------------------------------------------------------
-          const gearMaxV = GEAR_MAX_SPEED[simState.gear] || 305;
+          const baseGearMaxV = GEAR_MAX_SPEED[simState.gear] || 305;
+          const gearMaxV = (simState.gear === 6 && carProfile.classSpec && carProfile.classSpec.topSpeedKmh > 305)
+            ? carProfile.classSpec.topSpeedKmh
+            : baseGearMaxV;
           const normRpm = Math.min(1.03, Math.max(0.16, simState.speedKmh / gearMaxV));
           simState.rpm = Math.round(1150 + normRpm * 7650);
           const revLimiterCut = (!simState.autoTransmission && simState.rpm > 8780) ? 0.10 : 1.0;
@@ -1842,9 +1973,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
         // Sync AI meshes after collision separation
         aiCars.forEach(ai => {
           const w = sdToWorld(ai.s, ai.d);
-          const aiH = (ai.heading != null) ? ai.heading : w.heading;
-          ai.mesh.position.set(w.x, w.y, w.z);
-          ai.mesh.rotation.y = -aiH;
+          syncAiMeshTransform(ai, w);
         });
 
         // Contact sparks, metallic collision/scrape audio & gamepad dual-rumble pulse
@@ -1915,8 +2044,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             ai.throttleInput = 0;
             ai.brakeInput = 100;
             const w = sdToWorld(ai.s, ai.d);
-            ai.mesh.position.set(w.x, w.y, w.z);
-            ai.mesh.rotation.y = -ai.heading;
+            syncAiMeshTransform(ai, w);
             if (ai.mesh.userData.tailLight) setSlotBrakeLight(ai.mesh, true, 0xff2222, 0x550000);
             return;
           }
@@ -1950,11 +2078,17 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           // - 業餘 (0.92): ~13-16s slower than PRO (Monza ~94s, Fuji ~100s, Hakone ~111s) — beginner-friendly
           // - 專業 (1.00): Standard PRO AI matching PRO_LAP_TIME (Monza ~80.5s, Fuji ~86.4s, Hakone ~95.2s)
           // - 頂尖 (1.10): ~6-8s faster than PRO (Monza ~74.4s, Fuji ~79.7s, Hakone ~87.0s) — elite challenge
+          const activeProfile = getCurrentCarHandling();
+          const isNonGT3Class = !!(activeProfile && activeProfile.carClass && activeProfile.carClass !== 'GT3');
+          const cSpec = (isNonGT3Class && activeProfile.classSpec)
+            ? activeProfile.classSpec
+            : { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 };
+          const classTopMult = (cSpec.topSpeedKmh || 300) / 300;
           const isAmateurTier = (diff < 0.96);
           const isTopTier = (diff > 1.04);
           const tierSpeedMult = isAmateurTier ? 0.735 : (isTopTier ? 1.015 : 0.922);
           const tierPowerMult = isAmateurTier ? 0.635 : (isTopTier ? 1.085 : 1.000);
-          const tierTopCapKmh = isAmateurTier ? 232 : (isTopTier ? 310 : 286);
+          const tierTopCapKmh = (isAmateurTier ? 232 : (isTopTier ? 310 : 286)) * classTopMult;
           const diffPaceMult = tierSpeedMult * ai.basePace;
           const refKmh = Math.min(proRef.speedKmh, proBrakeRef.speedKmh);
           let targetV = Math.min(tierTopCapKmh, refKmh * styleSpeedMult * diffPaceMult);
@@ -2188,14 +2322,15 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
             const aiThr = ai.throttleInput / 100;
             const aiBrk = ai.brakeInput / 100;
             const vEff = Math.max(Math.abs(ai.speedMs), 12.5);
-            const rawEngineAccel = Math.min(8.25, 338.0 / vEff);
+            const rawEngineAccel = Math.min(8.25 * (cSpec.accelMult || 1.0), (338.0 * (cSpec.accelMult || 1.0)) / vEff);
             const aiLatG = (ai.speedMs * ai.speedMs * absCurv) / 9.81;
             const throttleWeightTransfer = (aiThr > 0.35 && absCurv > 0.0015)
               ? (1.0 - ((aiThr - 0.35) / 0.65) * Math.min(1.0, aiLatG / 1.35) * 0.18)
               : 1.0;
             const aiDriveAccel = aiThr * rawEngineAccel * aiShiftCutMult * throttleWeightTransfer * tierPowerMult * arch.drivePowerMult;
-            const aiBrakeDecel = aiBrk * (ai.style === 'late_braker' ? 20.2 : 19.2);
-            const aiAeroCoeff = aiInSlipstream ? 0.00046 : 0.000557;
+            const aiBrakeDecel = aiBrk * (ai.style === 'late_braker' ? 20.2 : 19.2) * (cSpec.brakeDecelMult || 1.0);
+            const aiClassAeroMult = isNonGT3Class ? (activeProfile.aeroDragFactor || 1.0) : 1.0;
+            const aiAeroCoeff = (aiInSlipstream ? 0.00046 : 0.000557) * aiClassAeroMult;
             const aiCornerDrag = aiLatG * 0.38;
             const aiDrag = aiAeroCoeff * ai.speedMs * Math.abs(ai.speedMs) + 0.14 + aiCornerDrag;
             const aiEngineBrk = (aiThr < 0.05 && ai.speedMs > 1.0) ? 0.65 : 0;
@@ -2233,8 +2368,7 @@ if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
           }
 
           const w = sdToWorld(ai.s, ai.d);
-          ai.mesh.position.set(w.x, w.y, w.z);
-          ai.mesh.rotation.y = -ai.heading;
+          syncAiMeshTransform(ai, w);
           ai.colHeadingOffset = wrapAngle(ai.heading - w.heading);
 
           // Illuminate AI brake tail-lights strictly from real translated brake pressure

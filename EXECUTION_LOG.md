@@ -840,3 +840,88 @@ Script error. at module(main.js:START):0:0
   - Out-In-Out arc-length optimal line overhaul & flat-out sweeper velocity solver
   - 3-tier AI difficulty rebalance (`業餘 (新手友善)` / `專業 (標準 PRO AI)` / `頂尖 (極限挑戰)`)
   - Unified Player / PRO Ghost / AI standing-start launch, gearshift cut, and corner-exit physics
+
+---
+
+## 2026-11-15 — Local 3D GLB Cars & Circuits Integration, Multi-Class Scaling & Visual Polish
+
+### Scope (Held Locally Pending User Push Confirmation)
+- Inspected and integrated 6 newly downloaded car `.glb` models in `assets/models/cars/` and 3 circuit `.glb` models in `assets/models/tracks/`, while strictly excluding brake disc thermal glow (`煞車碟盤熱紅光效`).
+
+### Key Changes Implemented
+1. **6 Local Car GLB Models & Normalizer/Rig Pipeline (`js/render.js`, `js/flow.js`, `js/physics.js`)**:
+   - Added `CAR_MODEL_PRESETS`, `CAR_CATALOG`, and `CAR_HANDLING_PROFILES` entries for:
+     - `aston_vulcan` (`assets/models/cars/aston_martin_vulcan.glb`, `HYPER`)
+     - `mclaren_senna` (`assets/models/cars/mclaren_senna.glb`, `HYPER`)
+     - `zenvo_tsrs` (`assets/models/cars/zenvo_tsr-s.glb`, `HYPER`)
+     - `pagani_huayra_r` (`assets/models/cars/pagani_huayra_r_evo_roadster.glb`, `HYPER`)
+     - `amg_one` (`assets/models/cars/amg 1.glb`, `HYPER`)
+     - `porsche_919_evo` (`assets/models/cars/porsche_919_hybrid_evo.glb`, `LMP1`)
+   - Updated `normalizeVehicleScene()`: excluded `/glows/i` helper meshes from scaling/centering bounds and hid protruding glow meshes (`> 0.25m` past core bounds) so `zenvo_tsr-s.glb` scales to accurate width (`2.05 m`), plus enhanced front/rear node and material orientation detection (`brake_lamp` etc.).
+   - Added `splitMergedWheelMeshes()` for Porsche 919 Hybrid Evo's merged 4-corner wheel/disc/caliper meshes (`.006`–`.009`), filtered multi-wheel container groups in `rigHiFiWheels()`, added tire material matching (`tyre`, `tyre_blk`), and added `isHeavyNonPlayer` guard (`tris > 150000`) in `applyHiFiTemplateToSlot()` so ultra-high-poly cars only clone into the player slot.
+2. **Monza / Spa-Francorchamps / Suzuka 3D Circuits & Elevation (`js/circuits.js`, `js/render.js`, `js/physics.js`)**:
+   - Wired `glbUrl` for `monza` (`assets/models/tracks/monza.glb`), added `spa` (`assets/models/tracks/spa_francorchamps.glb`, `-9.9 m` to `+38.6 m` elevation), and added `suzuka` (`assets/models/tracks/suzuka_circuit.glb`, `-8.4 m` to `+14.0 m` elevation including Figure-8 overpass bridge geometry).
+   - Updated `buildTrackGeometryData()` to interpolate explicit per-waypoint `y` elevation, added checkered start/finish line, 12 staggered grid boxes, overpass concrete support piers (`n.y > 5.0`), Mt Fuji visibility guard, and default-off optional `loadTrackGLBScenery()` (`window.ENABLE_GLB_TRACK_SCENERY = false`).
+   - Added `window.PRO_LAP_TIME` live sync inside `generateProBenchmarkLap()` and `window.currentCircuitIndex` / `window.currentCircuit` live sync inside `selectCircuit()`.
+3. **Multi-Class Benchmark Scaling, Per-Class PB, Step 3 SVG Minimaps & UI Styling (`js/circuits.js`, `js/physics.js`, `js/flow.js`, `index.html`)**:
+   - Added `classSpec` on all `GT3` / `HYPER` / `LMP1` vehicles, `window.rebuildProBenchmarkForCurrentCar()`, class-aware AI pace/power scaling in `updateAICars()`, per-class PB storage (`${idx}_${edition}_${carClass}` with GT3 fallback), Step 3 dynamic SVG minimaps (`buildTrackSvg`), and updated button/touch pedal CSS in `index.html`.
+
+### Verification Results (Post-Final-Edit)
+- `python scratch/check_syntax.py`: **7 / 7 OK** (`audio.js`, `circuits.js`, `flow.js`, `input.js`, `main.js`, `physics.js`, `render.js`)
+- `python scratch/test_physics_math.py`: **26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`: **38 PASSED, 0 FAILED**
+- `python scratch/verify_new_assets.py` (Headless Chrome WebGL): **100% PASSED** (`Errors: []`)
+  - 5 circuits verified: `monza` (`PRO 80.42s`, `y: -3.2..1.6`), `fuji` (`PRO 86.27s`, `y: -8.3..4.2`), `hakone` (`PRO 94.983s`, `y: -18.9..9.5`), `spa` (`PRO 90.22s`, `y: -9.9..38.6`), `suzuka` (`PRO 91.916s`, `y: -8.4..14.0`)
+  - All 6 new car GLBs verified (`ok: True`, `wheels: 4`, `hasBody: True`, front axle `+X` > rear axle):
+    - `aston_vulcan`: `71,620` tris, `4.6 x 2.16 x 1.13 m` (`FL=1.344 / RL=-1.302`)
+    - `mclaren_senna`: `238,310` tris, `4.6 x 2.09 x 1.21 m` (`FL=1.473 / RL=-1.104`)
+    - `zenvo_tsrs`: `31,642` tris, `4.6 x 2.05 x 1.24 m` (`FL=1.325 / RL=-1.457`)
+    - `pagani_huayra_r`: `301,826` tris, `4.6 x 2.09 x 1.02 m` (`FL=1.163 / RL=-1.291`)
+    - `amg_one`: `28,877` tris, `4.6 x 1.86 x 1.06 m` (`FL=1.39 / RL=-1.021`)
+    - `porsche_919_evo`: `63,865` tris, `4.6 x 1.77 x 1.28 m` (`FL=1.432 / RL=-1.242`)
+  - Spa multi-class PRO benchmark scaling: `procedural (GT3) 90.22s` > `mclaren_senna (HYPER) 85.714s` > `porsche_919_evo (LMP1) 80.364s`
+- `python scratch/test_proposal.py`: **44 / 44 PASSED** (`index.html` Chrome headless boot `153,936 chars`, zero `#apex-crash-banner`)
+
+---
+
+## 2026-11-15 — Production Deployment (`770d631`)
+
+- Pushed verified production changes (`14 files changed, 794 insertions(+), 91 deletions(-)`) to `origin/main` in commit `770d631`:
+  - Code & UI: `index.html`, `js/circuits.js`, `js/flow.js`, `js/physics.js`, `js/render.js`
+  - 6 Car GLBs (`assets/models/cars/`): `amg 1.glb`, `aston_martin_vulcan.glb`, `mclaren_senna.glb`, `pagani_huayra_r_evo_roadster.glb`, `porsche_919_hybrid_evo.glb`, `zenvo_tsr-s.glb`
+  - 3 Track GLBs (`assets/models/tracks/`): `monza.glb`, `spa_francorchamps.glb`, `suzuka_circuit.glb`
+  - `scratch/` test & helper scripts remain untracked locally.
+
+---
+
+## 2026-11-15 — 徹底修復賽道未閉環折返死路、橋樑／場景碰撞與 3D 坡度穿模問題
+
+### 1. 問題根因診斷 (Root Cause Analysis)
+1. **斯帕 (`spa`) 起終點 `177.1°` 折返重疊死路**：[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js) 原 `P13 -> P14 -> P00 (0,0,0)` 朝 `-X` 收尾後，`P00 -> P01` 立刻朝 `+X` 原路倒折 `177.1°`，造成起終點線 `x = 0` 處出現路面截斷死路感、`4` 處路緣折疊、`8` 處緩衝草皮折疊及 `457` 節點同層重疊。
+2. **鈴鹿 (`suzuka`) `P14 -> P15 -> P00` `158.6°` 折返死路 + 立體交叉高架橋懸空草皮／橋下穿模**：原 `P13 (-220) -> P14 (-80)` 往 `+X` 後 `P15 (-180)` 又倒退回 `-X`，再於 `(0,0,0)` 轉折 `158.6°` 回 `+X`，造成 `8` 處路緣折疊、`21` 處緩衝帶折疊與 `442` 節點重疊；同時 `y=+14m` 高架橋兩側誤生成 `42m` 寬懸空綠草與漂浮松樹，橋下 `y=-4m` 涵洞路段也生成穿過橋面的燈桿與樹木。
+3. **箱根 (`hakone`) 谷底沉入地板平面 (`-18m`)**：箱根最低點達 `-18.9m`，而 [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js) 將大地面網格固定於 `ground.position.y = -18`，導致賽道谷底低於地面草皮 `0.9m` 而產生路面被吞沒的斷裂與穿模現象。
+4. **路旁物件未檢測交叉／鄰近賽道**：輪胎牆、路燈柱、樹木、看台、維修站房車間、煞車牌與橋墩僅沿當前節點法向量偏移，會貫穿鄰近或橋下道路。
+5. **3D 縱向坡度未套用至車輛與攝影機 (`slopePitch`)**：車輛原本僅套用加減速重心俯仰 `pitchRad`，未貼合路面坡度 `atan2(dySmooth, segLen)`，導致上／下坡時車頭尾與輪胎嵌入瀝青；駕駛艙／引擎蓋／追尾視角 `lookAt.y` 亦未隨前方高度 `apexLookNode.y` 調整，造成上坡直視地下土坡與下坡鏡頭沉入路面。
+
+### 2. 修復內容
+- **[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)**：
+  - 重建 `spa.points`（總長 `6097.1m`）與 `suzuka.points`（總長 `5200.5m`）為單調順向閉合迴路（鈴鹿保留 `y=+14m` 跨線大橋與 `y=-4m` 涵洞高度差 `18.1m`）。
+  - 於 `sampleTrackAtS(s)` 與 `sdToWorld(s, d)` 新增並回傳平滑路面縱向坡度角 `slopePitch`。
+- **[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js) & [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)**：
+  - 動態計算全賽道最低點 `minTrackY`，將地面設定於 `groundY = Math.min(-20, minTrackY - 10.0)`（箱根地面降至 `-28.90m`）。
+  - 新增 `isBridgeNode(node)` 與 `isClearOfOtherTrack(...)`：高架橋段緩衝帶收窄為 `+0.9m` 水泥護牆配色並禁止於橋面與橋下長樹、立燈柱；輪胎牆、路燈、樹木、看台、維修站、煞車牌與橋墩全面避開其他非相鄰車道（含上下層淨空）。
+  - 為玩家車輛、Pro/PB 幽靈車（`applyGhostPose`）與 AI 對手車（`syncAiMeshTransform`）以 `'YXZ'` 歐拉順序套用 `slopePitch` 對應的俯仰 (`rotation.z`) 與側滑時橫傾 (`rotation.x`)；Cockpit / Hood / Chase 三種視角同步加入 `lookSlopeY` 與車尾後方地面淨空夾限 (`chaseGroundY + 1.85`)。
+- **[`scratch/verify_new_assets.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_new_assets.html)**：改於啟動驗證前中止初始遠端 GitHub `.glb` 預抓，直接針對本地 5 條賽道與 6 台本機 `.glb` 車輛執行驗證。
+
+### 3. 實機與幾何驗證結果 (2026-11-15)
+- **5 賽道幾何折疊與物件防穿模稽核 (`verify_track_geometry.py`)**：全數通過（`road_folds=0`、`runoff_folds=0`、`same_overlaps=0`、`scenery_hits=0`、`pier_hits=0`）：
+  - `monza`：`len=6006.8m`, `minY=-3.20m (gnd=-20.00m)`
+  - `fuji`：`len=5422.1m`, `minY=-8.30m (gnd=-20.00m)`
+  - `hakone`：`len=5501.1m`, `minY=-18.90m (gnd=-28.90m)`
+  - `spa`：`len=6097.1m`, `minY=-10.00m (gnd=-20.00m)`
+  - `suzuka`：`len=5200.5m`, `minY=-4.63m (gnd=-20.00m)`, `bridge_nodes=29 (dy=18.1m)`
+- `python scratch/check_syntax.py`：**7 / 7 OK**
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**44 / 44 PASSED**
+- `python scratch/verify_new_assets.py` (Headless Chrome WebGL)：**Errors: []**，5 條賽道 PRO 基準秒數與高程 (`monza 80.42s`, `fuji 86.27s`, `hakone 94.983s`, `spa 100.276s`, `suzuka 88.636s`)、6 台車 GLB 結構與 Spa 多級距縮放 (`100.276s > 95.002s > 88.575s`) 全數通過。

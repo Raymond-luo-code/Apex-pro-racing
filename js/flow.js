@@ -7,6 +7,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
       const CAR_CATALOG = [
         {
           id: 'procedural',
+          carClass: 'GT3',
           classLabel: 'GT3 · CLASS S',
           name: 'BMW M4 GT3 EVO // APEX WORKS',
           shortTag: '高精度 3D 模型 · 3.0L 雙渦輪直六',
@@ -19,6 +20,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         },
         {
           id: 'ferrari458',
+          carClass: 'GT3',
           classLabel: 'GT3 · CLASS S',
           name: 'FERRARI 458 ITALIA GT3',
           shortTag: '高精度 3D 模型 · 4.5L V8 超跑',
@@ -31,6 +33,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         },
         {
           id: 'porsche911',
+          carClass: 'GT3',
           classLabel: 'GT3 · CLASS S',
           name: 'PORSCHE 911 GT3 R (992)',
           shortTag: '高精度 3D 模型 · 斯圖加特 RR 六缸',
@@ -43,6 +46,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         },
         {
           id: 'amggt3',
+          carClass: 'GT3',
           classLabel: 'GT3 · CLASS S',
           name: 'MERCEDES-AMG GT3 EVO',
           shortTag: '高精度 3D 模型 · 前中置 6.2L V8',
@@ -51,6 +55,84 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           specs: { topSpeed: '312 km/h', accel: '3.4 s', power: '600 HP', weight: '1,285 kg' },
           bars: { speed: 97, accel: 92, handling: 91, braking: 94 },
           defaultPaint: '#eab308',
+          unlocked: true
+        },
+        {
+          id: 'aston_vulcan',
+          carClass: 'HYPER',
+          classLabel: 'HYPER · CLASS R',
+          name: 'ASTON MARTIN VULCAN AMR PRO',
+          shortTag: '本地高模 GLB · 7.0L V12 自然進氣',
+          origin: '🇬🇧 英國蓋登 · 7.0L V12 NA · 前中置後驅 (FMR)',
+          desc: '僅限賽道奔馳的英倫 820 匹 V12 狂獸！AMR Pro 雙層巨型尾翼與碳纖維單體殼車身帶來遠超 GT3 組別的下壓力與直線尾速。',
+          specs: { topSpeed: '322 km/h', accel: '2.9 s', power: '820 HP', weight: '1,350 kg' },
+          bars: { speed: 95, accel: 96, handling: 95, braking: 96 },
+          defaultPaint: '#10b981',
+          unlocked: true
+        },
+        {
+          id: 'mclaren_senna',
+          carClass: 'HYPER',
+          classLabel: 'HYPER · CLASS R',
+          name: 'MCLAREN SENNA GTR-SPEC',
+          shortTag: '本地高模 GLB · 4.0L V8 雙渦輪極致空力',
+          origin: '🇬🇧 沃金 MTC · 4.0L V8 雙渦輪 · 中置後驅 (MR)',
+          desc: '以傳奇車神命名的終極賽道兵器！Monocage III 碳纖維車體僅重 1,198kg，主動式前後空力在高速彎道產生驚人的 800kg 級下壓力。',
+          specs: { topSpeed: '325 km/h', accel: '2.8 s', power: '814 HP', weight: '1,198 kg' },
+          bars: { speed: 95, accel: 97, handling: 98, braking: 99 },
+          defaultPaint: '#f97316',
+          unlocked: true
+        },
+        {
+          id: 'zenvo_tsrs',
+          carClass: 'HYPER',
+          classLabel: 'HYPER · CLASS R',
+          name: 'ZENVO TSR-S ACTIVE WING',
+          shortTag: '本地高模 GLB · 5.8L V8 主動傾角尾翼',
+          origin: '🇩🇰 丹麥普雷斯特 · 5.8L V8 雙機械增壓 · 中置後驅 (MR)',
+          desc: '搭載舉世聞名 Centripetal Wing 雙軸向傾角尾翼的北歐超跑！入彎時尾翼主動向內側傾斜產生龐大側向壓地力，擁有 1,177 HP 殘暴加速。',
+          specs: { topSpeed: '328 km/h', accel: '2.8 s', power: '1,177 HP', weight: '1,495 kg' },
+          bars: { speed: 98, accel: 98, handling: 94, braking: 95 },
+          defaultPaint: '#0284c7',
+          unlocked: true
+        },
+        {
+          id: 'pagani_huayra_r',
+          carClass: 'HYPER',
+          classLabel: 'HYPER · CLASS R',
+          name: 'PAGANI HUAYRA R EVO ROADSTER',
+          shortTag: '本地高模 GLB · HWA 6.0L V12 高轉速長尾',
+          origin: '🇮🇹 摩德納 · 6.0L V12-R EVO · 中置後驅 (MR)',
+          desc: '將藝術與 Le Mans 原型車空力融為一體的義大利結晶！極輕 1,060kg 乾燥車重與 9,200 rpm 尖銳 V12 爆發力讓彎速全面輾壓傳統 GT 賽車。',
+          specs: { topSpeed: '332 km/h', accel: '2.7 s', power: '900 HP', weight: '1,060 kg' },
+          bars: { speed: 98, accel: 98, handling: 99, braking: 98 },
+          defaultPaint: '#cbd5e1',
+          unlocked: true
+        },
+        {
+          id: 'amg_one',
+          carClass: 'LMP1',
+          classLabel: 'LMP1 · CLASS X',
+          name: 'MERCEDES-AMG ONE F1 E-HYBRID',
+          shortTag: '本地高模 GLB · F1 1.6T V6 油電四驅',
+          origin: '🇩🇪 阿法爾特巴赫 / 布里克斯沃斯 · F1 PU106 混合動力 · 四驅',
+          desc: '直接移植 F1 世界冠軍動力單元的街道原型！11,000 rpm F1 引擎加 4 具電能馬達消除一切渦輪遲滯，紐伯林北環量產紀錄王者。',
+          specs: { topSpeed: '352 km/h', accel: '2.5 s', power: '1,063 HP', weight: '1,695 kg' },
+          bars: { speed: 99, accel: 100, handling: 99, braking: 99 },
+          defaultPaint: '#94a3b8',
+          unlocked: true
+        },
+        {
+          id: 'porsche_919_evo',
+          carClass: 'LMP1',
+          classLabel: 'LMP1 · CLASS X',
+          name: 'PORSCHE 919 HYBRID EVO LMP1',
+          shortTag: '本地高模 GLB · 斯帕 / 紐北終極無限制原型車',
+          origin: '🇩🇪 魏薩赫賽車部門 · 2.0L V4 渦輪 + 800V 動能回收 · 全輪驅動',
+          desc: '解放所有 FIA WEC 賽事規則限制的終極賽道魔王！僅 849kg 車重配合 1,160 HP 綜合輸出與比 F1 更高的空力下壓力，在斯帕與鈴鹿寫下神級單圈！',
+          specs: { topSpeed: '369 km/h', accel: '2.2 s', power: '1,160 HP', weight: '849 kg' },
+          bars: { speed: 100, accel: 100, handling: 100, braking: 100 },
+          defaultPaint: '#f8fafc',
           unlocked: true
         }
       ];
@@ -275,7 +357,10 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         const statsEl = document.getElementById('home-mini-stats');
         const recEl = document.getElementById('lbl-home-records');
 
-        if (clsEl) clsEl.textContent = meta.classLabel;
+        if (clsEl) {
+          clsEl.textContent = meta.classLabel;
+          clsEl.style.color = meta.carClass === 'LMP1' ? '#f43f5e' : (meta.carClass === 'HYPER' ? '#f59e0b' : '#38bdf8');
+        }
         if (nameEl) nameEl.textContent = meta.name;
         if (recEl) recEl.textContent = String(Object.keys(personalRecords).length);
 
@@ -328,6 +413,9 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
             applyCustomLiveryColors(null, null);
           }
         }
+        if (typeof window.rebuildProBenchmarkForCurrentCar === 'function') {
+          window.rebuildProBenchmarkForCurrentCar();
+        }
         renderGarageScreen();
         renderHomeScreen();
       }
@@ -364,7 +452,10 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         const statBars = document.getElementById('gar-stat-bars');
         const stripEl = document.getElementById('gar-car-strip');
 
-        if (clsEl) clsEl.textContent = meta.classLabel;
+        if (clsEl) {
+          clsEl.textContent = meta.classLabel;
+          clsEl.style.color = meta.carClass === 'LMP1' ? '#f43f5e' : (meta.carClass === 'HYPER' ? '#f59e0b' : '#38bdf8');
+        }
         if (nameEl) nameEl.textContent = meta.name;
         if (origEl) origEl.textContent = meta.origin;
         if (descEl) descEl.textContent = meta.desc;
@@ -616,15 +707,36 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         } else if (step === 3) {
           if (kickerEl) kickerEl.textContent = 'STEP 3 / 4 · CIRCUIT SELECTION';
           if (titleEl) titleEl.textContent = '選擇比賽賽道';
+          const buildTrackSvg = (circuit, accent) => {
+            const pts = circuit && circuit.points;
+            if (!pts || !pts.length) return '';
+            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            pts.forEach(p => {
+              if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+              if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+            });
+            const w = Math.max(1, maxX - minX), h = Math.max(1, maxZ - minZ);
+            const pad = 14, vw = 180, vh = 96;
+            const sc = Math.min((vw - pad * 2) / w, (vh - pad * 2) / h);
+            const ox = (vw - w * sc) * 0.5 - minX * sc;
+            const oy = (vh - h * sc) * 0.5 - minZ * sc;
+            const coords = pts.map(p => `${(p.x * sc + ox).toFixed(1)},${(p.z * sc + oy).toFixed(1)}`).join(' ');
+            const sx = (pts[0].x * sc + ox).toFixed(1), sy = (pts[0].z * sc + oy).toFixed(1);
+            return `<svg viewBox="0 0 ${vw} ${vh}" class="af-track-svg" aria-hidden="true">
+              <polygon points="${coords}" fill="none" stroke="rgba(148,163,184,0.22)" stroke-width="7" stroke-linejoin="round"/>
+              <polygon points="${coords}" fill="none" stroke="${accent}" stroke-width="2.6" stroke-linejoin="round"/>
+              <circle cx="${sx}" cy="${sy}" r="4.2" fill="#ffffff" stroke="${accent}" stroke-width="2"/>
+            </svg>`;
+          };
           const tracks = [
             {
               idx: 0,
               accent: '#10b981',
               ico: '🌲',
               tag: '★☆☆ 入門高速 · 晴空正午',
-              ttl: '蒙札森林高速環道',
+              ttl: '蒙札森林高速環道 MONZA',
               sub: 'MONZA HIGH-SPEED RING',
-              dsc: '全長 5.25 km，24m 超寬路面與超長全油門直道。最適合體驗 300+ km/h 高速離心慣性與尾流攻防，新手也能穩定完賽刷圈。',
+              dsc: '全長 5.57 km，24m 超寬路面與超長全油門直道。最適合體驗 300+ km/h 高速離心慣性與尾流攻防，新手也能穩定完賽刷圈。',
               meta: ['📏 路面寬 24m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[0].proLapTime), '☀ 晴空高抓地']
             },
             {
@@ -632,36 +744,59 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
               accent: '#6366f1',
               ico: '🗻',
               tag: '★★★ 中階技術 · 黃金夕陽',
-              ttl: '富士山國際大獎賽道',
+              ttl: '富士山國際大獎賽道 FUJI',
               sub: 'MOUNT FUJI TECHNICAL GP',
               dsc: '全長 5.18 km，結合 1.1km 大直線、2 座重煞髮夾彎（極限 74 km/h）與連續高速 S 彎重心轉移區，夕陽斜射下極富競技張力。',
-              meta: ['📏 路面寬 16m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[1].proLapTime), '🌅 夕陽眩光']
+              meta: ['📏 路面寬 20m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[1].proLapTime), '🌅 夕陽眩光']
             },
             {
               idx: 2,
               accent: '#f43f5e',
               ico: '🌙',
               tag: '★★★★★ 魔鬼山道 · 午夜霓虹',
-              ttl: '箱根午夜山道大獎賽',
+              ttl: '箱根午夜山道大獎賽 HAKONE',
               sub: 'HAKONE MIDNIGHT TOUGE GP',
               dsc: '全長 5.42 km，高低落差劇烈（±16m），遍布急促五連髮夾彎與盲彎。夜間開啟遠光頭燈束與霓虹拱門，極度考驗精準重煞控制！',
-              meta: ['📏 路面寬 13m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[2].proLapTime), '🌃 午夜頭燈']
+              meta: ['📏 路面寬 16.5m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[2].proLapTime), '🌃 午夜頭燈']
+            },
+            {
+              idx: 3,
+              accent: '#f59e0b',
+              ico: '⛰️',
+              tag: '★★★★ 殿堂山林 · Eau Rouge 陡坡',
+              ttl: '斯帕-弗朗科爾尚 SPA GP',
+              sub: 'CIRCUIT DE SPA-FRANCORCHAMPS',
+              dsc: '傳奇阿登森林賽道！從 La Source 下坡壓縮衝進紅水河谷再攀爬 35m Eau Rouge / Raidillon 盲頂全油門彎，直入 Blanchimont 與公車站芝加哥。',
+              meta: ['📏 路面寬 18.5m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[3].proLapTime), '🌲 高低差 47m']
+            },
+            {
+              idx: 4,
+              accent: '#06b6d4',
+              ico: '🌉',
+              tag: '★★★★ 傳奇八字 · 立體交叉天橋',
+              ttl: '鈴鹿國際賽道 SUZUKA',
+              sub: 'SUZUKA INTERNATIONAL RACING COURSE',
+              dsc: '全球唯一經典八字型立體交叉大獎賽道！連續 S 彎、湯匙雙頂點與高架橋上飛越德格納下穿隧道後直劈 130R 超高速左彎！',
+              meta: ['📏 路面寬 18m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[4].proLapTime), '🌉 八字高架立體橋']
             }
           ];
+          const carClassTag = getActiveCarMeta().carClass || 'GT3';
           bodyEl.innerHTML = `
-            <div class="af-choice-grid">
+            <div class="af-choice-grid" style="max-width:1180px;">
               ${tracks.map(t => {
-                const pbKey = `${t.idx}_${simState.edition}`;
-                const pbVal = personalRecords[pbKey];
+                const pbKey = `${t.idx}_${simState.edition}_${carClassTag}`;
+                const legacyPbKey = `${t.idx}_${simState.edition}`;
+                const pbVal = personalRecords[pbKey] || (carClassTag === 'GT3' ? personalRecords[legacyPbKey] : null);
                 return `
                   <div class="af-choice ${currentCircuitIndex === t.idx ? 'is-active' : ''}" style="--accent:${t.accent};" data-pick-track="${t.idx}">
+                    ${buildTrackSvg(CIRCUITS[t.idx], t.accent)}
                     <div class="ico">${t.ico}</div>
                     <div class="tag">${t.tag}</div>
                     <div class="ttl">${t.ttl}</div>
                     <div class="dsc">${t.dsc}</div>
                     <div class="meta">
                       ${t.meta.map(m => `<span>${m}</span>`).join('')}
-                      ${pbVal ? `<span style="color:#fbbf24;">🏆 個人最佳 ${formatLapTime(pbVal)}</span>` : ''}
+                      ${pbVal ? `<span style="color:#fbbf24;">🏆 最佳(${carClassTag}) ${formatLapTime(pbVal)}</span>` : ''}
                     </div>
                     <div class="go">選擇此賽道・前往選車 ➔</div>
                   </div>`;
@@ -674,6 +809,9 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
       function startConfiguredRace(withLoading) {
         soundEngine.init();
         clearAllHeldInputs();
+        if (typeof window.rebuildProBenchmarkForCurrentCar === 'function') {
+          window.rebuildProBenchmarkForCurrentCar();
+        }
         const carMeta = getActiveCarMeta();
         const modeTitle = simState.mode === 'ai_race' ? '2 圈電腦錦標賽' : '單圈計時挑戰賽';
         const edTitle = simState.edition === 'arcade' ? '娛樂氮氣模式' : '真實沉浸模式';
@@ -772,9 +910,11 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         const bestSessionLap = (simState.mode === 'time_attack') ? (rawBestLap + jumpPenaltySec) : rawBestLap;
         const totalSessionTime = lapTimes.reduce((a, b) => a + b, 0) + jumpPenaltySec;
 
-        const pbKey = `${currentCircuitIndex}_${simState.edition}`;
-        const prevPB = personalRecords[pbKey] || null;
+        const carClassKey = (getActiveCarMeta().carClass || 'GT3');
+        const pbKey = `${currentCircuitIndex}_${simState.edition}_${carClassKey}`;
+        const prevPB = personalRecords[pbKey] || (carClassKey === 'GT3' ? personalRecords[`${currentCircuitIndex}_${simState.edition}`] : null) || null;
         const isNewPB = savePersonalRecord(pbKey, bestSessionLap);
+        if (carClassKey === 'GT3') savePersonalRecord(`${currentCircuitIndex}_${simState.edition}`, bestSessionLap);
 
         let maxV = simState.sessionTopSpeed || 0;
         simState.currentLapSamples.forEach(s => { if (s.speed > maxV) maxV = s.speed; });

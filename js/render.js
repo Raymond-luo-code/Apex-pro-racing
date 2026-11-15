@@ -459,17 +459,19 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           circuitSceneryGroup.add(sunOrb);
         }
 
-        const mtFujiGeo = new THREE.ConeGeometry(720, 420, 32);
-        const mtFujiMat = new THREE.MeshLambertMaterial({ color: th.isNight ? 0x0f172a : 0x1e293b });
-        const mtFuji = new THREE.Mesh(mtFujiGeo, mtFujiMat);
-        mtFuji.position.set(420, 195, 2150);
-        circuitSceneryGroup.add(mtFuji);
+        if (currentCircuit.id === 'fuji' || currentCircuit.id === 'hakone' || currentCircuit.id === 'suzuka') {
+          const mtFujiGeo = new THREE.ConeGeometry(720, 420, 32);
+          const mtFujiMat = new THREE.MeshLambertMaterial({ color: th.isNight ? 0x0f172a : 0x1e293b });
+          const mtFuji = new THREE.Mesh(mtFujiGeo, mtFujiMat);
+          mtFuji.position.set(420, 195, 2150);
+          circuitSceneryGroup.add(mtFuji);
 
-        const snowCapGeo = new THREE.ConeGeometry(265, 155, 32);
-        const snowCapMat = new THREE.MeshBasicMaterial({ color: th.isNight ? 0x94a3b8 : 0xf1f5f9 });
-        const snowCap = new THREE.Mesh(snowCapGeo, snowCapMat);
-        snowCap.position.set(420, 326, 2150);
-        circuitSceneryGroup.add(snowCap);
+          const snowCapGeo = new THREE.ConeGeometry(265, 155, 32);
+          const snowCapMat = new THREE.MeshBasicMaterial({ color: th.isNight ? 0x94a3b8 : 0xf1f5f9 });
+          const snowCap = new THREE.Mesh(snowCapGeo, snowCapMat);
+          snowCap.position.set(420, 326, 2150);
+          circuitSceneryGroup.add(snowCap);
+        }
 
         const hillCoords = [
           { x: -1650, z: 1400, r: 520, h: 240 },
@@ -486,12 +488,48 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           circuitSceneryGroup.add(hMesh);
         });
 
+        let minTrackY = 0;
+        for (let i = 0; i < TRACK_SAMPLES; i++) {
+          const ny = trackNodes[i].y || 0;
+          if (ny < minTrackY) minTrackY = ny;
+        }
+        const groundY = Math.min(-20, minTrackY - 10.0);
+
         const groundGeo = new THREE.PlaneGeometry(6500, 6500);
         const groundMat = new THREE.MeshLambertMaterial({ color: th.grassColor });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -18;
+        ground.position.y = groundY;
         circuitSceneryGroup.add(ground);
+
+        function isBridgeNode(node) {
+          const ny = node.y || 0;
+          if (ny < 6.0) return false;
+          for (let j = 0; j < TRACK_SAMPLES; j += 2) {
+            const nj = trackNodes[j];
+            let ds = Math.abs((node.s || 0) - (nj.s || 0));
+            if (ds > totalTrackLength * 0.5) ds = totalTrackLength - ds;
+            if (ds < 55.0) continue;
+            const dxz = Math.hypot(node.x - nj.x, node.z - nj.z);
+            if (dxz < 65.0 && (ny - (nj.y || 0)) > 8.0) return true;
+          }
+          return false;
+        }
+
+        function isClearOfOtherTrack(wx, wy, wz, ownS, minClearance) {
+          const hw = TRACK_WIDTH * 0.5;
+          for (let j = 0; j < TRACK_SAMPLES; j += 2) {
+            const nj = trackNodes[j];
+            let ds = Math.abs(ownS - (nj.s || 0));
+            if (ds > totalTrackLength * 0.5) ds = totalTrackLength - ds;
+            if (ds <= 55.0) continue;
+            const dxz = Math.hypot(wx - nj.x, wz - nj.z);
+            const nyj = nj.y || 0;
+            if (dxz < hw + minClearance && Math.abs(wy - nyj) < 14.0) return false;
+            if (nyj > wy + 4.0 && dxz < hw + 10.0) return false;
+          }
+          return true;
+        }
 
         const positions = [];
         const colors = [];
@@ -528,6 +566,8 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           const nextLook = trackNodes[(i + 22) % TRACK_SAMPLES];
           const halfW = TRACK_WIDTH * 0.5;
           const runoffHalfW = halfW + 12.0;
+          const onBridge = isBridgeNode(node);
+          const curRunoffW = onBridge ? (halfW + 0.9) : runoffHalfW;
 
           const lx = node.x - node.rightX * halfW;
           const lz = node.z - node.rightZ * halfW;
@@ -537,15 +577,19 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           positions.push(lx, node.y, lz);
           positions.push(rx, node.y, rz);
 
-          const rLx = node.x - node.rightX * runoffHalfW;
-          const rLz = node.z - node.rightZ * runoffHalfW;
-          const rRx = node.x + node.rightX * runoffHalfW;
-          const rRz = node.z + node.rightZ * runoffHalfW;
+          const rLx = node.x - node.rightX * curRunoffW;
+          const rLz = node.z - node.rightZ * curRunoffW;
+          const rRx = node.x + node.rightX * curRunoffW;
+          const rRz = node.z + node.rightZ * curRunoffW;
           runoffPositions.push(rLx, node.y - 0.06, rLz);
           runoffPositions.push(rRx, node.y - 0.06, rRz);
           const isAlt = (Math.floor(i / 4) % 2 === 0);
-          const gCol = th.isNight ? (isAlt ? 0.07 : 0.09) : (isAlt ? 0.16 : 0.20);
-          runoffColors.push(0.06, gCol, 0.09, 0.06, gCol, 0.09);
+          if (onBridge) {
+            runoffColors.push(0.36, 0.39, 0.44, 0.36, 0.39, 0.44);
+          } else {
+            const gCol = th.isNight ? (isAlt ? 0.07 : 0.09) : (isAlt ? 0.16 : 0.20);
+            runoffColors.push(0.06, gCol, 0.09, 0.06, gCol, 0.09);
+          }
 
           const bandGrain = ((i % 3 === 0) ? 0.015 : 0);
           const isBrakingZone = Math.abs(nextLook.curvature) > 0.0055 && Math.abs(node.curvature) < 0.004;
@@ -783,106 +827,124 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
         sceneryNodes.forEach(({ node: n, idx }) => {
           const halfW = TRACK_WIDTH * 0.5;
+          const onBridge = isBridgeNode(n);
 
           if (Math.abs(n.curvature) > 0.0038) {
             const outSide = -Math.sign(n.curvature || 1);
             const tireDist = halfW + 4.8;
-            const tStack = new THREE.Mesh(tireStackGeo, (idx % 12 === 0) ? tireBlueMat : tireWhiteMat);
-            tStack.position.set(n.x + n.rightX * outSide * tireDist, n.y + 0.65, n.z + n.rightZ * outSide * tireDist);
-            circuitSceneryGroup.add(tStack);
+            const bx = n.x + n.rightX * outSide * tireDist;
+            const bz = n.z + n.rightZ * outSide * tireDist;
+            if (!onBridge && isClearOfOtherTrack(bx, n.y, bz, n.s, 4.0)) {
+              const tStack = new THREE.Mesh(tireStackGeo, (idx % 12 === 0) ? tireBlueMat : tireWhiteMat);
+              tStack.position.set(bx, n.y + 0.65, bz);
+              circuitSceneryGroup.add(tStack);
+            }
           }
 
-          if (idx % (th.isNight ? 12 : 24) === 0) {
+          if (!onBridge && idx % (th.isNight ? 12 : 24) === 0) {
             const side = (idx % 24 === 0) ? -1 : 1;
             const poleDist = halfW + 8.5;
             const px = n.x + n.rightX * side * poleDist;
             const pz = n.z + n.rightZ * side * poleDist;
 
-            const pole = new THREE.Mesh(lightPoleGeo, lightPoleMat);
-            pole.position.set(px, n.y + 5.75, pz);
-            circuitSceneryGroup.add(pole);
+            if (isClearOfOtherTrack(px, n.y, pz, n.s, 5.0)) {
+              const pole = new THREE.Mesh(lightPoleGeo, lightPoleMat);
+              pole.position.set(px, n.y + 5.75, pz);
+              circuitSceneryGroup.add(pole);
 
-            const head = new THREE.Mesh(lightHeadGeo, lightHeadMat);
-            head.position.set(px - n.rightX * side * 0.8, n.y + 11.5, pz - n.rightZ * side * 0.8);
-            head.rotation.y = -n.heading;
-            circuitSceneryGroup.add(head);
+              const head = new THREE.Mesh(lightHeadGeo, lightHeadMat);
+              head.position.set(px - n.rightX * side * 0.8, n.y + 11.5, pz - n.rightZ * side * 0.8);
+              head.rotation.y = -n.heading;
+              circuitSceneryGroup.add(head);
+            }
           }
 
-          [-1, 1].forEach(side => {
-            if (n.s < 460 || n.s > totalTrackLength - 320) return;
+          if (!onBridge) {
+            [-1, 1].forEach(side => {
+              if (n.s < 460 || n.s > totalTrackLength - 320) return;
 
-            const treeDist = halfW + 14.5 + ((idx * 7) % 16);
-            const tx = n.x + n.rightX * side * treeDist;
-            const tz = n.z + n.rightZ * side * treeDist;
+              const treeDist = halfW + 14.5 + ((idx * 7) % 16);
+              const tx = n.x + n.rightX * side * treeDist;
+              const tz = n.z + n.rightZ * side * treeDist;
+              if (!isClearOfOtherTrack(tx, n.y, tz, n.s, 8.0)) return;
 
-            const treeGroup = new THREE.Group();
-            treeGroup.position.set(tx, n.y, tz);
+              const treeGroup = new THREE.Group();
+              treeGroup.position.set(tx, n.y, tz);
 
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = 1.6;
-            treeGroup.add(trunk);
+              const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+              trunk.position.y = 1.6;
+              treeGroup.add(trunk);
 
-            const isSecondary = (idx % 30 === 0);
-            const crown = new THREE.Mesh(
-              isSecondary ? secCrownGeo : pineCrownGeo,
-              isSecondary ? secCrownMat : pineCrownMat
-            );
-            crown.position.y = isSecondary ? 4.8 : 5.4;
-            const scaleVar = 0.85 + ((idx * 13) % 5) * 0.12;
-            crown.scale.set(scaleVar, scaleVar, scaleVar);
-            treeGroup.add(crown);
+              const isSecondary = (idx % 30 === 0);
+              const crown = new THREE.Mesh(
+                isSecondary ? secCrownGeo : pineCrownGeo,
+                isSecondary ? secCrownMat : pineCrownMat
+              );
+              crown.position.y = isSecondary ? 4.8 : 5.4;
+              const scaleVar = 0.85 + ((idx * 13) % 5) * 0.12;
+              crown.scale.set(scaleVar, scaleVar, scaleVar);
+              treeGroup.add(crown);
 
-            circuitSceneryGroup.add(treeGroup);
-          });
+              circuitSceneryGroup.add(treeGroup);
+            });
+          }
         });
 
         for (let s = 40; s <= 400; s += 60) {
           const n = sampleTrackAtS(s);
           const standOffset = TRACK_WIDTH * 0.5 + 12.5;
-          const standGroup = new THREE.Group();
-          standGroup.position.set(n.x - n.rightX * standOffset, n.y, n.z - n.rightZ * standOffset);
-          standGroup.rotation.y = -n.heading;
+          const gx = n.x - n.rightX * standOffset;
+          const gz = n.z - n.rightZ * standOffset;
+          if (isClearOfOtherTrack(gx, n.y, gz, n.s, 28.0)) {
+            const standGroup = new THREE.Group();
+            standGroup.position.set(gx, n.y, gz);
+            standGroup.rotation.y = -n.heading;
 
-          const baseMesh = new THREE.Mesh(
-            new THREE.BoxGeometry(46, 8.5, 10),
-            new THREE.MeshLambertMaterial({ color: 0x1e293b })
-          );
-          baseMesh.position.y = 4.25;
-          standGroup.add(baseMesh);
+            const baseMesh = new THREE.Mesh(
+              new THREE.BoxGeometry(46, 8.5, 10),
+              new THREE.MeshLambertMaterial({ color: 0x1e293b })
+            );
+            baseMesh.position.y = 4.25;
+            standGroup.add(baseMesh);
 
-          const seatsMesh = new THREE.Mesh(
-            new THREE.BoxGeometry(44, 5.5, 8.2),
-            new THREE.MeshLambertMaterial({ color: (s % 120 === 0) ? 0xdc2626 : 0x2563eb })
-          );
-          seatsMesh.position.set(0, 5.2, 1.4);
-          standGroup.add(seatsMesh);
+            const seatsMesh = new THREE.Mesh(
+              new THREE.BoxGeometry(44, 5.5, 8.2),
+              new THREE.MeshLambertMaterial({ color: (s % 120 === 0) ? 0xdc2626 : 0x2563eb })
+            );
+            seatsMesh.position.set(0, 5.2, 1.4);
+            standGroup.add(seatsMesh);
 
-          const roofMesh = new THREE.Mesh(
-            new THREE.BoxGeometry(48, 0.8, 13),
-            new THREE.MeshLambertMaterial({ color: 0xf8fafc })
-          );
-          roofMesh.position.set(0, 10.5, 1.5);
-          standGroup.add(roofMesh);
-          circuitSceneryGroup.add(standGroup);
+            const roofMesh = new THREE.Mesh(
+              new THREE.BoxGeometry(48, 0.8, 13),
+              new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+            );
+            roofMesh.position.set(0, 10.5, 1.5);
+            standGroup.add(roofMesh);
+            circuitSceneryGroup.add(standGroup);
+          }
 
-          const pitGroup = new THREE.Group();
-          pitGroup.position.set(n.x + n.rightX * (standOffset - 2), n.y, n.z + n.rightZ * (standOffset - 2));
-          pitGroup.rotation.y = -n.heading;
+          const pbx = n.x + n.rightX * (standOffset - 2);
+          const pbz = n.z + n.rightZ * (standOffset - 2);
+          if (isClearOfOtherTrack(pbx, n.y, pbz, n.s, 18.0)) {
+            const pitGroup = new THREE.Group();
+            pitGroup.position.set(pbx, n.y, pbz);
+            pitGroup.rotation.y = -n.heading;
 
-          const pitBldg = new THREE.Mesh(
-            new THREE.BoxGeometry(44, 7.2, 9),
-            new THREE.MeshLambertMaterial({ color: 0x334155 })
-          );
-          pitBldg.position.y = 3.6;
-          pitGroup.add(pitBldg);
+            const pitBldg = new THREE.Mesh(
+              new THREE.BoxGeometry(44, 7.2, 9),
+              new THREE.MeshLambertMaterial({ color: 0x334155 })
+            );
+            pitBldg.position.y = 3.6;
+            pitGroup.add(pitBldg);
 
-          const glassStrip = new THREE.Mesh(
-            new THREE.BoxGeometry(44.2, 2.2, 9.2),
-            new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-          );
-          glassStrip.position.y = 5.2;
-          pitGroup.add(glassStrip);
-          circuitSceneryGroup.add(pitGroup);
+            const glassStrip = new THREE.Mesh(
+              new THREE.BoxGeometry(44.2, 2.2, 9.2),
+              new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+            );
+            glassStrip.position.y = 5.2;
+            pitGroup.add(glassStrip);
+            circuitSceneryGroup.add(pitGroup);
+          }
         }
 
         const brakePostGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8);
@@ -897,6 +959,9 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
             [-1, 1].forEach(side => {
               const offset = side * (TRACK_WIDTH * 0.5 + 3.2);
+              const bx = boardNode.x + boardNode.rightX * offset;
+              const bz = boardNode.z + boardNode.rightZ * offset;
+              if (!isClearOfOtherTrack(bx, boardNode.y, bz, boardNode.s, 3.0)) return;
               const signHolder = new THREE.Group();
 
               const signMesh = new THREE.Mesh(brakeSignGeo, signMat);
@@ -912,11 +977,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
               postMesh.position.y = 1.2;
               signHolder.add(postMesh);
 
-              signHolder.position.set(
-                boardNode.x + boardNode.rightX * offset,
-                boardNode.y,
-                boardNode.z + boardNode.rightZ * offset
-              );
+              signHolder.position.set(bx, boardNode.y, bz);
               // Face oncoming drivers (-dirX, -dirZ) with local +X pointing left-to-right (+rightX, +rightZ)
               signHolder.rotation.y = -boardNode.heading - Math.PI / 2;
               circuitSceneryGroup.add(signHolder);
@@ -970,6 +1031,141 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           gateGroup.add(pL, pR, banner);
           circuitSceneryGroup.add(gateGroup);
         });
+
+        // F1 / GT3 Checkered Start/Finish Line & 12 Staggered Starting Grid Boxes
+        {
+          const sfNode = sampleTrackAtS(0);
+          const sfGroup = new THREE.Group();
+          sfGroup.position.set(sfNode.x, sfNode.y + 0.04, sfNode.z);
+          sfGroup.rotation.y = -sfNode.heading;
+          const tileSize = 1.25;
+          const rows = 2;
+          const cols = Math.floor((TRACK_WIDTH * 0.92) / tileSize);
+          const wMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+          const bMat = new THREE.MeshBasicMaterial({ color: 0x090d16 });
+          const tileGeo = new THREE.PlaneGeometry(tileSize, tileSize);
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              const sq = new THREE.Mesh(tileGeo, ((r + c) % 2 === 0) ? wMat : bMat);
+              sq.rotation.x = -Math.PI / 2;
+              sq.position.set((r - 0.5) * tileSize, 0, (c - (cols - 1) * 0.5) * tileSize);
+              sfGroup.add(sq);
+            }
+          }
+          circuitSceneryGroup.add(sfGroup);
+
+          const gridLineMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
+          const gridFrontGeo = new THREE.PlaneGeometry(0.28, 2.25);
+          const gridSideGeo = new THREE.PlaneGeometry(1.15, 0.22);
+          for (let slot = 0; slot < 12; slot++) {
+            const gs = (totalTrackLength - 14 - slot * 8.5) % totalTrackLength;
+            const gd = (slot % 2 === 0 ? -1 : 1) * Math.min(3.2, TRACK_WIDTH * 0.22);
+            const gn = sampleTrackAtS(gs);
+            const box = new THREE.Group();
+            box.position.set(gn.x + gn.rightX * gd, gn.y + 0.045, gn.z + gn.rightZ * gd);
+            box.rotation.y = -gn.heading;
+            const bar = new THREE.Mesh(gridFrontGeo, gridLineMat);
+            bar.rotation.x = -Math.PI / 2;
+            bar.position.x = 1.2;
+            const sideL = new THREE.Mesh(gridSideGeo, gridLineMat);
+            sideL.rotation.x = -Math.PI / 2;
+            sideL.position.set(0.65, 0, -1.02);
+            const sideR = new THREE.Mesh(gridSideGeo, gridLineMat);
+            sideR.rotation.x = -Math.PI / 2;
+            sideR.position.set(0.65, 0, 1.02);
+            box.add(bar, sideL, sideR);
+            circuitSceneryGroup.add(box);
+          }
+        }
+
+        // Overpass Bridge Concrete Support Piers (for elevated bridge sections such as Suzuka crossover & Spa Raidillon)
+        const bridgePillarMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+        const pierHalfW = TRACK_WIDTH * 0.5;
+        for (let i = 0; i < TRACK_SAMPLES; i += 24) {
+          const n = trackNodes[i];
+          if (n.y > 5.0) {
+            const colH = Math.max(4.0, (n.y - groundY) + 2.0);
+            const pierGeo = new THREE.CylinderGeometry(1.1, 1.45, colH, 10);
+            [-1, 1].forEach(side => {
+              const lat = side * (pierHalfW - 1.2);
+              const px = n.x + n.rightX * lat;
+              const pz = n.z + n.rightZ * lat;
+              let clearBelow = true;
+              for (let j = 0; j < TRACK_SAMPLES; j += 2) {
+                const nj = trackNodes[j];
+                if ((nj.y || 0) >= n.y - 4.0) continue;
+                let ds = Math.abs((n.s || 0) - (nj.s || 0));
+                if (ds > totalTrackLength * 0.5) ds = totalTrackLength - ds;
+                if (ds <= 55.0) continue;
+                if (Math.hypot(px - nj.x, pz - nj.z) < pierHalfW + 4.5) {
+                  clearBelow = false;
+                  break;
+                }
+              }
+              if (!clearBelow) return;
+              const pier = new THREE.Mesh(pierGeo, bridgePillarMat);
+              pier.position.set(px, n.y - colH * 0.5 - 0.6, pz);
+              circuitSceneryGroup.add(pier);
+            });
+          }
+        }
+
+        // Optional Asynchronous 3D Track Environment Loader (.glb scenery without overlapping road ribbon)
+        loadTrackGLBScenery(currentCircuit, circuitSceneryGroup);
+      }
+
+      const trackGLBCache = {};
+      let activeTrackGLBSeq = 0;
+      if (typeof window !== 'undefined' && typeof window.ENABLE_GLB_TRACK_SCENERY === 'undefined') {
+        window.ENABLE_GLB_TRACK_SCENERY = false;
+      }
+      function loadTrackGLBScenery(circuit, parentGroup) {
+        if (!circuit || !circuit.glbUrl || !parentGroup) return;
+        if (typeof window === 'undefined' || window.ENABLE_GLB_TRACK_SCENERY !== true) return;
+        const seq = ++activeTrackGLBSeq;
+        const mountScenery = (raw) => {
+          if (seq !== activeTrackGLBSeq || !parentGroup.parent) return;
+          const inst = raw.clone(true);
+          const tr = circuit.glbTransform || { pos: [0, 0, 0], rotX: 0, rotY: 0, scale: 1.0 };
+          const wrap = new THREE.Group();
+          wrap.name = `track_glb_scenery_${circuit.id}`;
+          wrap.position.set(tr.pos[0] || 0, (tr.pos[1] || 0) - 0.35, tr.pos[2] || 0);
+          wrap.rotation.set(0, tr.rotY || 0, 0);
+          wrap.scale.setScalar(tr.scale || 1.0);
+          inst.rotation.x = tr.rotX || 0;
+          inst.traverse(o => {
+            if (!o.isMesh) return;
+            o.frustumCulled = true;
+            o.castShadow = false;
+            o.receiveShadow = false;
+            const nm = (o.name || '').toLowerCase();
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            const mStr = mats.map(m => (m && m.name) ? m.name.toLowerCase() : '').join(' ');
+            if (/\b(gnd_road|road1|road2|road3|psroad|roadsfn|overlay_startgrid)\b|meshesroadroad/.test(nm + ' ' + mStr)) {
+              o.visible = false;
+            }
+          });
+          wrap.add(inst);
+          parentGroup.add(wrap);
+        };
+
+        if (trackGLBCache[circuit.id]) {
+          mountScenery(trackGLBCache[circuit.id]);
+          return;
+        }
+        try {
+          const loader = createGLTFLoader();
+          loader.load(circuit.glbUrl, (gltf) => {
+            const sc = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
+            if (!sc) return;
+            trackGLBCache[circuit.id] = sc;
+            mountScenery(sc);
+          }, undefined, (err) => {
+            console.warn('[APEX TRACK GLB] async scenery load skipped:', circuit.glbUrl, err && err.message ? err.message : err);
+          });
+        } catch (e) {
+          /* non-fatal fallback to procedural track scenery */
+        }
       }
 
       // Skidmarks & Smoke / Nitrous Flame / Exhaust Backfire Particles
@@ -1120,6 +1316,48 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             'https://raw.githubusercontent.com/KhazP/librecorsa/7b009d905790e277cd6bc926a549b862907e49f3/public/cars/amg-gt3-evo/model/amg-gt3-evo.glb',
             'https://raw.githubusercontent.com/KhazP/librecorsa/7b009d905790e277cd6bc926a549b862907e49f3/public/gt3/model/amg_gt3.glb'
           ]
+        },
+        {
+          id: 'aston_vulcan',
+          label: 'Aston Martin Vulcan AMR Pro',
+          desc: '英國賽道專屬 7.0L V12 自然進氣超跑・雙層尾翼高下壓力 GLB 模型',
+          defaultPaint: '#10b981',
+          urls: ['assets/models/cars/aston_martin_vulcan.glb']
+        },
+        {
+          id: 'mclaren_senna',
+          label: 'McLaren Senna GTR-Spec',
+          desc: '沃金終極賽道機器・4.0L V8 雙渦輪＋巨型鵝頸主動尾翼 GLB 模型',
+          defaultPaint: '#f97316',
+          urls: ['assets/models/cars/mclaren_senna.glb']
+        },
+        {
+          id: 'zenvo_tsrs',
+          label: 'Zenvo TSR-S Centripetal Wing',
+          desc: '丹麥雙機械增壓 5.8L V8 頂級超跑・主動傾角離心尾翼 GLB 模型',
+          defaultPaint: '#0284c7',
+          urls: ['assets/models/cars/zenvo_tsr-s.glb']
+        },
+        {
+          id: 'pagani_huayra_r',
+          label: 'Pagani Huayra R Evo Roadster',
+          desc: '義大利藝術級賽道猛獸・HWA 6.0L V12 自然進氣長尾 GLB 模型',
+          defaultPaint: '#cbd5e1',
+          urls: ['assets/models/cars/pagani_huayra_r_evo_roadster.glb']
+        },
+        {
+          id: 'amg_one',
+          label: 'Mercedes-AMG ONE F1 E-Hybrid',
+          desc: 'F1 冠軍動力下放・1.6L V6 渦輪油電四馬達＋鯊魚鰭主動空力 GLB 模型',
+          defaultPaint: '#94a3b8',
+          urls: ['assets/models/cars/amg 1.glb']
+        },
+        {
+          id: 'porsche_919_evo',
+          label: 'Porsche 919 Hybrid Evo LMP1',
+          desc: '紐北與斯帕賽道紀錄保持者・1,160 HP 終極原型賽車 GLB 模型',
+          defaultPaint: '#f8fafc',
+          urls: ['assets/models/cars/porsche_919_hybrid_evo.glb']
         }
       ];
 
@@ -1570,13 +1808,19 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         orient.rotation.y = baseRotY;
         root.updateMatrixWorld(true);
 
-        // Auto-detect whether front wheels point toward +X or -X (some GLBs face -Z, others face +Z)
+        // Auto-detect whether front wheels/lights point toward +X or -X (some GLBs face -Z, others face +Z)
         let frontSumX = 0, frontCnt = 0, rearSumX = 0, rearCnt = 0;
         srcScene.traverse(o => {
           if (!o.visible) return;
           const nm = (o.name || '');
-          const isFront = /\b(wheel_?f[lr]|wheel_?[lr]f|rim_?f[lr]|rim_?[lr]f|tire_?f[lr]|tyre_?f[lr]|disc_?[lr]f|wheelf)/i.test(nm);
-          const isRear = /\b(wheel_?r[lr]|wheel_?[lr]r|rim_?r[lr]|rim_?[lr]r|tire_?r[lr]|tyre_?r[lr]|disc_?[lr]r|wheelb)/i.test(nm);
+          let matNames = '';
+          if (o.isMesh && o.material) {
+            const ms = Array.isArray(o.material) ? o.material : [o.material];
+            matNames = ms.map(m => (m && m.name) || '').join(' ');
+          }
+          const combined = nm + ' ' + matNames;
+          const isFront = /\b(wheel_?f[lr]|wheel_?[lr]f|rim_?f[lr]|rim_?[lr]f|tire_?f[lr]|tyre_?f[lr]|disc_?[lr]f|wheelf|front\s*[lr]|frontbumper|headlight)/i.test(combined);
+          const isRear = /\b(wheel_?r[lr]|wheel_?[lr]r|rim_?r[lr]|rim_?[lr]r|tire_?r[lr]|tyre_?r[lr]|disc_?[lr]r|wheelb|rear\s*[lr]|rearbumper|taillight|brake_lamp)/i.test(combined);
           if (isFront || isRear) {
             const wb = new THREE.Box3().setFromObject(o);
             if (!wb.isEmpty()) {
@@ -1586,7 +1830,8 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             }
           }
         });
-        if (frontCnt > 0 && rearCnt > 0 && (frontSumX / frontCnt) < (rearSumX / rearCnt)) {
+        if ((frontCnt > 0 && rearCnt > 0 && (frontSumX / frontCnt) < (rearSumX / rearCnt)) ||
+            (frontCnt === 0 && rearCnt > 0 && (rearSumX / rearCnt) > 0.25)) {
           baseRotY += Math.PI;
         }
 
@@ -1594,20 +1839,30 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           (carAssetState.flip ? Math.PI : 0) +
           carAssetState.yawSteps * (Math.PI / 2);
         root.updateMatrixWorld(true);
+        const isGlowHelper = o => /glows/i.test(o.name || '');
         box = new THREE.Box3();
-        orient.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+        orient.traverse(o => { if (o.isMesh && o.visible && !isGlowHelper(o)) box.expandByObject(o); });
+        if (box.isEmpty()) orient.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
         let size = box.getSize(new THREE.Vector3());
 
         const s = CAR_TARGET_DIMS.length / Math.max(0.001, size.x);
         orient.scale.setScalar(s);
         root.updateMatrixWorld(true);
         box = new THREE.Box3();
-        orient.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+        orient.traverse(o => { if (o.isMesh && o.visible && !isGlowHelper(o)) box.expandByObject(o); });
+        if (box.isEmpty()) orient.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
         const center = box.getCenter(new THREE.Vector3());
         orient.position.set(-center.x, -box.min.y, -center.z);
         root.updateMatrixWorld(true);
         box = new THREE.Box3();
-        root.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+        root.traverse(o => { if (o.isMesh && o.visible && !isGlowHelper(o)) box.expandByObject(o); });
+        if (box.isEmpty()) root.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+        root.traverse(o => {
+          if (o.isMesh && o.visible && isGlowHelper(o)) {
+            const gb = new THREE.Box3().setFromObject(o);
+            if (gb.min.x < box.min.x - 0.25 || gb.max.x > box.max.x + 0.25) o.visible = false;
+          }
+        });
         size = box.getSize(new THREE.Vector3());
         return { root, rawSize, size, scale: s };
       }
@@ -1690,16 +1945,107 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         root.updateMatrixWorld(true);
       }
 
+      // ---- Split merged 4-corner wheel/disc/caliper meshes (e.g., Porsche 919 Hybrid Evo Object_2..5) ----
+      function splitMergedWheelMeshes(root) {
+        root.updateMatrixWorld(true);
+        const rootInv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+        const toSplit = [];
+        root.traverse(o => {
+          if (!o.isMesh || !o.visible || !o.geometry || !o.geometry.attributes.position) return;
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          const matNames = mats.map(m => (m && m.name ? m.name.trim() : '')).join(' ');
+          if (/\.00[6789]\b/.test(matNames)) {
+            const b = new THREE.Box3().setFromObject(o);
+            const sz = b.getSize(new THREE.Vector3());
+            if (sz.x > 1.8 && sz.z > 1.1) {
+              toSplit.push({ mesh: o, isCaliper: /\.006\b/.test(matNames) });
+            }
+          }
+        });
+        toSplit.forEach(({ mesh, isCaliper }) => {
+          const geom = mesh.geometry;
+          const posAttr = geom.attributes.position;
+          const normAttr = geom.attributes.normal;
+          const uvAttr = geom.attributes.uv;
+          const idxArr = geom.index ? geom.index.array : null;
+          const triCount = idxArr ? (idxArr.length / 3) : (posAttr.count / 3);
+          const toRoot = new THREE.Matrix4().multiplyMatrices(rootInv, mesh.matrixWorld);
+          const buckets = { FL: [], FR: [], RL: [], RR: [] };
+          const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+          for (let t = 0; t < triCount; t++) {
+            const i0 = idxArr ? idxArr[t * 3] : (t * 3);
+            const i1 = idxArr ? idxArr[t * 3 + 1] : (t * 3 + 1);
+            const i2 = idxArr ? idxArr[t * 3 + 2] : (t * 3 + 2);
+            va.fromBufferAttribute(posAttr, i0).applyMatrix4(toRoot);
+            vb.fromBufferAttribute(posAttr, i1).applyMatrix4(toRoot);
+            vc.fromBufferAttribute(posAttr, i2).applyMatrix4(toRoot);
+            const cx = (va.x + vb.x + vc.x) / 3;
+            const cz = (va.z + vb.z + vc.z) / 3;
+            const key = (cx >= 0 ? 'F' : 'R') + (cz >= 0 ? 'R' : 'L');
+            buckets[key].push(i0, i1, i2);
+          }
+          Object.keys(buckets).forEach(key => {
+            const vis = buckets[key];
+            if (!vis.length) return;
+            const g = new THREE.BufferGeometry();
+            const posOut = new Float32Array(vis.length * 3);
+            const normOut = normAttr ? new Float32Array(vis.length * 3) : null;
+            const uvOut = uvAttr ? new Float32Array(vis.length * 2) : null;
+            for (let k = 0; k < vis.length; k++) {
+              const vi = vis[k];
+              posOut[k * 3] = posAttr.getX(vi);
+              posOut[k * 3 + 1] = posAttr.getY(vi);
+              posOut[k * 3 + 2] = posAttr.getZ(vi);
+              if (normOut) {
+                normOut[k * 3] = normAttr.getX(vi);
+                normOut[k * 3 + 1] = normAttr.getY(vi);
+                normOut[k * 3 + 2] = normAttr.getZ(vi);
+              }
+              if (uvOut) {
+                uvOut[k * 2] = uvAttr.getX(vi);
+                uvOut[k * 2 + 1] = uvAttr.getY(vi);
+              }
+            }
+            g.setAttribute('position', new THREE.BufferAttribute(posOut, 3));
+            if (normOut) g.setAttribute('normal', new THREE.BufferAttribute(normOut, 3));
+            if (uvOut) g.setAttribute('uv', new THREE.BufferAttribute(uvOut, 2));
+            const sub = new THREE.Mesh(g, mesh.material);
+            sub.name = (isCaliper ? 'caliper_' : 'wheel_split_') + key;
+            sub.position.copy(mesh.position);
+            sub.quaternion.copy(mesh.quaternion);
+            sub.scale.copy(mesh.scale);
+            mesh.parent.add(sub);
+          });
+          mesh.visible = false;
+        });
+        root.updateMatrixWorld(true);
+      }
+
       // ---- Wheel auto-detection & 5-Node Rigging (Body + FL/FR/RL/RR steer/spin pivots + discs/calipers) ----
       function rigHiFiWheels(root) {
         root.updateMatrixWorld(true);
         const all = [];
         root.traverse(o => { if (o !== root && o.visible !== false) all.push(o); });
-        const byName = re => all.filter(o => re.test(o.name || '') && !/steer|steering|lug|bolt|nut|well|arch|fender|house|blur/i.test(o.name || ''));
-        let cands = byName(/wheel|whl/i);
-        if (cands.length < 4) cands = cands.concat(byName(/tire|tyre/i));
-        if (cands.length < 4) cands = cands.concat(byName(/rim/i));
-        if (cands.length < 4) cands = cands.concat(byName(/^cylinder\.00[0-3]$/i));
+        const byName = re => all.filter(o => re.test(o.name || '') && !/steer|steering|lug|bolt|nut|well|arch|fender|house|blur|caliper|calliper/i.test(o.name || ''));
+        const byMatName = re => all.filter(o => {
+          if (!o.isMesh || !o.material) return false;
+          const ms = Array.isArray(o.material) ? o.material : [o.material];
+          return ms.some(m => m && re.test((m.name || '').trim()));
+        });
+        const isSingleCornerSize = o => {
+          const b = new THREE.Box3().setFromObject(o);
+          if (b.isEmpty()) return false;
+          const sz = b.getSize(new THREE.Vector3());
+          return sz.x <= 1.35 && sz.z <= 1.35 && sz.y > 0.16 && sz.y < 1.25;
+        };
+
+        let cands = []
+          .concat(byName(/wheel|whl|tire|tyre|rim/i))
+          .concat(byMatName(/^(tyre|tyre_blk|tire|wheel)$/i))
+          .concat(byName(/^cylinder\.00[0-3]$/i))
+          .concat(byName(/^cube\.0(01|02|09|10)$/i));
+        // Deduplicate & drop multi-wheel container groups (e.g. Wheel1A_3D_00) BEFORE top-most pruning
+        cands = Array.from(new Set(cands)).filter(isSingleCornerSize);
 
         // keep top-most wheel nodes only (avoid rigging a rim AND its parent wheel)
         const set = new Set(cands);
@@ -1711,18 +2057,24 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         const infos = cands.map(o => {
           const b = new THREE.Box3().setFromObject(o);
           return { o, b, c: b.getCenter(new THREE.Vector3()), size: b.getSize(new THREE.Vector3()) };
-        }).filter(i => !i.b.isEmpty() && i.size.y > 0.18 && i.size.y < 1.25 && i.c.y < CAR_TARGET_DIMS.height * 0.75);
+        }).filter(i => !i.b.isEmpty() && i.size.y > 0.16 && i.size.y < 1.25 && i.c.y < CAR_TARGET_DIMS.height * 0.78);
 
         // Also locate top-most brake disc nodes (spin with wheel) and brake caliper/knuckle nodes (steer with wheel hub)
         const filterTopMost = list => {
-          const s = new Set(list);
-          return list.filter(o => {
+          const single = list.filter(o => {
+            const b = new THREE.Box3().setFromObject(o);
+            if (b.isEmpty()) return false;
+            const sz = b.getSize(new THREE.Vector3());
+            return sz.x <= 1.35 && sz.z <= 1.35;
+          });
+          const s = new Set(single);
+          return single.filter(o => {
             for (let p = o.parent; p; p = p.parent) if (s.has(p) || set.has(p)) return false;
             return true;
           });
         };
-        const discNodes = filterTopMost(byName(/\b(disc|disk)_[lrf]{2}|sm_disk_[lr]/i));
-        const caliperNodes = filterTopMost(byName(/\b(caliper|susp)_[lrf]{2}|sm_brake_[flr]{2}/i));
+        const discNodes = filterTopMost(all.filter(o => /\b(disc|disk)_[lrf]{2}|sm_disk_[lr]|^disk\.\d+/i.test(o.name || '')));
+        const caliperNodes = filterTopMost(all.filter(o => /caliper|calliper|disk_caliper|sm_brake_[flr]{2}|\bsusp_[lrf]{2}/i.test(o.name || '')));
 
         const quads = { FL: [], FR: [], RL: [], RR: [] };
         infos.forEach(i => {
@@ -1787,9 +2139,9 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           const meshStr = (meshNamesByMat.get(mat) || '').toLowerCase();
           let role = 'other';
 
-          if (/glass|window|windshield|windscreen|visor/.test(mName) && !/emissive|light|sticker/.test(mName)) {
+          if ((/glass|window|windshield|windscreen|visor/.test(mName + ' ' + meshStr) || mName === '.010') && !/emissive|light|sticker/.test(mName)) {
             role = 'glass';
-          } else if (/tail|brake.?light|rear.?light|stop.?lamp|lights?_red|red_glass|red_light|lamp_r|emissive.*rear/.test(mName + ' ' + meshStr)) {
+          } else if (/tail|brake.?light|brake.?lamp|rear.?light|stop.?lamp|lights?_red|red_glass|red_light|lamp_r|emissive.*rear/.test(mName + ' ' + meshStr)) {
             role = 'taillight';
           } else if (/head.?light|front.?light|lamp_f|led_front|emissive.*front|aux_light/.test(mName + ' ' + meshStr)) {
             role = 'light';
@@ -1797,9 +2149,9 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             role = 'tire';
           } else if (/rim|alloy|^ext_rim/i.test(mName) || (/metal_gray/.test(mName) && /rim/.test(meshStr))) {
             role = 'rim';
-          } else if (/^(body|paint|car_?paint|carpaint|livery|shell|carroserie|lack|ext_paint|body_paint|body_color|main_paint|car_body_mat)$/i.test(mName) || /car_?paint|body_?paint|body_?color|ext_?paint|livery|carpaint/.test(mName)) {
+          } else if ((/^(body|paint|car_?paint|carpaint|livery|shell|carroserie|lack|ext_paint|body_paint|body_color|main_paint|car_body_mat)$/i.test(mName) || /car_?paint|body_?paint|body_?color|ext_?paint|livery|carpaint|paint_material|painta_material/.test(mName)) && !/carbon|caliper|calliper|int_|interior|wheel|rim|glass/.test(mName)) {
             role = 'body';
-          } else if (/detail|trim|interior|leather|seat|dash|carbon|plastic|chrome|metal|steel|iron|exhaust|grill|grille|mesh|badge|logo|emblem|yellow|black|dark|shadow|int_|underbody|chassis|carpet|mirror|caliper|disc|disk|brake/.test(mName)) {
+          } else if (/detail|trim|interior|leather|seat|dash|carbon|plastic|chrome|metal|steel|iron|exhaust|grill|grille|mesh|badge|logo|emblem|yellow|black|dark|shadow|int_|underbody|chassis|carpet|mirror|caliper|calliper|disc|disk|brake/.test(mName)) {
             role = 'trim';
           }
           mat.userData.apexRole = role;
@@ -1922,7 +2274,8 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
       function applyHiFiTemplateToSlot(slot) {
         disposeSlotHiFi(slot);
-        const enabled = !!carAssetState.template && carAssetState.scope[slot.kind] !== false;
+        const isHeavyNonPlayer = slot.kind !== 'player' && carAssetState.stats && carAssetState.stats.tris > 150000;
+        const enabled = !!carAssetState.template && carAssetState.scope[slot.kind] !== false && !isHeavyNonPlayer;
         slot.procedural.visible = !enabled;
         slot.rig = enabled ? null : slot.proceduralRig;
         slot.group.userData.hifiTailMats = null;
@@ -1978,6 +2331,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         });
         const norm = normalizeVehicleScene(src);
         attachGT3AeroKit(norm.root, targetPresetId || carAssetState.presetId);
+        splitMergedWheelMeshes(norm.root);
         const matInfo = classifyHiFiMaterials(norm.root);
         const wheelInfo = rigHiFiWheels(norm.root);
 
@@ -2532,13 +2886,28 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         lastSec: 0
       };
 
+      function applyGhostPose(ghostMesh, state) {
+        const gNode = sampleTrackAtS(state.s);
+        const hDiff = state.heading - gNode.heading;
+        const gSlope = gNode.slopePitch || 0;
+        ghostMesh.position.set(state.x, state.y, state.z);
+        ghostMesh.rotation.order = 'YXZ';
+        ghostMesh.rotation.y = -state.heading;
+        ghostMesh.rotation.z = gSlope * Math.cos(hDiff);
+        ghostMesh.rotation.x = gSlope * Math.sin(hDiff);
+      }
+
       function update3DSceneAndVisualFX(nowSec) {
         const pWorld = sdToWorld(simState.s, simState.d);
+        const visualHeading = simState.heading + simState.driftAngle;
+        const headingDiff = visualHeading - pWorld.heading;
+        const roadPitch = (pWorld.slopePitch || 0) * Math.cos(headingDiff);
+        const roadRoll = (pWorld.slopePitch || 0) * Math.sin(headingDiff);
         playerCarGroup.position.set(pWorld.x, pWorld.y, pWorld.z);
         playerCarGroup.rotation.order = 'YXZ';
-        playerCarGroup.rotation.y = -(simState.heading + simState.driftAngle);
-        playerCarGroup.rotation.z = simState.pitchRad;
-        playerCarGroup.rotation.x = simState.rollRad;
+        playerCarGroup.rotation.y = -visualHeading;
+        playerCarGroup.rotation.z = simState.pitchRad + roadPitch;
+        playerCarGroup.rotation.x = simState.rollRad + roadRoll;
 
         // RFC Module 2: Apply local chassis vertical oscillation (suspension deflection)
         const suspY = simState.suspensionDispY || 0;
@@ -2673,18 +3042,20 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         }
 
         if (!simState.inShowcaseMode) {
+          const lookSlopeY = (apexLookNode.y || 0) - pWorld.y;
           if (simState.cameraMode === 0) {
             // Cockpit View: direct noise removed, stable camera rig
             playerExteriorMesh.visible = false;
             cockpitGroup.visible = true;
             camera.position.set(
               pWorld.x + cosH * 0.12,
-              pWorld.y + 1.16 - simState.pitchRad * 2.1,
+              pWorld.y + 1.16 - simState.pitchRad * 2.1 + Math.sin(roadPitch) * 0.12,
               pWorld.z + sinH * 0.12
             );
+            camera.up.set(0, 1, 0);
             camera.lookAt(
               lookX,
-              pWorld.y + 0.92 + simState.pitchRad * 15,
+              pWorld.y + 0.92 + lookSlopeY + simState.pitchRad * 15,
               lookZ
             );
             camera.rotation.z = -simState.rollRad * 0.92;
@@ -2693,15 +3064,16 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             const hasHiFiPlayer = !!(playerExteriorMesh.userData.vehicleSlot && playerExteriorMesh.userData.vehicleSlot.hifi);
             playerExteriorMesh.visible = hasHiFiPlayer;
             cockpitGroup.visible = !hasHiFiPlayer;
+            const hoodFwd = hasHiFiPlayer ? 0.24 : 1.15;
             camera.position.set(
-              pWorld.x + cosH * (hasHiFiPlayer ? 0.24 : 1.15),
-              pWorld.y + (hasHiFiPlayer ? 1.22 : 1.05),
-              pWorld.z + sinH * (hasHiFiPlayer ? 0.24 : 1.15)
+              pWorld.x + cosH * hoodFwd,
+              pWorld.y + (hasHiFiPlayer ? 1.22 : 1.05) + Math.sin(roadPitch) * hoodFwd,
+              pWorld.z + sinH * hoodFwd
             );
             camera.up.set(0, 1, 0);
-            camera.lookAt(lookX, pWorld.y + 0.85, lookZ);
+            camera.lookAt(lookX, pWorld.y + 0.85 + lookSlopeY + simState.pitchRad * 10, lookZ);
           } else {
-            // Chase View: smooth yaw lag + Dynamic Look-Into-Apex for natural corner sightlines
+            // Chase View: smooth yaw lag + Dynamic Look-Into-Apex + 3D terrain slope clearance
             playerExteriorMesh.visible = true;
             cockpitGroup.visible = false;
             const cosChase = Math.cos(chaseCamRig.camHeading);
@@ -2709,13 +3081,16 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             const chaseLookHeading = simState.heading + chaseCamRig.apexOffsetRad;
             const chaseLookX = pWorld.x + Math.cos(chaseLookHeading) * 34 + (apexLookNode.x - pWorld.x) * 0.18;
             const chaseLookZ = pWorld.z + Math.sin(chaseLookHeading) * 34 + (apexLookNode.z - pWorld.z) * 0.18;
+            const chaseBackDist = 6.8;
+            const chaseGroundY = sampleTrackAtS(simState.s - chaseBackDist * Math.cos(simState.heading - pWorld.heading)).y || 0;
+            const camTargetY = Math.max(pWorld.y + 2.45 - Math.sin(roadPitch) * 4.2, chaseGroundY + 1.85);
             camera.position.set(
-              pWorld.x - cosChase * 6.8,
-              pWorld.y + 2.45,
-              pWorld.z - sinChase * 6.8
+              pWorld.x - cosChase * chaseBackDist,
+              camTargetY,
+              pWorld.z - sinChase * chaseBackDist
             );
             camera.up.set(0, 1, 0);
-            camera.lookAt(chaseLookX, pWorld.y + 0.9, chaseLookZ);
+            camera.lookAt(chaseLookX, pWorld.y + 0.9 + lookSlopeY * 0.45, chaseLookZ);
           }
         }
 
@@ -2747,8 +3122,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         if (showPro) {
           const gState = sampleGhostAtTime(proTelemetrySamples, simState.lapElapsed);
           if (gState) {
-            proGhostMesh.position.set(gState.x, gState.y, gState.z);
-            proGhostMesh.rotation.y = -gState.heading;
+            applyGhostPose(proGhostMesh, gState);
             if (proGhostMesh.userData.tailLight) {
               setSlotBrakeLight(proGhostMesh, gState.brake > 15, 0xff3333, 0x1e293b);
             }
@@ -2757,8 +3131,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         if (showPb) {
           const pbState = sampleGhostAtTime(simState.pbTelemetrySamples, simState.lapElapsed);
           if (pbState) {
-            pbGhostMesh.position.set(pbState.x, pbState.y, pbState.z);
-            pbGhostMesh.rotation.y = -pbState.heading;
+            applyGhostPose(pbGhostMesh, pbState);
           }
         }
 

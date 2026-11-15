@@ -24,6 +24,8 @@ window.formatLapTime = formatLapTime;
           proLapTime: 80.456,
           elevationAmp1: 2.2,
           elevationAmp2: 1.0,
+          glbUrl: 'assets/models/tracks/monza.glb',
+          glbTransform: { pos: [-265, -3.6, -266.5], rotX: 0, rotY: Math.PI, scale: 1.0 },
           theme: {
             skyColor: 0x1e3a5f,
             fogColor: 0x1e3a5f,
@@ -139,6 +141,99 @@ window.formatLapTime = formatLapTime;
             { x: -740, z: 160, vTarget: 118, name: "T11 鳥居拱門技術彎 (極限 115km/h) // 對準出彎路線準備全油門爬坡" },
             { x: -360, z: 5, vTarget: 235, name: "山頂終點衝刺段 // 全油門加速通過霓虹龍門架" }
           ]
+        },
+        {
+          id: 'spa',
+          name: 'CIRCUIT DE SPA-FRANCORCHAMPS',
+          shortLabel: '殿堂:斯帕森林',
+          badgeText: 'SPA GP ★★★★',
+          difficultyStars: '★★★★',
+          width: 18.5,
+          proLapTime: 84.820,
+          elevationAmp1: 14.0,
+          elevationAmp2: 6.5,
+          glbUrl: 'assets/models/tracks/spa_francorchamps.glb',
+          glbTransform: { pos: [-959, -77, 912], rotX: 0, rotY: 1.5708, scale: 0.25 },
+          theme: {
+            skyColor: 0x162a45,
+            fogColor: 0x1e334d,
+            fogDensity: 0.00058,
+            hemiSky: 0xe0f2fe,
+            hemiGround: 0x14261c,
+            hemiIntensity: 1.15,
+            sunColor: 0xfff7ed,
+            sunIntensity: 1.32,
+            sunPos: [480, 540, -320],
+            grassColor: 0x0f291a,
+            treePrimary: 0x065f46,
+            treeSecondary: 0x14532d,
+            isNight: false,
+            hasSunsetFlare: false
+          },
+          points: [
+            { x: 0, y: 0, z: 0, vTarget: 285, name: "T1 斯帕起跑下坡直道 // 對準 La Source 髮夾彎重煞區" },
+            { x: 440, y: -2, z: 0, vTarget: 68, name: "T1 拉索斯髮夾彎 La Source (極限 68km/h) // 重煞貼緊內側路緣石、提早回正出彎" },
+            { x: 740, y: -4, z: 150, vTarget: 235, name: "T1B 拉索斯出彎加速段 // 順著下坡直衝紅水河谷" },
+            { x: 540, y: -9, z: 360, vTarget: 255, name: "T2 紅水河谷下坡衝刺 // 準備挑戰傳奇 Eau Rouge 艾爾羅格全油門上坡彎！" },
+            { x: 260, y: 18, z: 560, vTarget: 242, name: "T3-T4 艾爾羅格與雷迪永陡坡彎 Eau Rouge / Raidillon // 谷底壓縮後爬升 35m 盲彎頂點" },
+            { x: -140, y: 35, z: 860, vTarget: 285, name: "T5 凱梅爾大直道前段 Kemmel Straight // 衝上阿登高原全油門加速" },
+            { x: -680, y: 38, z: 1020, vTarget: 302, name: "T5 凱梅爾大直道尾流區 // 高原全油門極速超車區！" },
+            { x: -1120, y: 34, z: 880, vTarget: 132, name: "T6-T7 萊斯康布減速彎 Les Combes (極限 132km/h) // 大直道末端重煞切入右-左連續彎" },
+            { x: -1280, y: 24, z: 520, vTarget: 112, name: "T8 布魯塞爾長右彎 Bruxelles (極限 112km/h) // 下坡複合右彎，耐心維持半油門" },
+            { x: -1020, y: 16, z: 200, vTarget: 198, name: "T10 普昂雙左高速彎 Pouhon (極限 195km/h) // 考驗高下壓力側向極限的五檔高速左彎！" },
+            { x: -1260, y: 10, z: -140, vTarget: 145, name: "T12 法格尼奧連續彎 Campus / Fagnes (極限 145km/h) // 節奏明快的右-左重心轉移" },
+            { x: -1040, y: 4, z: -460, vTarget: 162, name: "T14 斯塔夫洛彎 Stavelot (極限 160km/h) // 出彎全油門加速決定回程尾速！" },
+            { x: -560, y: 6, z: -420, vTarget: 280, name: "T16-T17 布朗希蒙高速彎 Blanchimont // 膽量測試！全油門高速森林長彎" },
+            { x: -620, y: 3, z: -120, vTarget: 76, name: "T18 公車站減速彎 Bus Stop Chicane (極限 76km/h) // 全場最後重煞超車點！" },
+            { x: -340, y: 1, z: -4, vTarget: 255, name: "T19 斯帕終點直線衝刺 // 全油門加速衝過龍門架" }
+          ]
+        },
+        {
+          id: 'suzuka',
+          name: 'SUZUKA INTERNATIONAL RACING COURSE',
+          shortLabel: '傳奇:鈴鹿八字',
+          badgeText: 'SUZUKA ★★★★',
+          difficultyStars: '★★★★',
+          width: 18.0,
+          proLapTime: 83.640,
+          elevationAmp1: 9.5,
+          elevationAmp2: 4.5,
+          glbUrl: 'assets/models/tracks/suzuka_circuit.glb',
+          glbTransform: { pos: [-654.5, 21.8, -379.7], rotX: 0, rotY: -1.49365, scale: 0.9673 },
+          theme: {
+            skyColor: 0x172554,
+            fogColor: 0x1e293b,
+            fogDensity: 0.00055,
+            hemiSky: 0xfef3c7,
+            hemiGround: 0x1e293b,
+            hemiIntensity: 1.16,
+            sunColor: 0xffedd5,
+            sunIntensity: 1.38,
+            sunPos: [380, 520, 420],
+            grassColor: 0x142e1b,
+            treePrimary: 0x15803d,
+            treeSecondary: 0xd97706,
+            isNight: false,
+            hasSunsetFlare: false
+          },
+          points: [
+            { x: 0, y: 0, z: 0, vTarget: 275, name: "T1 鈴鹿起跑大直道 // 全油門下坡衝向第一彎高速煞車區" },
+            { x: 440, y: -2, z: 0, vTarget: 170, name: "T1 第一彎 First Curve (極限 170km/h) // 高速帶煞入彎、準備銜接第二彎" },
+            { x: 720, y: -4, z: 180, vTarget: 126, name: "T2 第二彎 (極限 126km/h) // 貼緊內側路緣石、控制出彎油門避免推頭" },
+            { x: 560, y: 2, z: 380, vTarget: 142, name: "T3-T4 蛇行連續彎前段 S-Curves (極限 142km/h) // 左右重心高速轉換、保持流暢節奏！" },
+            { x: 640, y: 6, z: 580, vTarget: 148, name: "T5-T6 蛇行連續彎後段 // 順暢帶油通過連續複合彎" },
+            { x: 360, y: 10, z: 720, vTarget: 168, name: "T7 鄧祿普長左彎 Dunlop Curve (極限 168km/h) // 上坡高G力長左彎、小心外拋！" },
+            { x: 80, y: 2, z: 540, vTarget: 162, name: "T8 德格納一號彎 Degner 1 (極限 162km/h) // 快速精準切入方角右彎" },
+            { x: -200, y: -4, z: 380, vTarget: 125, name: "T9 德格納二號彎 Degner 2 (極限 125km/h) // 穿過立體交叉橋下涵洞、小心外側草地！" },
+            { x: -560, y: -4, z: 220, vTarget: 210, name: "T10 立體交叉橋下加速段 // 穿越涵洞後重煞準備進入髮夾彎" },
+            { x: -900, y: 0, z: 200, vTarget: 64, name: "T11 鈴鹿髮夾彎 Hairpin (極限 64km/h) // 全場最慢重煞點！耐心等待車頭對準出彎" },
+            { x: -1140, y: 6, z: 440, vTarget: 225, name: "T12 200R 高速右弧彎 // 全油門貼內線高速爬升衝向湯匙彎" },
+            { x: -1120, y: 12, z: 760, vTarget: 132, name: "T13-T14 湯匙雙頂點彎 Spoon Curve (極限 132km/h) // 雙頂點長左彎、出彎尾速決定西直道極速！" },
+            { x: -720, y: 14, z: 640, vTarget: 278, name: "西直道立體交叉上橋段 West Straight // 全油門加速衝上 8 字形跨線大橋！" },
+            { x: -420, y: 14, z: 320, vTarget: 228, name: "T15 130R 高速立體交叉橋彎 (極限 225km/h) // 跨越德格納涵洞上方、考驗極限膽量的高速彎！" },
+            { x: -380, y: 6, z: 80, vTarget: 82, name: "T16-T17 卡西歐三角減速彎 Casio Triangle (極限 82km/h) // 下橋重煞切入右-左最後減速彎" },
+            { x: -200, y: 1, z: 0, vTarget: 245, name: "T18 最終下坡右彎 // 全油門出彎衝刺鈴鹿起跑終點線！" }
+          ]
         }
       ];
 
@@ -165,6 +260,7 @@ window.formatLapTime = formatLapTime;
         const pts = currentCircuit.points;
         TRACK_WIDTH = currentCircuit.width;
         const N = pts.length;
+        const hasExplicitY = pts.some(p => typeof p.y === 'number');
         const rawPts = [];
 
         for (let i = 0; i < TRACK_SAMPLES; i++) {
@@ -179,8 +275,10 @@ window.formatLapTime = formatLapTime;
           const x = catmullRom(p0.x, p1.x, p2.x, p3.x, frac);
           const z = catmullRom(p0.z, p1.z, p2.z, p3.z, frac);
           const vTarget = p1.vTarget * (1 - frac) + p2.vTarget * frac;
-          const y = Math.sin((i / TRACK_SAMPLES) * Math.PI * 2) * currentCircuit.elevationAmp1 +
-            Math.cos((i / TRACK_SAMPLES) * Math.PI * 4) * currentCircuit.elevationAmp2;
+          const y = hasExplicitY
+            ? catmullRom(p0.y || 0, p1.y || 0, p2.y || 0, p3.y || 0, frac)
+            : (Math.sin((i / TRACK_SAMPLES) * Math.PI * 2) * currentCircuit.elevationAmp1 +
+              Math.cos((i / TRACK_SAMPLES) * Math.PI * 4) * currentCircuit.elevationAmp2);
           rawPts.push({ x, y, z, vTarget, name: p1.name });
         }
 
@@ -296,6 +394,11 @@ window.formatLapTime = formatLapTime;
         while (dHead > Math.PI) dHead -= Math.PI * 2;
         while (dHead < -Math.PI) dHead += Math.PI * 2;
 
+        const nPrev = trackNodes[(idx - 1 + TRACK_SAMPLES) % TRACK_SAMPLES];
+        const nNext = trackNodes[(idx + 2) % TRACK_SAMPLES];
+        const dySmooth = ((n1.y || 0) - (n0.y || 0)) * 0.65 + (((nNext.y || 0) - (nPrev.y || 0)) / 3.0) * 0.35;
+        const slopePitch = Math.atan2(dySmooth, Math.max(1.0, segLen));
+
         return {
           s: normS,
           idx,
@@ -307,6 +410,7 @@ window.formatLapTime = formatLapTime;
           rightX: n0.rightX + (n1.rightX - n0.rightX) * t,
           rightZ: n0.rightZ + (n1.rightZ - n0.rightZ) * t,
           heading: n0.heading + dHead * t,
+          slopePitch,
           curvature: n0.curvature + (n1.curvature - n0.curvature) * t,
           vTarget: n0.vTarget + (n1.vTarget - n0.vTarget) * t,
           optimalD: n0.optimalD + (n1.optimalD - n0.optimalD) * t,
@@ -321,6 +425,7 @@ window.formatLapTime = formatLapTime;
           y: node.y,
           z: node.z + node.rightZ * d,
           heading: node.heading,
+          slopePitch: node.slopePitch,
           node
         };
       }
@@ -348,8 +453,19 @@ window.formatLapTime = formatLapTime;
       let PRO_LAP_TIME = currentCircuit.proLapTime;
       const proTelemetrySamples = [];
 
-      function generateProBenchmarkLap() {
+      function generateProBenchmarkLap(classSpec) {
         proTelemetrySamples.length = 0;
+        const spec = classSpec || (typeof window !== 'undefined' && window.selectedCarClassSpec) || {
+          cornerGripMult: 1.0,
+          accelMult: 1.0,
+          brakeDecelMult: 1.0,
+          topSpeedKmh: 300
+        };
+        const cornerMult = spec.cornerGripMult || 1.0;
+        const accelMult = spec.accelMult || 1.0;
+        const brakeMult = spec.brakeDecelMult || 1.0;
+        const topCapMs = (spec.topSpeedKmh || 300) / 3.6;
+
         const stepM = 10; // High-resolution 10m spatial integration
         const numSteps = Math.floor(totalTrackLength / stepM);
         const nodes = [];
@@ -361,13 +477,13 @@ window.formatLapTime = formatLapTime;
           const s = i * stepM;
           const node = sampleTrackAtS(s);
           nodes.push(node);
-          const localMaxKmh = getUpcomingCornerMaxSpeedKmh(s);
-          vLimitMs[i] = Math.max(64 / 3.6, localMaxKmh / 3.6);
+          const localMaxKmh = getUpcomingCornerMaxSpeedKmh(s) * cornerMult;
+          vLimitMs[i] = Math.min(topCapMs, Math.max(64 / 3.6, localMaxKmh / 3.6));
         }
 
-        // Step 2: Backward Pass — Enforce realistic GT3 braking deceleration (a_brake = 17.2 m/s^2)
+        // Step 2: Backward Pass — Enforce realistic class braking deceleration (GT3 base = 17.2 m/s^2)
         const vProfileMs = vLimitMs.slice();
-        const maxBrakeDecel = 17.2; // ~1.75G GT3 aero + mechanical braking
+        const maxBrakeDecel = 17.2 * brakeMult; // ~1.75G+ aero + mechanical braking
         for (let pass = 0; pass < 2; pass++) {
           for (let i = numSteps - 1; i >= 0; i--) {
             const nextIdx = (i + 1) % numSteps;
@@ -388,7 +504,7 @@ window.formatLapTime = formatLapTime;
             const vCurr = vFlyingMs[i];
             const vEff = Math.max(vCurr, 12.5);
             const shiftEff = (vCurr * 3.6 < 252) ? 0.955 : 1.0;
-            const engineAccel = Math.min(8.25, 338.0 / vEff) * shiftEff;
+            const engineAccel = Math.min(8.25 * accelMult, (338.0 * accelMult) / vEff) * shiftEff;
             const curv = Math.abs(nodes[i].curvature);
             const latG = (vCurr * vCurr * curv * getCornerLineCutFactor()) / 9.81;
             const dragDecel = 0.000557 * vCurr * vCurr + 0.14 + latG * 0.38;
@@ -409,7 +525,7 @@ window.formatLapTime = formatLapTime;
           const vEff = Math.max(vCurr, 12.5);
           const launchRamp = (i === 0) ? 0.78 : (i === 1 ? 0.94 : 1.0);
           const shiftEff = (vCurr * 3.6 < 252) ? 0.955 : 1.0;
-          const engineAccel = Math.min(8.25, 338.0 / vEff) * launchRamp * shiftEff;
+          const engineAccel = Math.min(8.25 * accelMult, (338.0 * accelMult) / vEff) * launchRamp * shiftEff;
           const curv = Math.abs(nodes[i].curvature);
           const latG = (vCurr * vCurr * curv * getCornerLineCutFactor()) / 9.81;
           const dragDecel = 0.000557 * vCurr * vCurr + 0.14 + latG * 0.38;
@@ -424,7 +540,7 @@ window.formatLapTime = formatLapTime;
         // Step 4: Integrate exact physical lap time & pedal telemetry traces
         // Includes 0.22s human visual reaction delay at Lights Out (s = 0)
         let simTime = 0.22;
-        const proPaceFactor = currentCircuit.id === 'monza' ? 1.005 : (currentCircuit.id === 'fuji' ? 0.996 : 0.980);
+        const proPaceFactor = currentCircuit.id === 'monza' ? 1.005 : (currentCircuit.id === 'hakone' ? 0.980 : 0.996);
         for (let i = 0; i < numSteps; i++) {
           const nextIdx = (i + 1) % numSteps;
           const s = i * stepM;
@@ -476,6 +592,7 @@ window.formatLapTime = formatLapTime;
         // Set true physical PRO_LAP_TIME from the forward-backward solver
         PRO_LAP_TIME = Number(simTime.toFixed(3));
         currentCircuit.proLapTime = PRO_LAP_TIME;
+        if (typeof window !== 'undefined') window.PRO_LAP_TIME = PRO_LAP_TIME;
       }
 
       function sampleGhostAtTime(samples, lapElapsed) {
@@ -533,6 +650,19 @@ window.formatLapTime = formatLapTime;
         return a.t + (b.t - a.t) * f;
       }
 
+window.selectedCarClassSpec = window.selectedCarClassSpec || null;
+window.rebuildProBenchmarkForCurrentCar = function rebuildProBenchmarkForCurrentCar() {
+  if (typeof getCurrentCarHandling === 'function') {
+    const h = getCurrentCarHandling();
+    window.selectedCarClassSpec = (h && h.classSpec) ? h.classSpec : null;
+  }
+  generateProBenchmarkLap(window.selectedCarClassSpec);
+  if (typeof simState !== 'undefined' && simState) {
+    simState.bestLapTime = PRO_LAP_TIME;
+    const hudBest = typeof document !== 'undefined' && document.getElementById('hud-best-time');
+    if (hudBest) hudBest.textContent = formatLapTime(PRO_LAP_TIME);
+  }
+};
 window.CIRCUITS = CIRCUITS;
 window.currentCircuitIndex = currentCircuitIndex;
 window.currentCircuit = currentCircuit;

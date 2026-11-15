@@ -925,3 +925,63 @@ Script error. at module(main.js:START):0:0
 - `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
 - `python scratch/test_proposal.py`：**44 / 44 PASSED**
 - `python scratch/verify_new_assets.py` (Headless Chrome WebGL)：**Errors: []**，5 條賽道 PRO 基準秒數與高程 (`monza 80.42s`, `fuji 86.27s`, `hakone 94.983s`, `spa 100.276s`, `suzuka 88.636s`)、6 台車 GLB 結構與 Spa 多級距縮放 (`100.276s > 95.002s > 88.575s`) 全數通過。
+
+---
+
+## 2026-11-15 — 桌面應用程式雙模架構、全場景程序化 PBR 材質升級與 GLB 賽道走廊裁切系統 (Phase 1)
+
+### 1. 桌面單機雙模執行引擎 (Desktop Runtime + GitHub / Web 雙相容)
+- **[`apex_desktop_app.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/apex_desktop_app.py)** 與 **[`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat)**（及 [`.gitignore`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/.gitignore) 排除 `.apex_app_profile/`、`__pycache__/`、`*.pyc`）：
+  - 以 Python 標準庫 `ThreadingHTTPServer` 啟動本地 `HTTP/1.1` 多執行緒資產伺服器（完整支援 `model/gltf-binary` MIME、HTTP `Range` `206` 分片串流、CORS 標頭與 `--check` 自我檢測）。
+  - 自動搜尋 Chrome / Edge 並以 `--app` 獨立桌面視窗搭配 `--force_high_performance_gpu`、`--enable-gpu-rasterization`、`--enable-zero-copy`、`--ignore-gpu-blocklist` 與獨立 `.apex_app_profile` 設定檔啟動，完整保留離線單機遊玩體驗與 GitHub 網頁同步相容性。
+- **[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)**（`CAR_MODEL_PRESETS` 與 `loadVehicleFromURLs()`）與 **[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)**：
+  - 為 6 台本機 `.glb` 車輛預設補齊 GitHub raw 備援網址，並於 `file://` 直接開啟時優先使用遠端 `https://`、於 `http(s)://`（桌面版／網頁版）優先使用本機高速資產。
+  - 於 [`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js) 加入 `!carAssetState.loading` 檢查，避免開機預設車種自動載入覆蓋中斷進行中的指定 `.glb` 載入請求。
+
+### 2. 全場景程序化 PBR 材質升級（消除大面積單色粗糙幾何）
+- **[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)**：
+  - 硬體 WebGL 環境啟用 `THREE.ACESFilmicToneMapping`（`toneMappingExposure = 1.08`），並新增軟體 WebGL 偵測 `isSoftwareWebGL`（自動對 SwiftShader 等軟體算繪降低貼圖解析、停用重複 `PMREMGenerator` 與非玩家高面數車模、並於 `.glb` 下載期節流幀率以防主執行緒卡頓）；真實 GPU 環境依主題快取 `envRTCache` 並保留完整 `512²` PBR / ACES / 環境反射畫質。
+  - 新增 `getGrassPBRSet()`（縫合平鋪修剪草皮 Albedo + Normal + Roughness）、`getSceneDetailTextures()`（看台觀眾貼圖 `grandstandCrowdMap`、維修站車間門與玻璃幕牆 `pitBuildingMap`、山體岩石紋理 `mountainRockMap` / `mountainNormalMap` 與樹冠紋理 `barkFoliageMap`）及 `buildAlpineMountainMesh()`（頂點高度置換與森林—花崗岩—雪線漸層著色），替換原本 `rebuild3DCircuitScene()` 中的單色平面地面、緩衝區草皮、路肩、雙層松樹、看台、維修站房與遠景山錐，維修站玻璃並改用 `THREE.MeshPhysicalMaterial` 清漆材質。
+
+### 3. 實景 `.glb` 賽道載入與道路走廊裁切 (`carveMeshOutOfCorridor`)
+- **[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)**、**[index.html](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html)**（`#btn-garage-glbtrack`）與 **[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)**：
+  - 啟用 `window.ENABLE_GLB_TRACK_SCENERY = true` 並於車庫 `4. 賽道 PBR 材質` 新增 `3D 實景賽道模型 (GLB Scenery)` 開關；硬體 GPU 載入 `monza.glb` / `spa_francorchamps.glb` / `suzuka_circuit.glb`（快速切換賽道時具備 `150ms` 防抖），軟體 WebGL 預設跳過巨型賽道 `.glb`（可透過 `window.FORCE_GLB_TRACK_SCENERY = true` 強制測試）。
+  - `buildTrackSpatialGrid(24.0, halfW + 10.0)` 預擴展鄰近網格達成單次 `Map.get()` 查詢；`carveMeshOutOfCorridor()` 結合世界空間包圍盒 (`_carveWorldBox`) 與 2D 網格粗篩、單網格快速剔除，並以零緩衝區複製方式建立裁切後的 `BufferGeometry` 索引，排除侵占路面走廊與遮擋原路面網格之三角面。
+
+### 4. 最終編輯後實測結果 (2026-11-15)
+- `python scratch/check_syntax.py`：**7 / 7 OK**（`audio.js`、`circuits.js`、`flow.js`、`input.js`、`main.js`、`physics.js`、`render.js`）
+- `python apex_desktop_app.py --check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%**（`6/6` 本地靜態與 `model/gltf-binary` 資產路由 HTTP 200）
+- `verify_track_geometry.py`：**ALL 5 CIRCUITS PASSED ZERO-FOLD, ZERO-OVERLAP, AND SCENERY CLEARANCE AUDIT**
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/verify_new_assets.py` (Headless Chrome WebGL)：**Errors: []**，`ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!`（`monza 80.42s`, `fuji 86.27s`, `hakone 94.983s`, `spa 100.276s`, `suzuka 88.636s`；Spa 多級距 `100.276 > 95.002 > 88.575`）
+- `bench_tracks.py`（強制啟用 `FORCE_GLB_TRACK_SCENERY = true` 實測 `spa_francorchamps.glb`）：`mounted: true`、`errors: []`、`gridMs: 0.4`、`carveMs: 8.9`、`hiddenRoadMeshes: 8`、`carvedMeshes: 8`、`carvedRemoved: 171`，**`< 500ms` 基準通過**
+- `python scratch/test_proposal.py`：**44 / 44 PASSED**（含無頭 Chrome 啟動 `index.html`、`144275` chars、零 `#apex-crash-banner`）
+
+---
+
+## 2026-11-15 — 修復賽道上空異常懸浮山體／樹牆切塊與浮空樹木建模 (Sky & Scenery Grounding Fix)
+
+### 1. 問題根因
+- **未對齊外部 `.glb` 賽道場景於賽道上空被水平切斷**：`spa_francorchamps.glb`、`monza.glb`、`suzuka_circuit.glb` 的平面路線與高程（例如斯帕 Blanchimont 高達 `+90m..+134m` 的山體與黑色松樹牆）與自訂閉環樣條賽道（`+6m`）不重合；舊版 `carveMeshOutOfCorridor` 僅剔除 `wy < ny + 14.0` 範圍，導致 `14m` 以上的山體與樹牆在半空形成整齊水平切面懸浮塊；同時 `gfxSettings.glbTrackScenery: true` 已寫入 `localStorage`（`apexpro.gfx`）。
+- **程序化樹木、看台與維修站超出草地緩衝區（`runoffHalfW`）而懸空**：舊版 `treeDist` 放在 `halfW + 14.5 .. halfW + 29.5m`、看台／維修站外緣延伸至 `halfW + 17.5m / 15.0m`，全數超出 `runoffHalfW = halfW + 12.0m` 邊界且底部未向下紮根；高處賽道段在鄰近低處賽道草地上空亦因 `isClearOfOtherTrack` 垂直淨空僅 `14m` 而產生浮空樹。
+- **高架／起伏路段草地外緣下方鏤空與遠山基座懸空**：`runoffGeo` 下方缺乏封閉護坡側裙；`mtFuji` 與 `hillCoords` 未依 `groundY` 擺放（在箱根 `groundY = -28.90m` 懸空），且 `hillCoords[2]` 過近斯帕賽道西側。
+
+### 2. 修復內容 ([`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js))
+- **預設強制停用未對齊的 `.glb` 實景賽道模型並移除 `14m` 上空裁切上限**：
+  - 將 `gfxSettings.glbTrackScenery` 預設設為 `false`，並於讀取 `localStorage.getItem('apexpro.gfx')` 後強制設為 `false`；將 `window.ENABLE_GLB_TRACK_SCENERY` 預設設為 `false`（僅在顯式設定 `window.FORCE_GLB_TRACK_SCENERY === true` 時放行）。
+  - 調整 `buildTrackSpatialGrid`（`maxY: 1e6`）與 `isPointInRoadCorridor`（移除 `+14.0m` 上限，只要水平落在走廊內且 `wy >= ny - 8.0` 即裁切），防止測試手動啟用時於賽道上空殘留水平切塊。
+- **修正遠景山脈基座與座標，並強化跨賽道段淨空檢查**：
+  - 先計算 `minTrackY` 與 `groundY = Math.min(-20, minTrackY - 10.0)`，將 `mtFuji` 與 4 座 `hillCoords` 外移至 5 條賽道安全距離外（`x: ±2150..-2200, z: 1850.. -1450`）並設定 Y 為 `groundY + h * 0.48`（底面嵌入地面下 `2%` 高度）。
+  - `isClearOfOtherTrack` 水平淨空基準擴大為 `hw + 13.5 + minClearance`、垂直淨空擴大至 `65.0m`。
+- **新增垂直護坡側裙（Embankment Skirt）與全場景物件草地內嵌紮根**：
+  - 於 `rebuild3DCircuitScene()` 同步建立 `skirtGeo`（非橋樑區段沿 `runoffGeo` 外緣 `rLx/rRx` 垂直封閉至 `groundY`，附岩土草坡漸層頂點色），徹底封閉高低差賽道外緣下方鏤空。
+  - 所有路旁物件嚴格收斂於 `runoffHalfW = halfW + 12.0m` 內且底部深植地面以下：`treeDist = halfW + 4.2 + ((idx * 3) % 6.5)`（`trunkGeo` 高 `4.6m`、`y = 0.9` 下探 `-1.4m` 並避開急彎輪胎牆）、`poleDist = halfW + 6.5`（`lightPoleGeo` 高 `13.0m`、`y = 5.0` 下探 `-1.5m`）、`tireStackGeo`（高 `1.8m`、`y = 0.4` 下探 `-0.5m`）、看台與維修站（`standOffset` / `pitOffset = halfW + 7.2`、深 `8.0m`，外緣 `<= halfW + 11.3m`，基座下探 `-3.0m`）。
+
+### 3. 驗證結果 (2026-11-15)
+- `verify_track_geometry.py`：**ALL 5 CIRCUITS PASSED ZERO-FOLD, ZERO-OVERLAP, EMBEDDED-BASE, RUNOFF-BOUNDED SCENERY & GLB-OFF AUDIT**（`monza` / `fuji` / `hakone` / `spa` / `suzuka` 全數 `road_folds=0`、`runoff_folds=0`、`same_overlaps=0`、`scenery_hits=0`、`outside_runoff=0`、`floating_hills=0`、`hill_overlaps=0`、`pier_hits=0`）
+- `python scratch/check_syntax.py`：**7 / 7 OK**
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**44 / 44 PASSED**（含無頭 Chrome 啟動 `index.html`、`144271` chars、零 `#apex-crash-banner`）
+- `python scratch/verify_new_assets.py` (Headless Chrome WebGL)：**Errors: []**，`ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!`（`monza 80.42s`, `fuji 86.27s`, `hakone 94.983s`, `spa 100.276s`, `suzuka 88.636s`；Spa 多級距 `100.276 > 95.002 > 88.575`）

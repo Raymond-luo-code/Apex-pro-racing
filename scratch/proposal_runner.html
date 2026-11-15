@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Proposal V8 Test Runner</title></head>
+<body>
+<div id="canvas-container"></div>
+<input id="slider-steer" value="0">
+<input id="slider-throttle" value="0">
+<input id="slider-brake" value="0">
+<div id="hud-gear">1</div>
+<div id="hud-top-gear">1</div>
+<div id="hud-s1"></div><div id="hud-s2"></div><div id="hud-s3"></div><div id="hud-lap-count">1</div>
+<div id="hud-best-time"></div><div id="lbl-track-short"></div><div id="hud-track-badge"></div>
+<div id="bench-0-100"></div><div id="bench-0-200"></div><div id="bench-0-300"></div>
+<div id="start-lights-overlay"></div><div id="start-countdown-num"></div><div id="start-countdown-hint"></div><div id="start-lights-pods"><span></span><span></span><span></span><span></span><span></span></div>
+<div id="btn-recover-banner"></div><div id="btn-reset-track"></div>
+<div id="btn-gear-down"></div><div id="btn-gear-up"></div><div id="btn-steer-center"></div>
+<div id="touch-btn-left"></div><div id="touch-btn-right"></div><div id="touch-btn-throttle"></div>
+<div id="touch-btn-brake"></div><div id="touch-btn-trail"></div><div id="touch-btn-drift"></div><div id="touch-btn-nos"></div>
+<div id="touch-btn-center"></div><div id="touch-btn-cam"></div><div id="touch-btn-geardown"></div><div id="touch-btn-gearup"></div>
+<div id="touch-btn-gyro"></div><div id="gyro-label"></div>
+<div id="btn-edition-toggle"></div><div id="btn-drawer-edition"></div><div id="card-edition-real"></div><div id="card-edition-arcade"></div>
+<div id="btn-track-cycle"></div><div id="btn-input-mode-toggle"></div><div id="btn-drawer-input-mode"></div>
+<div id="lbl-edition"></div><div id="icon-edition"></div><div id="hud-control-hint"></div>
+<div id="top-nos-container"></div><div id="mobile-arcade-buttons"></div><div id="pc-nos-col"></div>
+<div id="mobile-gamepad-overlay"></div><div id="pc-bottom-hud"></div><div id="top-left-panels"></div><div id="hud-corner-banner"></div>
+<div id="lbl-input-mode"></div><div id="icon-input-mode"></div>
+
+<pre id="v8-results"></pre>
+<pre id="v8-errors"></pre>
+
+<script>
+window.__errs = [];
+window.onerror = function(msg, url, line, col, err) {
+  window.__errs.push(msg + ' @ ' + url + ':' + line + ':' + col);
+  document.getElementById('v8-errors').textContent = JSON.stringify(window.__errs);
+};
+// Minimal scene / three.js stubs for circuits.js & physics.js load
+window.THREE = { Color: function(){}, Vector3: function(){} };
+window.scene = { add: function(){} };
+window.createGT3CarMesh = function() { return { visible: false, position: { set: function(){} }, rotation: { y: 0 }, userData: {} }; };
+window.spawnSkidMark = function(){};
+window.spawnTireSmoke = function(){};
+window.updateSmokeParticles = function(){};
+window.setSlotBrakeLight = function(m, on) { m.userData._lastBrakeOn = on; };
+window.rebuild3DCircuitScene = function(){};
+window.applyEngineCarGeometry = function(){};
+window.headlightGroup = { visible: false };
+window.formatLapTime = function(t){ return String(t); };
+</script>
+<script src="../js/audio.js"></script>
+<script src="../js/circuits.js"></script>
+<script src="../js/physics.js"></script>
+<script src="../js/input.js"></script>
+<script>
+(function() {
+  const results = [];
+  function ok(cond, msg) {
+    results.push({ pass: !!cond, msg });
+  }
+
+  buildTrackGeometryData();
+  generateProBenchmarkLap();
+
+  const dt = 0.01; // 100Hz sim sub-step
+
+  // Test 1: Throttle Lift-Off Decay (~0.18s, tapering through 50%)
+  let st = { throttleInput: 100, brakeInput: 0 };
+  let t = 0, hit50Time = null, hit0Time = null;
+  for (let i = 1; i <= 30; i++) {
+    translateAnalogPedals(st, false, false, false, dt, 100);
+    t = +(i * dt).toFixed(3);
+    if (hit50Time === null && st.throttleInput <= 50) hit50Time = t;
+    if (hit0Time === null && st.throttleInput <= 0.1) hit0Time = t;
+  }
+  ok(hit50Time !== null && hit50Time >= 0.05 && hit50Time <= 0.11, "Throttle lift-off tapers smoothly through 50% at " + hit50Time + "s");
+  ok(hit0Time !== null && hit0Time >= 0.17 && hit0Time <= 0.19, "Throttle lift-off reaches 0% in ~0.18s (got " + hit0Time + "s)");
+
+  // Test 2: Emergency Throttle Cut when braking (<= 0.03s)
+  st = { throttleInput: 100, brakeInput: 0 };
+  for (let i = 1; i <= 3; i++) translateAnalogPedals(st, false, true, false, dt, 100);
+  ok(st.throttleInput <= 0.1, "Emergency brake cuts throttle to 0% within 0.03s (got " + st.throttleInput.toFixed(2) + "%)");
+
+  // Test 3: Progressive Acceleration Ramp (35-50% at 0.20s, 100% by 0.35s)
+  st = { throttleInput: 0, brakeInput: 0 };
+  let at20 = 0, at35 = 0;
+  for (let i = 1; i <= 36; i++) {
+    translateAnalogPedals(st, true, false, false, dt, 100);
+    if (i === 20) at20 = st.throttleInput;
+    if (i === 35) at35 = st.throttleInput;
+  }
+  ok(at20 >= 35 && at20 <= 50, "Throttle ramp passes 35-50% at 0.20s (got " + at20.toFixed(1) + "%)");
+  ok(at35 >= 99.5, "Throttle ramp reaches 100% by 0.35s (got " + at35.toFixed(1) + "%)");
+
+  // Test 4: Multi-Stage Braking (0.15s -> 65-75%, 0.40s -> 95-100%, Fast release <= 0.08s, Spacebar cap <= 75%)
+  st = { throttleInput: 0, brakeInput: 0 };
+  let brk15 = 0, brk40 = 0;
+  for (let i = 1; i <= 40; i++) {
+    translateAnalogPedals(st, false, true, false, dt, 100);
+    if (i === 15) brk15 = st.brakeInput;
+    if (i === 40) brk40 = st.brakeInput;
+  }
+  ok(brk15 >= 65 && brk15 <= 75, "Brake Stage 1 reaches 65-75% Trail Braking window at 0.15s (got " + brk15.toFixed(1) + "%)");
+  ok(brk40 >= 95 && brk40 <= 100, "Brake Stage 2 reaches 95-100% at 0.40s (got " + brk40.toFixed(1) + "%)");
+
+  for (let i = 1; i <= 8; i++) translateAnalogPedals(st, false, false, false, dt, 100);
+  ok(st.brakeInput <= 0.1, "Brake fast release drops to 0% within 0.08s (got " + st.brakeInput.toFixed(2) + "%)");
+
+  st = { throttleInput: 0, brakeInput: 0 };
+  for (let i = 1; i <= 40; i++) translateAnalogPedals(st, false, false, true, dt, 100);
+  ok(Math.abs(st.brakeInput - 75) < 0.5, "Spacebar trail-brake caps strictly at 75% (got " + st.brakeInput.toFixed(1) + "%)");
+
+  // Test 5: Dynamic Speed-Sensitive Steering Angle & Self-Aligning Torque
+  const car = CAR_HANDLING_PROFILES.ferrari458;
+  const degLow = getDynamicMaxSteerDeg(40, car, true);
+  const degMid1 = getDynamicMaxSteerDeg(90, car, true);
+  const degMid2 = getDynamicMaxSteerDeg(175, car, true);
+  const degHigh = getDynamicMaxSteerDeg(270, car, true);
+  ok(degLow >= 30 && degLow <= 34, "Low speed (40 km/h) steering reaches ~32 deg (got " + degLow.toFixed(2) + ")");
+  ok(degMid1 >= 13.5 && degMid1 <= 18.5 && degMid2 >= 13.5 && degMid2 <= 18.0, "Mid speed (80-180 km/h) opens smoothly within 13.5-18.5 deg (" + degMid1.toFixed(2) + " / " + degMid2.toFixed(2) + ")");
+  ok(degHigh >= 8.0 && degHigh <= 11.0, "High speed (270 km/h) allows generous turn-in angle 8-11 deg (got " + degHigh.toFixed(2) + ")");
+
+  const decaySlow = Math.abs(stepAnalogSteering(0.8, false, false, 30, 0.1, car, true));
+  const decayFast = Math.abs(stepAnalogSteering(0.8, false, false, 240, 0.1, car, true));
+  ok(decayFast < decaySlow, "Self-aligning caster torque returns steering faster at 240 km/h (" + decayFast.toFixed(3) + ") than 30 km/h (" + decaySlow.toFixed(3) + ")");
+
+  // Test 6: AI Cars Actuator Integration & Brake Lights
+  simState.paused = false;
+  simState.inShowcaseMode = false;
+  simState.mode = 'ai_race';
+  resetSession(false);
+  // Simulate AI cars braking before a tight corner (speedMs high near slow corner)
+  aiCars[0].s = 500;
+  aiCars[0].speedMs = 75; // 270 km/h entering slow section
+  for (let i = 0; i < 20; i++) stepAIRivals(0.01);
+  ok(aiCars[0].throttleInput >= 0 && aiCars[0].brakeInput >= 0, "AI cars integrate analog throttleInput & brakeInput actuators");
+
+  // Test 7: Clean Realistic Grip - No artificial rear power-on oversteer tail-slide assist
+  simState.edition = 'realistic';
+  simState.driftAngle = 0;
+  simState.speedMs = 35; // ~126 km/h
+  simState.speedKmh = 126;
+  simState.throttleInput = 96;
+  simState.brakeInput = 0;
+  simState.steerInput = 0.85;
+  simState.latG = 1.35;
+  stepPhysics(0.016);
+  ok(simState.isOversteer === false && Math.abs(simState.driftAngle) < 0.005, "High-speed throttle steering stays planted without artificial rear slip/oversteer assist");
+
+  // Test 8: Phase 1 - FIA 5-Red-Light Gantry Start & Jump Start Detection
+  simState.mode = 'ai_race';
+  resetSession(true);
+  ok(simState.countdownActive === true && simState.gantryHoldDuration >= 0.25 && simState.gantryHoldDuration <= 2.00,
+    "FIA 5-light gantry activates with 0.25-2.00s random hold (" + simState.gantryHoldDuration + "s)");
+  // Hold brake + throttle -> safe launch staging, zero jump start
+  inputs.throttle = true; inputs.brake = true;
+  for (let i = 0; i < 20; i++) stepPhysics(0.05);
+  ok(simState.hasJumpStarted === false && simState.speedMs === 0 && aiCars[0].speedMs === 0,
+    "Brake launch staging holds player & AI safely on grid during red lights");
+  // Drop brake + hold throttle before lights out -> creeps >0.5m and triggers +5.0s Jump Start!
+  inputs.brake = false; inputs.throttle = true;
+  for (let i = 0; i < 20; i++) stepPhysics(0.05);
+  ok(simState.hasJumpStarted === true && simState.jumpStartPenaltySec === 5.0,
+    "Premature launch triggers Jump Start violation (+5.0s penalty)");
+  inputs.throttle = false; inputs.brake = false;
+  // Advance past total gantry duration -> Lights Out!
+  const remWait = (3.40 + simState.gantryHoldDuration) - simState.gantryElapsed + 0.1;
+  stepPhysics(remWait);
+  ok(simState.countdownActive === false, "Lights Out extinguishes all 5 red lights simultaneously");
+
+  // Test 9: Phase 1 - Three-Tier Progressive Driving Cue (Lift, Trail, Heavy)
+  selectCircuit(0); // Monza Ring fast sweeping bend (Lift & Coast check at realistic top speed)
+  let liftFound = false;
+  for (let s = 100; s < totalTrackLength; s += 15) {
+    const c = computeDrivingCue(s, 290, 0, 1.0);
+    if (c.tier === 'lift') { liftFound = true; break; }
+  }
+  ok(liftFound, "Monza fast sweeping corners trigger 'lift' (Lift & Coast) cue without premature heavy braking");
+
+  selectCircuit(1); // Fuji Technical GP (has fast sweeper + sharp T2 hairpin)
+  resetSession(false);
+  // Find heavy hairpin zone before T2 hairpin
+  let heavyS = 750;
+  for (let s = 100; s < totalTrackLength; s += 20) {
+    if (getProProfileAtDistance(s).brake > 60) { heavyS = s; break; }
+  }
+  const heavyCue = computeDrivingCue(heavyS, 260, 0, 1);
+  ok(heavyCue.tier === 'heavy', "High-speed hairpin approach triggers 'heavy' threshold brake cue (target " + heavyCue.targetKmh + " km/h)");
+  const trailCue = computeDrivingCue(heavyS, Math.max(115, heavyCue.targetKmh + 18), 0, 1);
+  ok(trailCue.tier === 'trail' || trailCue.tier === 'heavy', "Moderate corner excess speed classifies into progressive braking tiers (got " + trailCue.tier + ")");
+  const safeCue = computeDrivingCue(heavyS, Math.max(60, heavyCue.targetKmh - 8), 0, 0.4);
+  ok(safeCue.tier === 'none', "Once slowed to safe apex speed, alert clears smoothly ('none')");
+
+  // Test 10: Phase 1 - Competitive AI Alien (1.10) vs Clubman (0.92) Pace
+  resetSession(false);
+  simState.paused = false;
+  simState.inShowcaseMode = false;
+  simState.mode = 'ai_race';
+  simState.aiDifficulty = 1.10;
+  aiCars[0].reactionTimer = 0;
+  aiCars[0].s = 120;
+  aiCars[0].speedMs = 15;
+  for (let i = 0; i < 150; i++) stepAIRivals(0.04); // 6s full-pace acceleration
+  const alienSpd = aiCars[0].speedMs * 3.6;
+  simState.aiDifficulty = 0.92;
+  aiCars[0].s = 120;
+  aiCars[0].speedMs = 15;
+  for (let i = 0; i < 150; i++) stepAIRivals(0.04);
+  const clubSpd = aiCars[0].speedMs * 3.6;
+  ok(alienSpd > clubSpd + 15 && alienSpd > 190, "Alien AI (1.10) achieves competitive pace (" + alienSpd.toFixed(1) + " km/h vs Clubman " + clubSpd.toFixed(1) + " km/h)");
+
+  // Test 11: Cornering Plan Verification - Smooth Caster, Counter-Steer Agility, & No Step Cliffs
+  let sTap = 0;
+  for (let i = 0; i < 12; i++) sTap = stepAnalogSteering(sTap, false, true, 140, 0.01, car, true);
+  let sRel = sTap;
+  for (let i = 0; i < 12; i++) sRel = stepAnalogSteering(sRel, false, false, 140, 0.01, car, true);
+  ok(sRel / sTap >= 0.55, "140 km/h damped caster keeps smooth >55% hold after 0.12s release (ratio " + (sRel / sTap).toFixed(2) + ")");
+
+  const sRightFromZero = stepAnalogSteering(0, false, true, 140, 0.05, car, true);
+  const sLeftFromRight = stepAnalogSteering(0.5, true, false, 140, 0.05, car, true);
+  ok(Math.abs(sLeftFromRight - 0.5) > sRightFromZero * 1.75, "Counter-steering turns across center >1.75x faster for chicanes/S-bends");
+
+  // Continuous throttle weight transfer (no 0.78 cliff) & Peak Slip Plateau at 140 km/h
+  function evalSteerAt(spdKmh, thrPct, steerVal) {
+    selectCircuit(0); resetSession(false);
+    simState.countdownActive = false; simState.paused = false; simState.inShowcaseMode = false; simState.edition = 'realistic';
+    simState.speedMs = spdKmh / 3.6; simState.speedKmh = spdKmh;
+    simState.throttleInput = thrPct; simState.steerInput = steerVal;
+    manualSteerDrag = true; manualThrottleDrag = true; manualBrakeDrag = true;
+    for (let i = 0; i < 15; i++) stepPhysics(0.016);
+    const out = { latG: simState.latG, yawRate: simState.yawRate };
+    manualSteerDrag = false; manualThrottleDrag = false; manualBrakeDrag = false;
+    return out;
+  }
+  const cOff = evalSteerAt(140, 0, 1.0);
+  const cFull = evalSteerAt(140, 100, 1.0);
+  const ratio = cFull.latG / cOff.latG;
+  ok(ratio >= 0.88 && ratio <= 0.96 && cFull.latG >= 1.44, "140 km/h full-throttle cornering holds 88-96% of coasting grip (" + cFull.latG.toFixed(2) + "G vs " + cOff.latG.toFixed(2) + "G)");
+
+  // No discontinuity crossing 126 km/h (35 m/s) turnInBonus boundary
+  const cLow = evalSteerAt(123, 50, 0.55);
+  const cHigh = evalSteerAt(129, 50, 0.55);
+  const yawStepRatio = Math.abs(cHigh.yawRate - cLow.yawRate) / Math.max(0.01, cLow.yawRate);
+  ok(yawStepRatio < 0.08, "Yaw response stays smooth across 126 km/h without turn-in step jump (delta " + (yawStepRatio * 100).toFixed(1) + "%)");
+
+  // Test 12: Phase 2 - Continuous Rigid-Body OBB Player<->AI Collision (Anti-Teleport + Progressive Contact + Momentum & Yaw Torque)
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.gear = 4; simState.s = 200.0; simState.d = 0.0; simState.speedMs = 60.0; simState.speedKmh = 216.0; simState.yawRate = 0;
+  simState.heading = sampleTrackAtS(200.0).heading;
+  aiCars[0].s = 204.2; aiCars[0].d = 0.55; aiCars[0].speedMs = 30.0; aiCars[0].colVelD = 0; aiCars[0].colHeadingOffset = 0;
+  aiCars[1].s = 600.0; aiCars[2].s = 900.0;
+  const sBefore12 = simState.s;
+  resolveVehicleCollisions(0.016);
+  const singleStepDisp12 = Math.abs(simState.s - sBefore12);
+  for (let k = 0; k < 8; k++) {
+    simState.s += simState.speedMs * 0.016;
+    aiCars[0].s += aiCars[0].speedMs * 0.016;
+    resolveVehicleCollisions(0.016);
+  }
+  const playerPost = simState.speedMs;
+  const aiPost = aiCars[0].speedMs;
+  const wP2 = sdToWorld(simState.s, simState.d);
+  const wA2 = sdToWorld(aiCars[0].s, aiCars[0].d);
+  const distAfter = Math.hypot(wA2.x - wP2.x, wA2.z - wP2.z);
+  ok(singleStepDisp12 <= 0.16 && playerPost < 50.0 && aiPost > 38.0 && Math.abs(simState.yawRate) > 0.04 && distAfter > 4.2,
+    "OBB Player<->AI collision has zero teleport (1-frame dS=" + singleStepDisp12.toFixed(3) + "m), smooth momentum (" + playerPost.toFixed(1) + " / " + aiPost.toFixed(1) + " m/s), yaw torque & separation (" + distAfter.toFixed(2) + "m)");
+
+  // Test 13: Phase 2 - AI<->AI Continuous Rigid-Body Collision Separation & Momentum Transfer
+  aiCars[0].s = 300.0; aiCars[0].d = 0.0; aiCars[0].speedMs = 52.0; aiCars[0].colVelD = 0;
+  aiCars[1].s = 304.1; aiCars[1].d = 0.2; aiCars[1].speedMs = 26.0; aiCars[1].colVelD = 0;
+  simState.s = 800.0; aiCars[2].s = 1200.0;
+  for (let k = 0; k < 8; k++) {
+    aiCars[0].s += aiCars[0].speedMs * 0.016;
+    aiCars[1].s += aiCars[1].speedMs * 0.016;
+    resolveVehicleCollisions(0.016);
+  }
+  ok(aiCars[0].speedMs < 46.0 && aiCars[1].speedMs > 32.0 && (aiCars[1].s - aiCars[0].s) > 4.4,
+    "OBB Rigid-Body AI<->AI collision resolves continuous separation & impulse (" + aiCars[0].speedMs.toFixed(1) + " / " + aiCars[1].speedMs.toFixed(1) + " m/s)");
+
+  // Test 18: Side-by-Side Door-Rub Anti-Teleport Check (never resolves laterally overlapping pass as longitudinal jump)
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.s = 200.0; simState.d = 0.0; simState.speedMs = 55.0; simState.heading = sampleTrackAtS(200.0).heading;
+  aiCars[0].s = 200.8; aiCars[0].d = 1.85; aiCars[0].speedMs = 45.0; aiCars[0].colVelD = 0; aiCars[0].colHeadingOffset = 0;
+  aiCars[1].s = 600.0; aiCars[2].s = 900.0;
+  resolveVehicleCollisions(0.016);
+  ok(Math.abs(simState.s - 200.0) < 0.08 && Math.abs(simState.d - 0.0) < 0.08 && simState.d < 0 && aiCars[0].d > 1.85,
+    "Side-by-side door rub pushes smoothly laterally without longitudinal teleport (pS=" + simState.s.toFixed(3) + ", pD=" + simState.d.toFixed(3) + ")");
+
+  // Test 14: Phase 2 - Mistake-Free Clinical AI (zero stress / mistakeTimer fields or failure states)
+  const hasLegacyStress = aiCars.some(a => ('stress' in a) || ('mistakeTimer' in a) || ('mistakeType' in a));
+  let hadMistakeLabel = false;
+  simState.s = 400.0; simState.d = 0.0; simState.speedMs = 45.0;
+  aiCars[0].s = 415.0; aiCars[0].d = 0.0; aiCars[0].speedMs = 45.0; aiCars[0].reactionTimer = 0;
+  for (let i = 0; i < 200; i++) {
+    stepAIRivals(0.02);
+    if (String(aiCars[0].stateLabel || '').includes('⚠') || String(aiCars[0].stateLabel || '').includes('MISSED')) {
+      hadMistakeLabel = true;
+    }
+  }
+  ok(!hasLegacyStress && !hadMistakeLabel, "AI operates with zero artificial stress/mistake mechanics");
+
+  // Test 15: Phase 2 - Tire Compound Grip Scaling (Soft 1.65G > Medium 1.52G > Hard 1.42G)
+  setTireCompound('soft');
+  const softCorner = evalSteerAt(140, 0, 1.0);
+  setTireCompound('medium');
+  const medCorner = evalSteerAt(140, 0, 1.0);
+  setTireCompound('hard');
+  const hardCorner = evalSteerAt(140, 0, 1.0);
+  setTireCompound('medium');
+  ok(softCorner.latG > medCorner.latG + 0.08 && medCorner.latG > hardCorner.latG + 0.06,
+    "Tire compounds scale lateral G accurately (S:" + softCorner.latG.toFixed(2) + "G > M:" + medCorner.latG.toFixed(2) + "G > H:" + hardCorner.latG.toFixed(2) + "G)");
+
+  // Test 16: Phase 2 - Audio Synthesis Hooks & 0.08s Upshift Ignition Cut
+  const hasAudioHooks = (typeof soundEngine.triggerShiftClunk === 'function')
+    && (typeof soundEngine.triggerTurboFlutter === 'function')
+    && (typeof soundEngine.triggerCollision === 'function')
+    && (typeof soundEngine.triggerBackfire === 'function');
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.autoTransmission = true;
+  simState.gear = 1; simState.speedMs = 66 / 3.6; simState.speedKmh = 66;
+  stepPhysics(0.016);
+  ok(hasAudioHooks && simState.gear === 2 && Math.abs(simState.ignitionCutTimer - 0.08) < 0.005,
+    "Audio synthesis hooks present & AT 1->2 upshift triggers 0.08s ignition cut (cut=" + simState.ignitionCutTimer.toFixed(3) + "s)");
+
+  // Test 17: Full-Throttle 0->260+ km/h Sweep (Zero Gear Hunting / Zero High-Freq Backfire)
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.autoTransmission = true;
+  simState.throttleInput = 100;
+  manualThrottleDrag = true; manualBrakeDrag = true; manualSteerDrag = true;
+  let gearChanges = 0;
+  let bfCount = 0;
+  const origBf = soundEngine.triggerBackfire;
+  soundEngine.triggerBackfire = function() { bfCount++; if (origBf) origBf.apply(this, arguments); };
+  let prevG = simState.gear;
+  for (let i = 0; i < 1500; i++) {
+    const n50 = sampleTrackAtS(50);
+    simState.s = 50; simState.d = 0; simState.heading = n50.heading; simState.yawRate = 0;
+    stepPhysics(0.016);
+    if (simState.gear !== prevG) { gearChanges++; prevG = simState.gear; }
+  }
+  soundEngine.triggerBackfire = origBf;
+  manualThrottleDrag = false; manualBrakeDrag = false; manualSteerDrag = false;
+  ok(gearChanges === 5 && bfCount <= 5 && simState.speedKmh > 250,
+    "Full-throttle 0->250+ km/h sweep has zero gear hunting (shifts=" + gearChanges + ", backfires=" + bfCount + ", v=" + simState.speedKmh.toFixed(1) + " km/h)");
+
+  // Test 19: Phase 2.5 - Side-by-Side Angled Door Lean -> Parallel Heading Alignment + Continuous Coulomb Speed Drag
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.gear = 4; simState.s = 200.0; simState.d = -1.75; simState.speedMs = 56.0; simState.speedKmh = 201.6; simState.yawRate = 0;
+  const h19 = sampleTrackAtS(200.0).heading;
+  simState.heading = h19 + 0.21; // ~12 deg angled approach leaning right into AI's door
+  aiCars[0].s = 200.4; aiCars[0].d = 0.0; aiCars[0].speedMs = 44.0; aiCars[0].heading = h19; aiCars[0].yawRate = 0; aiCars[0].vLat = 0; aiCars[0].spinTimer = 0;
+  aiCars[1].s = 600.0; aiCars[2].s = 900.0;
+  manualThrottleDrag = true; manualBrakeDrag = true; manualSteerDrag = true;
+  simState.throttleInput = 0; simState.brakeInput = 0; simState.steerInput = 0.35; // gentle steering into AI door
+  let minHeadingGap19 = 999;
+  for (let i = 0; i < 45; i++) {
+    stepPhysics(0.016);
+    const gap = Math.abs(Math.atan2(Math.sin(simState.heading - aiCars[0].heading), Math.cos(simState.heading - aiCars[0].heading)));
+    if (gap < minHeadingGap19) minHeadingGap19 = gap;
+  }
+  const endHeadingGap19 = Math.abs(Math.atan2(Math.sin(simState.heading - aiCars[0].heading), Math.cos(simState.heading - aiCars[0].heading)));
+  const speedGapAfter19 = Math.abs(simState.speedMs - aiCars[0].speedMs);
+  manualThrottleDrag = false; manualBrakeDrag = false; manualSteerDrag = false;
+  ok(endHeadingGap19 < 0.095 && speedGapAfter19 < 8.5,
+    "Side-by-side angled contact aligns headings parallel (gap=" + (endHeadingGap19 * 180 / Math.PI).toFixed(1) + " deg) & Coulomb friction narrows speed delta (" + speedGapAfter19.toFixed(1) + " m/s)");
+
+  // Test 20: Phase 2.5 - Non-Parallel Nose-to-Rear-Quarter PIT Strike -> Lead AI Spinout (>30 deg)
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.gear = 4; simState.s = 200.0; simState.d = -0.85; simState.speedMs = 56.0; simState.speedKmh = 201.6; simState.yawRate = 0;
+  const h20 = sampleTrackAtS(200.0).heading;
+  simState.heading = h20 + 0.14;
+  aiCars[0].s = 203.9; aiCars[0].d = 0.0; aiCars[0].speedMs = 42.0; aiCars[0].heading = h20; aiCars[0].yawRate = 0; aiCars[0].vLat = 0; aiCars[0].spinTimer = 0;
+  aiCars[1].s = 600.0; aiCars[2].s = 900.0;
+  manualThrottleDrag = true; manualBrakeDrag = true; manualSteerDrag = true;
+  simState.throttleInput = 80; simState.brakeInput = 0; simState.steerInput = 0.25;
+  let maxAiDeflection20 = 0;
+  let sawSpinState20 = false;
+  for (let i = 0; i < 45; i++) {
+    stepPhysics(0.016);
+    const nAi = sampleTrackAtS(aiCars[0].s);
+    const defl = Math.abs(Math.atan2(Math.sin(aiCars[0].heading - nAi.heading), Math.cos(aiCars[0].heading - nAi.heading)));
+    if (defl > maxAiDeflection20) maxAiDeflection20 = defl;
+    if (aiCars[0].stateLabel === 'LOST CONTROL' || aiCars[0].stateLabel === 'CATCHING SLIDE') sawSpinState20 = true;
+  }
+  manualThrottleDrag = false; manualBrakeDrag = false; manualSteerDrag = false;
+  ok(sawSpinState20 && maxAiDeflection20 > 0.52,
+    "Non-parallel PIT rear-quarter strike induces authentic AI spinout (maxYaw=" + (maxAiDeflection20 * 180 / Math.PI).toFixed(1) + " deg, spin=" + sawSpinState20 + ")");
+
+  // Test 21: Phase 2.5 - Continuous Multi-Frame Side Contact Anti-Teleport Guard
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.s = 200.0; simState.d = -1.70; simState.speedMs = 50.0; simState.heading = sampleTrackAtS(200.0).heading;
+  aiCars[0].s = 200.5; aiCars[0].d = 0.0; aiCars[0].speedMs = 46.0; aiCars[0].heading = sampleTrackAtS(200.5).heading;
+  aiCars[1].s = 600.0; aiCars[2].s = 900.0;
+  let maxSingleResolverStep21 = 0;
+  for (let i = 0; i < 30; i++) {
+    const sPrev = simState.s, dPrev = simState.d;
+    resolveVehicleCollisions(0.016);
+    const stepD = Math.hypot(simState.s - sPrev, simState.d - dPrev);
+    if (stepD > maxSingleResolverStep21) maxSingleResolverStep21 = stepD;
+    simState.s += simState.speedMs * 0.016;
+    aiCars[0].s += aiCars[0].speedMs * 0.016;
+  }
+  ok(maxSingleResolverStep21 <= 0.14,
+    "Continuous multi-frame side contact resolves smoothly without teleport (maxStep=" + maxSingleResolverStep21.toFixed(4) + "m)");
+
+  // Test 22: Side-by-Side Staggered Steering Stability (prevents excessive yaw spin-out when steering closely beside AI)
+  selectCircuit(0); resetSession(false);
+  simState.edition = 'realistic';
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.gear = 4; simState.s = 201.5; simState.d = -1.85; simState.speedMs = 68.0; simState.speedKmh = 244.8; simState.yawRate = 0;
+  simState.heading = sampleTrackAtS(201.5).heading;
+  aiCars[0].s = 200.0; aiCars[0].d = 0.0; aiCars[0].speedMs = 68.0; aiCars[0].heading = sampleTrackAtS(200.0).heading;
+  aiCars[0].yawRate = 0; aiCars[0].vLat = 0; aiCars[0].spinTimer = 0; aiCars[0].reactionTimer = 0;
+  aiCars[1].s = 600.0; aiCars[2].s = 900.0;
+  manualThrottleDrag = true; manualBrakeDrag = true; manualSteerDrag = true;
+  simState.throttleInput = 85; simState.brakeInput = 0; simState.steerInput = 1.0;
+  let maxYr22 = 0, maxDeg22 = 0;
+  for (let i = 0; i < 60; i++) {
+    stepPhysics(0.016);
+    const yr = Math.abs(simState.yawRate);
+    const dg = Math.abs(wrapAngle(simState.heading - sampleTrackAtS(simState.s).heading)) * 57.3;
+    if (yr > maxYr22) maxYr22 = yr;
+    if (dg > maxDeg22) maxDeg22 = dg;
+  }
+  manualThrottleDrag = false; manualBrakeDrag = false; manualSteerDrag = false;
+  ok(maxYr22 <= 1.60 && maxDeg22 < 32.0,
+    "Side-by-side staggered steering resists excessive yaw snap (maxYr=" + maxYr22.toFixed(2) + " rad/s, maxAngle=" + maxDeg22.toFixed(1) + " deg)");
+
+  // Test 23: Phase 3 - Equal-Pace Distinct-Style AI Archetypes
+  selectCircuit(1); // Fuji Technical GP
+  const stylesOk = aiCars[0].style === 'smooth_apex' && aiCars[1].style === 'late_braker' && aiCars[2].style === 'exit_surge' &&
+    aiCars.every(a => Math.abs(a.basePace - 1.034) < 1e-6);
+  const soloDist = [], avgEntry = [], avgApex = [], avgStraight = [];
+  for (let k = 0; k < 3; k++) {
+    resetSession(false);
+    simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+    simState.aiDifficulty = 1.0;
+    simState.lap = 99; simState.s = 2500;
+    aiCars.forEach((a, idx) => {
+      a.reactionTimer = 0;
+      if (idx === k) {
+        a.lap = 1; a.s = 60; a.d = getProProfileAtDistance(60).optimalD; a.speedMs = 25;
+        a.heading = sampleTrackAtS(60).heading;
+      } else {
+        a.lap = 99; a.s = 2600 + idx * 50; a.speedMs = 0;
+      }
+    });
+    let eSum = 0, eN = 0, aSum = 0, aN = 0, sSum = 0, sN = 0;
+    for (let step = 0; step < 750; step++) {
+      stepAIRivals(0.04);
+      const ai = aiCars[k];
+      const curS = ai.s;
+      const pr = getProProfileAtDistance(curS);
+      const cNow = Math.abs(sampleTrackAtS(curS).curvature || 0);
+      const cMid = Math.abs(sampleTrackAtS(curS + 25).curvature || 0);
+      const cLook = Math.abs(sampleTrackAtS(curS + 95).curvature || 0);
+      if (pr.brake > 15 || (cNow < 0.0022 && cLook > 0.0030)) { eSum += ai.speedMs * 3.6; eN++; }
+      else if (cNow >= 0.0022 && cMid >= 0.0018) { aSum += ai.speedMs * 3.6; aN++; }
+      else if (cNow < 0.0020 && cLook < 0.0025) { sSum += ai.speedMs * 3.6; sN++; }
+    }
+    const ai = aiCars[k];
+    soloDist.push((ai.lap - 1) * totalTrackLength + ai.s - 60);
+    avgEntry.push(eN > 0 ? eSum / eN : 0);
+    avgApex.push(aN > 0 ? aSum / aN : 0);
+    avgStraight.push(sN > 0 ? sSum / sN : 0);
+  }
+  const distSpreadPct = ((Math.max(...soloDist) - Math.min(...soloDist)) / Math.max(1, Math.min(...soloDist))) * 100;
+  const distinctStyles = (avgEntry[1] > avgEntry[2]) && (avgApex[0] > avgApex[1]) && (avgStraight[2] > avgStraight[0]);
+  ok(stylesOk && distSpreadPct < 1.5 && distinctStyles,
+    "Equal-pace distinct-style AI archetypes (spread=" + distSpreadPct.toFixed(2) + "%, entry=" + avgEntry.map(x => x.toFixed(1)).join('/') + ", apex=" + avgApex.map(x => x.toFixed(1)).join('/') + ", exit=" + avgStraight.map(x => x.toFixed(1)).join('/') + ")");
+
+  // Test 24: Phase 3 - Dynamic Multi-Line Racecraft (FIA One-Move Defense Lock, Inside Protection, Two-Wide Room)
+  selectCircuit(1); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.aiDifficulty = 1.0;
+  let straightS = 100;
+  for (let s = 60; s < totalTrackLength - 220; s += 15) {
+    if (Math.abs(sampleTrackAtS(s).curvature || 0) < 0.0012 &&
+        Math.abs(sampleTrackAtS(s + 95).curvature || 0) < 0.0012 &&
+        Math.abs(sampleTrackAtS(s + 165).curvature || 0) < 0.0012) {
+      straightS = s; break;
+    }
+  }
+  simState.lap = 1; simState.s = straightS; simState.d = -3.2; simState.speedMs = 60;
+  aiCars[0].lap = 99; aiCars[2].lap = 99;
+  aiCars[1].lap = 1; aiCars[1].s = straightS + 18; aiCars[1].d = 0; aiCars[1].speedMs = 52;
+  aiCars[1].heading = sampleTrackAtS(aiCars[1].s).heading; aiCars[1].reactionTimer = 0;
+  for (let i = 0; i < 5; i++) {
+    stepAIRivals(0.04);
+    simState.s += simState.speedMs * 0.04;
+  }
+  const lockedD24 = aiCars[1].defendTargetD;
+  const hadLock24 = aiCars[1].defendLockTimer > 2.0 && aiCars[1].stateLabel === 'ONE-MOVE BLOCK';
+  // Player suddenly jukes to the opposite side; AI must NOT weave after jumping across!
+  simState.d = 3.5;
+  for (let i = 0; i < 12; i++) {
+    stepAIRivals(0.04);
+    simState.s += Math.min(aiCars[1].speedMs, simState.speedMs) * 0.04;
+  }
+  const heldOneMove = hadLock24 && Math.abs(aiCars[1].defendTargetD - lockedD24) < 0.05;
+
+  // Sub-check B: Inside Corner Protection
+  let cornerS = 500;
+  for (let s = 100; s < totalTrackLength - 180; s += 15) {
+    if (Math.abs(sampleTrackAtS(s + 95).curvature || 0) > 0.0045) { cornerS = s; break; }
+  }
+  const cSignB = Math.sign(sampleTrackAtS(cornerS + 95).curvature || 1);
+  simState.lap = 1; simState.s = cornerS - 18; simState.d = 0; simState.speedMs = 45;
+  aiCars[1].lap = 1; aiCars[1].s = cornerS; aiCars[1].d = 0; aiCars[1].speedMs = 42;
+  aiCars[1].heading = sampleTrackAtS(cornerS).heading;
+  aiCars[1].defendLockTimer = 0; aiCars[1].defendCooldownTimer = 0;
+  for (let i = 0; i < 16; i++) {
+    stepAIRivals(0.04);
+    simState.s += aiCars[1].speedMs * 0.04;
+  }
+  const protectedInside = (aiCars[1].stateLabel === 'PROTECT INSIDE') && (aiCars[1].d * cSignB > 0.5);
+
+  // Sub-check C: Two-Wide Side-by-Side Racing Room Corridor
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.lap = 1; simState.s = 200; simState.d = 1.5; simState.speedMs = 50;
+  aiCars[1].lap = 99; aiCars[2].lap = 99;
+  aiCars[0].lap = 1; aiCars[0].s = 201; aiCars[0].d = 3.2; aiCars[0].speedMs = 50;
+  aiCars[0].heading = sampleTrackAtS(201).heading; aiCars[0].reactionTimer = 0;
+  for (let i = 0; i < 35; i++) {
+    stepAIRivals(0.04);
+    simState.s += aiCars[0].speedMs * 0.04;
+  }
+  const sideGap24 = Math.abs(aiCars[0].d - simState.d);
+  const twoWideOk = (aiCars[0].stateLabel === 'SIDE BY SIDE' || aiCars[0].stateLabel === 'SWITCHBACK') && sideGap24 >= 2.15;
+  ok(heldOneMove && protectedInside && twoWideOk,
+    "Dynamic racecraft FSM (oneMoveLock=" + heldOneMove + ", protectInside=" + protectedInside + ", twoWideGap=" + sideGap24.toFixed(2) + "m)");
+
+  // Test 25: Phase 4 - Out-In-Out Racing Line, Zero False Braking on Small Kinks, Competitive Lap Times
+  selectCircuit(1); // Fuji
+  let peakApexS = 800, peakApexAbsK = 0;
+  for (let s = 200; s < totalTrackLength * 0.5; s += 10) {
+    const kAbs = Math.abs(sampleTrackAtS(s).curvature || 0);
+    if (kAbs > peakApexAbsK) { peakApexAbsK = kAbs; peakApexS = s; }
+  }
+  const apexSign25 = Math.sign(sampleTrackAtS(peakApexS).curvature || 1);
+  let minEntryOut = 999, minExitOut = 999;
+  for (let off = 70; off <= 130; off += 10) {
+    const de = sampleTrackAtS(peakApexS - off).optimalD * apexSign25;
+    const dx = sampleTrackAtS(peakApexS + off).optimalD * apexSign25;
+    if (de < minEntryOut) minEntryOut = de;
+    if (dx < minExitOut) minExitOut = dx;
+  }
+  const dApex25 = sampleTrackAtS(peakApexS).optimalD * apexSign25;
+  const outInOutOk = (dApex25 > 4.5 && minEntryOut < -2.5 && minExitOut < -2.0);
+
+  // Flat-out small corner / sweeper check on Monza
+  selectCircuit(0); resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
+  simState.aiDifficulty = 1.0; simState.lap = 99; simState.s = 3000;
+  let kinkS = 400;
+  for (let s = 200; s < totalTrackLength - 300; s += 20) {
+    const k = Math.abs(sampleTrackAtS(s).curvature || 0);
+    if (k > 0.0008 && k < 0.0018 && getProProfileAtDistance(s).brake === 0 && getProProfileAtDistance(s + 30).brake === 0) {
+      kinkS = s; break;
+    }
+  }
+  aiCars[0].lap = 1; aiCars[0].s = kinkS; aiCars[0].d = getProProfileAtDistance(kinkS).optimalD;
+  aiCars[0].speedMs = 240 / 3.6; aiCars[0].heading = sampleTrackAtS(kinkS).heading; aiCars[0].reactionTimer = 0;
+  aiCars[1].lap = 99; aiCars[2].lap = 99;
+  for (let i = 0; i < 15; i++) stepAIRivals(0.04);
+  const flatOutOk = (aiCars[0].brakeInput === 0 && aiCars[0].throttleInput > 90);
+
+  // Competitive human-matched PRO_LAP_TIME across all 3 circuits
+  selectCircuit(0); const tMonza = PRO_LAP_TIME;
+  selectCircuit(1); const tFuji = PRO_LAP_TIME;
+  selectCircuit(2); const tHakone = PRO_LAP_TIME;
+  const lapTimesOk = (tMonza >= 74.0 && tMonza <= 82.0) && (tFuji >= 80.0 && tFuji <= 88.0) && (tHakone >= 87.0 && tHakone <= 96.0);
+
+  ok(outInOutOk && flatOutOk && lapTimesOk,
+    "Out-In-Out line (entry=" + minEntryOut.toFixed(1) + "/apex=" + dApex25.toFixed(1) + "/exit=" + minExitOut.toFixed(1) + "), flatOut=" + flatOutOk + ", PRO times=(" + tMonza.toFixed(1) + "s/" + tFuji.toFixed(1) + "s/" + tHakone.toFixed(1) + "s)");
+
+  // Test 26: Standing-Start Launch Parity (Player vs 專業 PRO AI vs PRO Ghost) & Corner-Exit Early Throttle Advantage
+  selectCircuit(0); // Monza straight at s=0
+  resetSession(false);
+  simState.edition = 'realistic'; simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false;
+  simState.mode = 'time_attack'; simState.s = 0; simState.d = 0; simState.speedMs = 0; simState.speedKmh = 0;
+  inputs.throttle = false; inputs.brake = false;
+  for (let i = 0; i < 175; i++) {
+    inputs.throttle = (i * 0.02 >= 0.22); // Matching 0.22s human visual reaction at Lights Out
+    stepPhysics(0.02);
+  }
+  const playerLaunchDist = simState.s;
+  inputs.throttle = false; inputs.brake = false;
+
+  resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false;
+  simState.mode = 'ai_race'; simState.aiDifficulty = 1.0; simState.lap = 99; simState.s = 3000;
+  aiCars[0].lap = 1; aiCars[0].s = 0; aiCars[0].d = 0; aiCars[0].speedMs = 0;
+  aiCars[0].heading = sampleTrackAtS(0).heading; aiCars[0].reactionTimer = 0.22;
+  aiCars[1].lap = 99; aiCars[2].lap = 99;
+  for (let i = 0; i < 175; i++) stepAIRivals(0.02);
+  const aiLaunchDist = aiCars[0].s;
+  const ghostAt35 = sampleGhostAtTime(proTelemetrySamples, 3.5);
+  const launchParityOk = Math.abs(aiLaunchDist - playerLaunchDist) < 3.5 && Math.abs(ghostAt35.s - playerLaunchDist) < 4.5;
+
+  // Sub-check B: Exiting a medium/tight corner where Player applies full throttle 0.25s earlier than PRO AI
+  selectCircuit(1); // Fuji
+  let exitCornerS = 1125;
+  for (let s = 300; s < totalTrackLength - 300; s += 15) {
+    if (Math.abs(sampleTrackAtS(s).curvature) > 0.0042 && Math.abs(sampleTrackAtS(s + 95).curvature) < 0.0018) {
+      exitCornerS = s; break;
+    }
+  }
+  resetSession(false);
+  simState.edition = 'realistic'; simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false;
+  simState.mode = 'time_attack'; simState.gear = 2;
+  simState.s = exitCornerS; simState.d = 0; simState.speedMs = 25; simState.speedKmh = 90;
+  simState.heading = sampleTrackAtS(exitCornerS).heading;
+  manualSteerDrag = true;
+  inputs.throttle = true; inputs.brake = false;
+  for (let i = 0; i < 175; i++) {
+    const nd = sampleTrackAtS(simState.s);
+    simState.d = 0;
+    simState.heading = nd.heading;
+    simState.latG = (simState.speedMs * simState.speedMs * Math.abs(nd.curvature)) / 9.81;
+    stepPhysics(0.02);
+  }
+  const playerExitDist = simState.s - exitCornerS;
+  manualSteerDrag = false;
+  simState.latG = 0;
+  inputs.throttle = false; inputs.brake = false;
+
+  resetSession(false);
+  simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false;
+  simState.mode = 'ai_race'; simState.aiDifficulty = 1.0; simState.lap = 99; simState.s = 3000;
+  aiCars[0].lap = 1; aiCars[0].s = exitCornerS; aiCars[0].d = getProProfileAtDistance(exitCornerS).optimalD;
+  aiCars[0].speedMs = 25; aiCars[0].gear = 2; aiCars[0].heading = sampleTrackAtS(exitCornerS).heading; aiCars[0].reactionTimer = 0;
+  aiCars[1].lap = 99; aiCars[2].lap = 99;
+  for (let i = 0; i < 175; i++) {
+    if (i * 0.02 < 0.25) {
+      aiCars[0].s += aiCars[0].speedMs * 0.02;
+    } else {
+      stepAIRivals(0.02);
+    }
+  }
+  const aiExitDist = aiCars[0].s - exitCornerS;
+  const earlyThrottleWins = (playerExitDist > aiExitDist + 1.5);
+
+  ok(launchParityOk && earlyThrottleWins,
+    "Unified launch & exit physics (3.5s launch: P=" + playerLaunchDist.toFixed(1) + "m / AI=" + aiLaunchDist.toFixed(1) + "m / Ghost=" + ghostAt35.s.toFixed(1) + "m; corner exit: P=+" + playerExitDist.toFixed(1) + "m vs AI=+" + aiExitDist.toFixed(1) + "m)");
+
+  document.getElementById('v8-results').textContent = JSON.stringify(results);
+})();
+</script>
+</body>
+</html>

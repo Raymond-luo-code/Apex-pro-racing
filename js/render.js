@@ -8,8 +8,23 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.15, 2600);
       const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      const isSoftwareWebGL = (() => {
+        try {
+          const gl = renderer.getContext();
+          if (!gl) return false;
+          const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+          const rStr = (dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '') : '') + ' ' + String(gl.getParameter(gl.RENDERER) || '');
+          return /swiftshader|llvmpipe|softpipe|software/i.test(rStr);
+        } catch (e) {
+          return false;
+        }
+      })();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(isSoftwareWebGL ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+      if (!isSoftwareWebGL && 'toneMapping' in renderer && THREE.ACESFilmicToneMapping !== undefined) {
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.08;
+      }
       container.appendChild(renderer.domElement);
 
       const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x0f172a, 1.08);
@@ -129,12 +144,15 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
       const gfxSettings = {
         pbrAsphalt: true,
         asphaltRes: IS_MOBILE_GPU ? 512 : 1024,
-        envReflections: true
+        envReflections: true,
+        glbTrackScenery: false
       };
       try {
         const savedGfx = JSON.parse(localStorage.getItem('apexpro.gfx') || 'null');
         if (savedGfx) Object.assign(gfxSettings, savedGfx);
       } catch (e) { /* ignore corrupted storage */ }
+      // Disable unaligned external GLB track scenery unless explicitly opted in
+      gfxSettings.glbTrackScenery = false;
       function saveGfxSettings() {
         try { localStorage.setItem('apexpro.gfx', JSON.stringify(gfxSettings)); } catch (e) { }
       }
@@ -316,6 +334,242 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         return rubberGradientTex;
       }
 
+      let grassTextureSet = null;
+      function getGrassPBRSet() {
+        if (grassTextureSet) return grassTextureSet;
+        const N = isSoftwareWebGL ? 128 : 512;
+        const height = new Float32Array(N * N);
+        function hash2(ix, iy, seed) {
+          let n = Math.imul(ix, 374761393) ^ Math.imul(iy, 668265263) ^ Math.imul(seed + 1, 1442695041);
+          n = Math.imul(n ^ (n >>> 13), 1274126177);
+          n ^= n >>> 16;
+          return (n >>> 0) / 4294967296;
+        }
+        function pNoise(x, y, period, seed) {
+          const x0 = Math.floor(x), y0 = Math.floor(y);
+          const fx = x - x0, fy = y - y0;
+          const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+          const x0w = ((x0 % period) + period) % period, x1w = (x0w + 1) % period;
+          const y0w = ((y0 % period) + period) % period, y1w = (y0w + 1) % period;
+          const a = hash2(x0w, y0w, seed), b = hash2(x1w, y0w, seed);
+          const c = hash2(x0w, y1w, seed), d = hash2(x1w, y1w, seed);
+          return (a * (1 - ux) + b * ux) * (1 - uy) + (c * (1 - ux) + d * ux) * uy;
+        }
+
+        const cAlb = document.createElement('canvas'); cAlb.width = cAlb.height = N;
+        const cNorm = document.createElement('canvas'); cNorm.width = cNorm.height = N;
+        const cRough = document.createElement('canvas'); cRough.width = cRough.height = N;
+        const ctxA = cAlb.getContext('2d'), imgA = ctxA.createImageData(N, N);
+        const ctxN = cNorm.getContext('2d'), imgN = ctxN.createImageData(N, N);
+        const ctxR = cRough.getContext('2d'), imgR = ctxR.createImageData(N, N);
+        const dA = imgA.data, dN = imgN.data, dR = imgR.data;
+
+        for (let y = 0; y < N; y++) {
+          const mowerStripe = 0.90 + 0.10 * Math.sin((y / N) * Math.PI * 8);
+          for (let x = 0; x < N; x++) {
+            const idx = y * N + x;
+            const macro = pNoise(x / 64, y / 64, 8, 21);
+            const med = pNoise(x / 16, y / 16, 32, 22);
+            const blade = pNoise(x / 3, y / 5, Math.max(1, Math.floor(N / 3)), 23);
+            const grit = hash2(x, y, 24);
+            const h = macro * 0.42 + med * 0.25 + blade * 0.23 + grit * 0.10;
+            height[idx] = h;
+
+            const dryPatch = macro < 0.28 ? (0.28 - macro) * 1.4 : 0;
+            const shade = mowerStripe * (0.68 + h * 0.56);
+            const r = Math.min(255, Math.max(0, Math.round((46 + dryPatch * 58) * shade)));
+            const g = Math.min(255, Math.max(0, Math.round((96 - dryPatch * 14) * shade)));
+            const b = Math.min(255, Math.max(0, Math.round(42 * shade)));
+            const o = idx * 4;
+            dA[o] = r; dA[o + 1] = g; dA[o + 2] = b; dA[o + 3] = 255;
+
+            const rough = Math.round((0.76 + (1 - h) * 0.18) * 255);
+            dR[o] = dR[o + 1] = dR[o + 2] = rough; dR[o + 3] = 255;
+          }
+        }
+        const nStr = 2.6;
+        for (let y = 0; y < N; y++) {
+          const ym = (y - 1 + N) % N, yp = (y + 1) % N;
+          for (let x = 0; x < N; x++) {
+            const xm = (x - 1 + N) % N, xp = (x + 1) % N;
+            const dx = (height[y * N + xp] - height[y * N + xm]) * nStr;
+            const dy = (height[yp * N + x] - height[ym * N + x]) * nStr;
+            const il = 1 / Math.hypot(dx, dy, 1);
+            const o = (y * N + x) * 4;
+            dN[o] = Math.round((-dx * il * 0.5 + 0.5) * 255);
+            dN[o + 1] = Math.round((-dy * il * 0.5 + 0.5) * 255);
+            dN[o + 2] = Math.round((il * 0.5 + 0.5) * 255);
+            dN[o + 3] = 255;
+          }
+        }
+        ctxA.putImageData(imgA, 0, 0); ctxN.putImageData(imgN, 0, 0); ctxR.putImageData(imgR, 0, 0);
+
+        const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 4);
+        const prep = (canvas, isColor) => {
+          const tex = new THREE.CanvasTexture(canvas);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.anisotropy = isSoftwareWebGL ? 1 : aniso;
+          if (isSoftwareWebGL) {
+            tex.generateMipmaps = false;
+            tex.minFilter = THREE.LinearFilter;
+          }
+          if (isColor && 'colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+          else if (isColor && 'encoding' in tex && THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+          tex.needsUpdate = true;
+          return tex;
+        };
+        grassTextureSet = { map: prep(cAlb, true), normalMap: prep(cNorm, false), roughnessMap: prep(cRough, false) };
+        return grassTextureSet;
+      }
+
+      let sceneDetailTextures = null;
+      function getSceneDetailTextures() {
+        if (sceneDetailTextures) return sceneDetailTextures;
+        const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 4);
+        const makeTex = (w, h, drawFn, repeatX = 1, repeatY = 1, isColor = true) => {
+          const tw = isSoftwareWebGL ? Math.max(16, Math.round(w * 0.5)) : w;
+          const th = isSoftwareWebGL ? Math.max(16, Math.round(h * 0.5)) : h;
+          const c = document.createElement('canvas'); c.width = tw; c.height = th;
+          drawFn(c.getContext('2d'), tw, th);
+          const t = new THREE.CanvasTexture(c);
+          t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping;
+          t.repeat.set(repeatX, repeatY);
+          t.anisotropy = isSoftwareWebGL ? 1 : aniso;
+          if (isSoftwareWebGL) {
+            t.generateMipmaps = false;
+            t.minFilter = THREE.LinearFilter;
+          }
+          if (isColor && 'colorSpace' in t && THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
+          t.needsUpdate = true;
+          return t;
+        };
+
+        const grandstandCrowdMap = makeTex(512, 256, (ctx, w, h) => {
+          ctx.fillStyle = '#1e293b'; ctx.fillRect(0, 0, w, h);
+          const jacketCols = ['#ef4444', '#3b82f6', '#f8fafc', '#f59e0b', '#10b981', '#cbd5e1', '#fb7185', '#38bdf8'];
+          for (let row = 0; row < 12; row++) {
+            const ry = 24 + row * 19;
+            ctx.fillStyle = row % 2 === 0 ? '#334155' : '#263244';
+            ctx.fillRect(0, ry, w, 19);
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.fillRect(0, ry + 15, w, 4);
+            for (let col = 6; col < w - 6; col += 9) {
+              if ((col * 17 + row * 31) % 7 === 0) continue;
+              ctx.fillStyle = jacketCols[(col * 3 + row * 7) % jacketCols.length];
+              ctx.fillRect(col, ry + 3, 6, 10);
+              ctx.fillStyle = '#e2c4a8';
+              ctx.fillRect(col + 1, ry, 4, 4);
+            }
+          }
+          [110, 256, 402].forEach(ax => {
+            ctx.fillStyle = '#64748b'; ctx.fillRect(ax - 8, 24, 16, h - 24);
+          });
+          ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, 24);
+          ctx.fillStyle = '#f59e0b'; ctx.fillRect(0, 20, w, 4);
+          ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('APEX PRO MOTORSPORT // FIA GT WORLD SERIES', w * 0.5, 16);
+        });
+
+        const pitBuildingMap = makeTex(512, 256, (ctx, w, h) => {
+          ctx.fillStyle = '#1e293b'; ctx.fillRect(0, 0, w, h);
+          for (let g = 0; g < 6; g++) {
+            const gx = 8 + g * 84;
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(gx, 96, 72, 152);
+            ctx.fillStyle = '#334155';
+            for (let slat = 0; slat < 9; slat++) ctx.fillRect(gx + 3, 104 + slat * 15, 66, 9);
+            ctx.fillStyle = '#f8fafc'; ctx.fillRect(gx + 2, 96, 68, 12);
+            ctx.fillStyle = g % 2 === 0 ? '#dc2626' : '#0284c7';
+            ctx.fillRect(gx + 2, 108, 68, 5);
+          }
+          ctx.fillStyle = '#0ea5e9'; ctx.fillRect(0, 22, w, 62);
+          for (let m = 0; m < w; m += 32) {
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(m, 22, 4, 62);
+            ctx.fillStyle = 'rgba(224,242,254,0.22)'; ctx.fillRect(m + 4, 26, 20, 48);
+          }
+          ctx.fillStyle = '#94a3b8'; ctx.fillRect(0, 84, w, 10);
+        });
+
+        const mountainRockMap = makeTex(256, 256, (ctx, w, h) => {
+          ctx.fillStyle = '#2d3b32'; ctx.fillRect(0, 0, w, h);
+          for (let i = 0; i < 420; i++) {
+            const x = (i * 73) % w, y = (i * 137) % h;
+            const rw = 8 + (i % 19), rh = 5 + ((i * 3) % 14);
+            ctx.fillStyle = (i % 3 === 0) ? 'rgba(71,85,105,0.45)' : ((i % 3 === 1) ? 'rgba(22,101,52,0.38)' : 'rgba(15,23,42,0.42)');
+            ctx.fillRect(x, y, rw, rh);
+          }
+        }, 6, 4);
+
+        const mountainNormalMap = makeTex(256, 256, (ctx, w, h) => {
+          ctx.fillStyle = 'rgb(128,128,255)'; ctx.fillRect(0, 0, w, h);
+          for (let i = 0; i < 500; i++) {
+            const x = (i * 53) % w, y = (i * 97) % h;
+            ctx.fillStyle = (i % 2 === 0) ? 'rgba(165,148,255,0.55)' : 'rgba(92,108,245,0.55)';
+            ctx.fillRect(x, y, 7 + (i % 11), 6 + (i % 9));
+          }
+        }, 6, 4, false);
+
+        const barkFoliageMap = makeTex(128, 128, (ctx, w, h) => {
+          ctx.fillStyle = '#d1fae5'; ctx.fillRect(0, 0, w, h);
+          for (let i = 0; i < 320; i++) {
+            const x = (i * 37) % w, y = (i * 61) % h;
+            ctx.fillStyle = (i % 2 === 0) ? 'rgba(20,83,45,0.42)' : 'rgba(134,239,172,0.35)';
+            ctx.fillRect(x, y, 4 + (i % 7), 8 + (i % 10));
+          }
+        }, 3, 3);
+
+        sceneDetailTextures = { grandstandCrowdMap, pitBuildingMap, mountainRockMap, mountainNormalMap, barkFoliageMap };
+        return sceneDetailTextures;
+      }
+
+      function buildAlpineMountainMesh(radius, height, isNight, seed, hasSnowCap, texSet) {
+        const segR = 48, segH = 22;
+        const geo = new THREE.ConeGeometry(radius, height, segR, segH, true);
+        const pos = geo.attributes.position;
+        const cols = new Float32Array(pos.count * 3);
+        const baseForest = new THREE.Color(isNight ? 0x0b1714 : 0x1a3322);
+        const granite = new THREE.Color(isNight ? 0x1e293b : 0x475569);
+        const snow = new THREE.Color(isNight ? 0x94a3b8 : 0xe2e8f0);
+        const tmpCol = new THREE.Color();
+
+        for (let i = 0; i < pos.count; i++) {
+          let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+          const normH = (y + height * 0.5) / height; // 0 at base, 1 at peak
+          const rHoriz = Math.hypot(x, z);
+          const ang = Math.atan2(z, x);
+          if (normH > 0.01 && normH < 0.99) {
+            const ridge = Math.sin(ang * 5 + seed) * 0.11 + Math.cos(ang * 9 - normH * 4 + seed) * 0.06 + Math.sin(ang * 14 + normH * 7) * 0.03;
+            const radialScale = Math.max(0.45, 1.0 + ridge * (1.0 - normH * 0.35));
+            x *= radialScale;
+            z *= radialScale;
+            y += Math.sin(ang * 7 + normH * 6 + seed) * height * 0.035 * (1.0 - normH);
+            pos.setXYZ(i, x, y, z);
+          }
+          const snowLine = hasSnowCap ? (0.64 + Math.sin(ang * 6 + seed) * 0.06) : 1.05;
+          if (normH < 0.36) {
+            tmpCol.copy(baseForest).lerp(granite, normH / 0.36 * 0.55);
+          } else if (normH < snowLine) {
+            tmpCol.copy(granite).lerp(baseForest, Math.max(0, 0.3 - (normH - 0.36) * 0.8));
+          } else {
+            tmpCol.copy(granite).lerp(snow, Math.min(1, (normH - snowLine) * 8.0));
+          }
+          cols[i * 3] = tmpCol.r;
+          cols[i * 3 + 1] = tmpCol.g;
+          cols[i * 3 + 2] = tmpCol.b;
+        }
+        geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+        geo.computeVertexNormals();
+        const mat = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          map: texSet.mountainRockMap,
+          normalMap: texSet.mountainNormalMap,
+          normalScale: new THREE.Vector2(0.85, 0.85),
+          roughness: 0.88,
+          metalness: 0.05
+        });
+        return new THREE.Mesh(geo, mat);
+      }
+
       let carContactShadowTex = null;
       function getCarContactShadowTexture() {
         if (carContactShadowTex) return carContactShadowTex;
@@ -357,11 +611,17 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
       // PMREM environment map built from a tiny procedural "sky dome + softbox" scene,
       // re-tinted per circuit theme. Balanced so PBR car paint integrates naturally with Lambert scenery.
-      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      const pmremGenerator = isSoftwareWebGL ? null : new THREE.PMREMGenerator(renderer);
+      const envRTCache = new Map();
       let currentEnvRT = null;
       function updateEnvironmentMap(th) {
-        if (currentEnvRT) { currentEnvRT.dispose(); currentEnvRT = null; }
-        if (!gfxSettings.envReflections) { scene.environment = null; return; }
+        if (isSoftwareWebGL || !gfxSettings.envReflections) { scene.environment = null; return; }
+        const cacheKey = `${th.skyColor}_${th.grassColor}_${th.sunColor}_${th.isNight ? 1 : 0}_${th.hasSunsetFlare ? 1 : 0}`;
+        if (envRTCache.has(cacheKey)) {
+          currentEnvRT = envRTCache.get(cacheKey);
+          scene.environment = currentEnvRT.texture;
+          return;
+        }
         const envScene = new THREE.Scene();
         const skyCol = new THREE.Color(th.skyColor).multiplyScalar(0.85);
         const groundCol = new THREE.Color(th.grassColor || 0x1e293b).multiplyScalar(0.45);
@@ -404,6 +664,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         });
 
         currentEnvRT = pmremGenerator.fromScene(envScene, 0.04);
+        envRTCache.set(cacheKey, currentEnvRT);
         scene.environment = currentEnvRT.texture;
 
         envScene.traverse(o => {
@@ -459,34 +720,8 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           circuitSceneryGroup.add(sunOrb);
         }
 
-        if (currentCircuit.id === 'fuji' || currentCircuit.id === 'hakone' || currentCircuit.id === 'suzuka') {
-          const mtFujiGeo = new THREE.ConeGeometry(720, 420, 32);
-          const mtFujiMat = new THREE.MeshLambertMaterial({ color: th.isNight ? 0x0f172a : 0x1e293b });
-          const mtFuji = new THREE.Mesh(mtFujiGeo, mtFujiMat);
-          mtFuji.position.set(420, 195, 2150);
-          circuitSceneryGroup.add(mtFuji);
-
-          const snowCapGeo = new THREE.ConeGeometry(265, 155, 32);
-          const snowCapMat = new THREE.MeshBasicMaterial({ color: th.isNight ? 0x94a3b8 : 0xf1f5f9 });
-          const snowCap = new THREE.Mesh(snowCapGeo, snowCapMat);
-          snowCap.position.set(420, 326, 2150);
-          circuitSceneryGroup.add(snowCap);
-        }
-
-        const hillCoords = [
-          { x: -1650, z: 1400, r: 520, h: 240 },
-          { x: 1750, z: 950, r: 460, h: 210 },
-          { x: -1500, z: -750, r: 490, h: 220 },
-          { x: 950, z: -980, r: 430, h: 190 }
-        ];
-        hillCoords.forEach(hc => {
-          const hMesh = new THREE.Mesh(
-            new THREE.ConeGeometry(hc.r, hc.h, 16),
-            new THREE.MeshLambertMaterial({ color: th.isNight ? 0x090f1d : 0x142132 })
-          );
-          hMesh.position.set(hc.x, hc.h * 0.42, hc.z);
-          circuitSceneryGroup.add(hMesh);
-        });
+        const grassSet = getGrassPBRSet();
+        const detailTex = getSceneDetailTextures();
 
         let minTrackY = 0;
         for (let i = 0; i < TRACK_SAMPLES; i++) {
@@ -495,8 +730,40 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         }
         const groundY = Math.min(-20, minTrackY - 10.0);
 
+        if (currentCircuit.id === 'fuji' || currentCircuit.id === 'hakone' || currentCircuit.id === 'suzuka') {
+          const mtFuji = buildAlpineMountainMesh(760, 440, th.isNight, 1.3, true, detailTex);
+          mtFuji.position.set(420, groundY + 440 * 0.48, 2250);
+          circuitSceneryGroup.add(mtFuji);
+        }
+
+        const hillCoords = [
+          { x: -2150, z: 1850, r: 540, h: 250, seed: 0.7 },
+          { x: 2150, z: 1350, r: 480, h: 220, seed: 2.1 },
+          { x: -2200, z: -1250, r: 510, h: 230, seed: 3.8 },
+          { x: 1650, z: -1450, r: 450, h: 200, seed: 5.2 }
+        ];
+        hillCoords.forEach(hc => {
+          const hMesh = buildAlpineMountainMesh(hc.r, hc.h, th.isNight, hc.seed, false, detailTex);
+          hMesh.position.set(hc.x, groundY + hc.h * 0.48, hc.z);
+          circuitSceneryGroup.add(hMesh);
+        });
+
         const groundGeo = new THREE.PlaneGeometry(6500, 6500);
-        const groundMat = new THREE.MeshLambertMaterial({ color: th.grassColor });
+        const gUv = groundGeo.attributes.uv;
+        for (let ui = 0; ui < gUv.count; ui++) {
+          gUv.setXY(ui, gUv.getX(ui) * 540, gUv.getY(ui) * 540);
+        }
+        gUv.needsUpdate = true;
+        const groundTint = new THREE.Color(th.grassColor).lerp(new THREE.Color(0xffffff), th.isNight ? 0.38 : 0.72);
+        const groundMat = new THREE.MeshStandardMaterial({
+          color: groundTint,
+          map: grassSet.map,
+          normalMap: grassSet.normalMap,
+          normalScale: new THREE.Vector2(0.85, 0.85),
+          roughnessMap: grassSet.roughnessMap,
+          roughness: 0.92,
+          metalness: 0.02
+        });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = groundY;
@@ -518,6 +785,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
         function isClearOfOtherTrack(wx, wy, wz, ownS, minClearance) {
           const hw = TRACK_WIDTH * 0.5;
+          const runoffClear = hw + 13.5 + minClearance;
           for (let j = 0; j < TRACK_SAMPLES; j += 2) {
             const nj = trackNodes[j];
             let ds = Math.abs(ownS - (nj.s || 0));
@@ -525,8 +793,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             if (ds <= 55.0) continue;
             const dxz = Math.hypot(wx - nj.x, wz - nj.z);
             const nyj = nj.y || 0;
-            if (dxz < hw + minClearance && Math.abs(wy - nyj) < 14.0) return false;
-            if (nyj > wy + 4.0 && dxz < hw + 10.0) return false;
+            if (dxz < runoffClear && Math.abs(wy - nyj) < 65.0) return false;
           }
           return true;
         }
@@ -547,7 +814,13 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
         const runoffPositions = [];
         const runoffColors = [];
+        const runoffUVs = [];
         const runoffIndices = [];
+
+        const skirtPositions = [];
+        const skirtColors = [];
+        const skirtUVs = [];
+        const skirtIndices = [];
 
         const kerbPositions = [];
         const kerbColors = [];
@@ -583,13 +856,34 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           const rRz = node.z + node.rightZ * curRunoffW;
           runoffPositions.push(rLx, node.y - 0.06, rLz);
           runoffPositions.push(rRx, node.y - 0.06, rRz);
+          const runoffUWidth = (curRunoffW * 2) / 12.0;
+          const runoffVAlong = (i === TRACK_SAMPLES ? totalTrackLength : node.s) / 12.0;
+          runoffUVs.push(0, runoffVAlong, runoffUWidth, runoffVAlong);
           const isAlt = (Math.floor(i / 4) % 2 === 0);
           if (onBridge) {
-            runoffColors.push(0.36, 0.39, 0.44, 0.36, 0.39, 0.44);
+            runoffColors.push(0.88, 0.90, 0.94, 0.88, 0.90, 0.94);
           } else {
-            const gCol = th.isNight ? (isAlt ? 0.07 : 0.09) : (isAlt ? 0.16 : 0.20);
-            runoffColors.push(0.06, gCol, 0.09, 0.06, gCol, 0.09);
+            const stripeTint = th.isNight ? (isAlt ? 0.34 : 0.40) : (isAlt ? 0.72 : 0.88);
+            runoffColors.push(stripeTint * 0.95, stripeTint, stripeTint * 0.92, stripeTint * 0.95, stripeTint, stripeTint * 0.92);
           }
+
+          // Vertical embankment skirt sealing the runoff edge down to groundY on non-bridge sections
+          skirtPositions.push(
+            rLx, node.y - 0.06, rLz,
+            rLx, groundY, rLz,
+            rRx, node.y - 0.06, rRz,
+            rRx, groundY, rRz
+          );
+          const skirtShade = th.isNight ? 0.55 : 1.0;
+          const skTopR = 0.12 * skirtShade, skTopG = 0.24 * skirtShade, skTopB = 0.09 * skirtShade;
+          const skBotR = 0.09 * skirtShade, skBotG = 0.11 * skirtShade, skBotB = 0.08 * skirtShade;
+          skirtColors.push(
+            skTopR, skTopG, skTopB,
+            skBotR, skBotG, skBotB,
+            skTopR, skTopG, skTopB,
+            skBotR, skBotG, skBotB
+          );
+          skirtUVs.push(0, runoffVAlong, 1, runoffVAlong, 0, runoffVAlong, 1, runoffVAlong);
 
           const bandGrain = ((i % 3 === 0) ? 0.015 : 0);
           const isBrakingZone = Math.abs(nextLook.curvature) > 0.0055 && Math.abs(node.curvature) < 0.004;
@@ -662,6 +956,15 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             ribbonIndices.push(base + 1, base + 3, base + 2);
 
             const nextNode = trackNodes[(i + 1) % TRACK_SAMPLES];
+            if (!onBridge && !isBridgeNode(nextNode)) {
+              const sBase = i * 4;
+              // Left embankment face down to groundY
+              skirtIndices.push(sBase, sBase + 1, sBase + 4);
+              skirtIndices.push(sBase + 1, sBase + 5, sBase + 4);
+              // Right embankment face down to groundY
+              skirtIndices.push(sBase + 2, sBase + 6, sBase + 3);
+              skirtIndices.push(sBase + 3, sBase + 6, sBase + 7);
+            }
 
             for (const side of [-1, 1]) {
               const d0 = side * (halfW - 0.35);
@@ -733,9 +1036,34 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         const runoffGeo = new THREE.BufferGeometry();
         runoffGeo.setAttribute('position', new THREE.Float32BufferAttribute(runoffPositions, 3));
         runoffGeo.setAttribute('color', new THREE.Float32BufferAttribute(runoffColors, 3));
+        runoffGeo.setAttribute('uv', new THREE.Float32BufferAttribute(runoffUVs, 2));
         runoffGeo.setIndex(runoffIndices);
         runoffGeo.computeVertexNormals();
-        circuitSceneryGroup.add(new THREE.Mesh(runoffGeo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+        circuitSceneryGroup.add(new THREE.Mesh(runoffGeo, new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          map: grassSet.map,
+          normalMap: grassSet.normalMap,
+          normalScale: new THREE.Vector2(0.8, 0.8),
+          roughnessMap: grassSet.roughnessMap,
+          roughness: 0.90,
+          metalness: 0.02,
+          side: THREE.DoubleSide
+        })));
+
+        if (skirtIndices.length > 0) {
+          const skirtGeo = new THREE.BufferGeometry();
+          skirtGeo.setAttribute('position', new THREE.Float32BufferAttribute(skirtPositions, 3));
+          skirtGeo.setAttribute('color', new THREE.Float32BufferAttribute(skirtColors, 3));
+          skirtGeo.setAttribute('uv', new THREE.Float32BufferAttribute(skirtUVs, 2));
+          skirtGeo.setIndex(skirtIndices);
+          skirtGeo.computeVertexNormals();
+          circuitSceneryGroup.add(new THREE.Mesh(skirtGeo, new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            roughness: 0.94,
+            metalness: 0.02,
+            side: THREE.DoubleSide
+          })));
+        }
 
         const trackGeo = new THREE.BufferGeometry();
         trackGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -793,7 +1121,12 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         kerbGeo.setAttribute('color', new THREE.Float32BufferAttribute(kerbColors, 3));
         kerbGeo.setIndex(kerbIndices);
         kerbGeo.computeVertexNormals();
-        circuitSceneryGroup.add(new THREE.Mesh(kerbGeo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+        circuitSceneryGroup.add(new THREE.Mesh(kerbGeo, new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.56,
+          metalness: 0.08,
+          side: THREE.DoubleSide
+        })));
 
         const ribbonGeo = new THREE.BufferGeometry();
         ribbonGeo.setAttribute('position', new THREE.Float32BufferAttribute(ribbonPositions, 3));
@@ -809,21 +1142,22 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         tacticalRibbonMesh.visible = (typeof simState !== 'undefined' && simState) ? simState.showTacticalLine : true;
         circuitSceneryGroup.add(tacticalRibbonMesh);
 
-        const trunkGeo = new THREE.CylinderGeometry(0.35, 0.55, 3.2, 6);
-        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x452719 });
-        const pineCrownGeo = new THREE.ConeGeometry(2.8, 7.5, 7);
-        const pineCrownMat = new THREE.MeshLambertMaterial({ color: th.treePrimary });
-        const secCrownGeo = new THREE.DodecahedronGeometry(3.1, 0);
-        const secCrownMat = new THREE.MeshLambertMaterial({ color: th.treeSecondary });
+        const trunkGeo = new THREE.CylinderGeometry(0.35, 0.58, 4.6, 6);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x452719, roughness: 0.92, metalness: 0.02 });
+        const pineCrownGeo = new THREE.ConeGeometry(2.8, 6.2, 8);
+        const pineTopGeo = new THREE.ConeGeometry(2.0, 4.8, 8);
+        const pineCrownMat = new THREE.MeshStandardMaterial({ color: th.treePrimary, map: detailTex.barkFoliageMap, roughness: 0.88, metalness: 0.02 });
+        const secCrownGeo = new THREE.DodecahedronGeometry(3.1, 1);
+        const secCrownMat = new THREE.MeshStandardMaterial({ color: th.treeSecondary, map: detailTex.barkFoliageMap, roughness: 0.86, metalness: 0.02 });
 
-        const lightPoleGeo = new THREE.CylinderGeometry(0.18, 0.25, 11.5, 6);
-        const lightPoleMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+        const lightPoleGeo = new THREE.CylinderGeometry(0.18, 0.26, 13.0, 6);
+        const lightPoleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4, metalness: 0.7 });
         const lightHeadGeo = new THREE.BoxGeometry(2.2, 0.5, 0.8);
         const lightHeadMat = new THREE.MeshBasicMaterial({ color: th.isNight ? 0x38bdf8 : 0xfef08a });
 
-        const tireStackGeo = new THREE.CylinderGeometry(0.95, 0.95, 1.3, 10);
-        const tireBlueMat = new THREE.MeshLambertMaterial({ color: 0x2563eb });
-        const tireWhiteMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+        const tireStackGeo = new THREE.CylinderGeometry(0.95, 0.95, 1.8, 10);
+        const tireBlueMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.82, metalness: 0.05 });
+        const tireWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.82, metalness: 0.05 });
 
         sceneryNodes.forEach(({ node: n, idx }) => {
           const halfW = TRACK_WIDTH * 0.5;
@@ -836,20 +1170,20 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             const bz = n.z + n.rightZ * outSide * tireDist;
             if (!onBridge && isClearOfOtherTrack(bx, n.y, bz, n.s, 4.0)) {
               const tStack = new THREE.Mesh(tireStackGeo, (idx % 12 === 0) ? tireBlueMat : tireWhiteMat);
-              tStack.position.set(bx, n.y + 0.65, bz);
+              tStack.position.set(bx, n.y + 0.4, bz);
               circuitSceneryGroup.add(tStack);
             }
           }
 
           if (!onBridge && idx % (th.isNight ? 12 : 24) === 0) {
             const side = (idx % 24 === 0) ? -1 : 1;
-            const poleDist = halfW + 8.5;
+            const poleDist = halfW + 6.5;
             const px = n.x + n.rightX * side * poleDist;
             const pz = n.z + n.rightZ * side * poleDist;
 
             if (isClearOfOtherTrack(px, n.y, pz, n.s, 5.0)) {
               const pole = new THREE.Mesh(lightPoleGeo, lightPoleMat);
-              pole.position.set(px, n.y + 5.75, pz);
+              pole.position.set(px, n.y + 5.0, pz);
               circuitSceneryGroup.add(pole);
 
               const head = new THREE.Mesh(lightHeadGeo, lightHeadMat);
@@ -859,11 +1193,11 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             }
           }
 
-          if (!onBridge) {
+          if (!onBridge && Math.abs(n.curvature) <= 0.0038) {
             [-1, 1].forEach(side => {
               if (n.s < 460 || n.s > totalTrackLength - 320) return;
 
-              const treeDist = halfW + 14.5 + ((idx * 7) % 16);
+              const treeDist = halfW + 4.2 + ((idx * 3) % 6.5);
               const tx = n.x + n.rightX * side * treeDist;
               const tz = n.z + n.rightZ * side * treeDist;
               if (!isClearOfOtherTrack(tx, n.y, tz, n.s, 8.0)) return;
@@ -872,27 +1206,39 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
               treeGroup.position.set(tx, n.y, tz);
 
               const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-              trunk.position.y = 1.6;
+              trunk.position.y = 0.9;
               treeGroup.add(trunk);
 
               const isSecondary = (idx % 30 === 0);
+              const scaleVar = 0.85 + ((idx * 13) % 5) * 0.12;
               const crown = new THREE.Mesh(
                 isSecondary ? secCrownGeo : pineCrownGeo,
                 isSecondary ? secCrownMat : pineCrownMat
               );
-              crown.position.y = isSecondary ? 4.8 : 5.4;
-              const scaleVar = 0.85 + ((idx * 13) % 5) * 0.12;
+              crown.position.y = isSecondary ? 4.8 : 4.6;
               crown.scale.set(scaleVar, scaleVar, scaleVar);
               treeGroup.add(crown);
+              if (!isSecondary) {
+                const topTier = new THREE.Mesh(pineTopGeo, pineCrownMat);
+                topTier.position.y = 7.1 * scaleVar;
+                topTier.scale.set(scaleVar, scaleVar, scaleVar);
+                treeGroup.add(topTier);
+              }
 
               circuitSceneryGroup.add(treeGroup);
             });
           }
         });
 
+        const standBaseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.72, metalness: 0.25 });
+        const standSeatsMat = new THREE.MeshStandardMaterial({ map: detailTex.grandstandCrowdMap, roughness: 0.75, metalness: 0.08 });
+        const standRoofMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35, metalness: 0.65 });
+        const pitBldgMat = new THREE.MeshStandardMaterial({ map: detailTex.pitBuildingMap, roughness: 0.60, metalness: 0.22 });
+        const pitGlassMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, roughness: 0.12, metalness: 0.35, clearcoat: 0.9, clearcoatRoughness: 0.08, envMapIntensity: 1.1 });
+
         for (let s = 40; s <= 400; s += 60) {
           const n = sampleTrackAtS(s);
-          const standOffset = TRACK_WIDTH * 0.5 + 12.5;
+          const standOffset = TRACK_WIDTH * 0.5 + 7.2;
           const gx = n.x - n.rightX * standOffset;
           const gz = n.z - n.rightZ * standOffset;
           if (isClearOfOtherTrack(gx, n.y, gz, n.s, 28.0)) {
@@ -900,48 +1246,40 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             standGroup.position.set(gx, n.y, gz);
             standGroup.rotation.y = -n.heading;
 
-            const baseMesh = new THREE.Mesh(
-              new THREE.BoxGeometry(46, 8.5, 10),
-              new THREE.MeshLambertMaterial({ color: 0x1e293b })
-            );
-            baseMesh.position.y = 4.25;
+            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(46, 11.5, 8.0), standBaseMat);
+            baseMesh.position.y = 2.75;
             standGroup.add(baseMesh);
 
-            const seatsMesh = new THREE.Mesh(
-              new THREE.BoxGeometry(44, 5.5, 8.2),
-              new THREE.MeshLambertMaterial({ color: (s % 120 === 0) ? 0xdc2626 : 0x2563eb })
-            );
-            seatsMesh.position.set(0, 5.2, 1.4);
+            const seatsMesh = new THREE.Mesh(new THREE.BoxGeometry(44, 5.5, 6.6), standSeatsMat);
+            seatsMesh.position.set(0, 5.2, 1.1);
             standGroup.add(seatsMesh);
 
-            const roofMesh = new THREE.Mesh(
-              new THREE.BoxGeometry(48, 0.8, 13),
-              new THREE.MeshLambertMaterial({ color: 0xf8fafc })
-            );
-            roofMesh.position.set(0, 10.5, 1.5);
+            const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(48, 0.7, 9.5), standRoofMat);
+            roofMesh.position.set(0, 10.5, 1.0);
             standGroup.add(roofMesh);
+
+            [-21, 0, 21].forEach(px => {
+              const strut = new THREE.Mesh(new THREE.BoxGeometry(0.7, 6.2, 0.7), standRoofMat);
+              strut.position.set(px, 7.6, -2.8);
+              standGroup.add(strut);
+            });
             circuitSceneryGroup.add(standGroup);
           }
 
-          const pbx = n.x + n.rightX * (standOffset - 2);
-          const pbz = n.z + n.rightZ * (standOffset - 2);
+          const pitOffset = TRACK_WIDTH * 0.5 + 7.2;
+          const pbx = n.x + n.rightX * pitOffset;
+          const pbz = n.z + n.rightZ * pitOffset;
           if (isClearOfOtherTrack(pbx, n.y, pbz, n.s, 18.0)) {
             const pitGroup = new THREE.Group();
             pitGroup.position.set(pbx, n.y, pbz);
             pitGroup.rotation.y = -n.heading;
 
-            const pitBldg = new THREE.Mesh(
-              new THREE.BoxGeometry(44, 7.2, 9),
-              new THREE.MeshLambertMaterial({ color: 0x334155 })
-            );
-            pitBldg.position.y = 3.6;
+            const pitBldg = new THREE.Mesh(new THREE.BoxGeometry(44, 10.2, 8.0), pitBldgMat);
+            pitBldg.position.y = 2.1;
             pitGroup.add(pitBldg);
 
-            const glassStrip = new THREE.Mesh(
-              new THREE.BoxGeometry(44.2, 2.2, 9.2),
-              new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-            );
-            glassStrip.position.y = 5.2;
+            const glassStrip = new THREE.Mesh(new THREE.BoxGeometry(44.2, 2.0, 8.2), pitGlassMat);
+            glassStrip.position.y = 5.4;
             pitGroup.add(glassStrip);
             circuitSceneryGroup.add(pitGroup);
           }
@@ -1116,24 +1454,230 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
       const trackGLBCache = {};
       let activeTrackGLBSeq = 0;
+      let trackGLBTimer = null;
       if (typeof window !== 'undefined' && typeof window.ENABLE_GLB_TRACK_SCENERY === 'undefined') {
         window.ENABLE_GLB_TRACK_SCENERY = false;
       }
+
+      const _carveWorldBox = new THREE.Box3();
+
+      function buildTrackSpatialGrid(cellSize = 24.0, clearR = TRACK_WIDTH * 0.5 + 10.0) {
+        const grid = new Map();
+        const stride = 8192;
+        const span = Math.max(1, Math.ceil(clearR / cellSize));
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+        for (let i = 0; i < TRACK_SAMPLES; i++) {
+          const n = trackNodes[i];
+          const ny = n.y || 0;
+          if (n.x < minX) minX = n.x;
+          if (n.x > maxX) maxX = n.x;
+          if (ny < minY) minY = ny;
+          if (ny > maxY) maxY = ny;
+          if (n.z < minZ) minZ = n.z;
+          if (n.z > maxZ) maxZ = n.z;
+          const ncx = Math.floor(n.x / cellSize) + 2048;
+          const ncz = Math.floor(n.z / cellSize) + 2048;
+          for (let ox = -span; ox <= span; ox++) {
+            const rowKey = (ncx + ox) * stride;
+            for (let oz = -span; oz <= span; oz++) {
+              const key = rowKey + ncz + oz;
+              let bucket = grid.get(key);
+              if (!bucket) { bucket = []; grid.set(key, bucket); }
+              bucket.push(n);
+            }
+          }
+        }
+        return {
+          grid,
+          cellSize,
+          stride,
+          clearR,
+          rSq: clearR * clearR,
+          minX: minX - clearR,
+          maxX: maxX + clearR,
+          minY: minY - 8.0,
+          maxY: 1e6,
+          minZ: minZ - clearR,
+          maxZ: maxZ + clearR
+        };
+      }
+
+      function isPointInRoadCorridor(wx, wy, wz, spatial, rSq) {
+        if (
+          wx < spatial.minX || wx > spatial.maxX ||
+          wy < spatial.minY || wy > spatial.maxY ||
+          wz < spatial.minZ || wz > spatial.maxZ
+        ) {
+          return false;
+        }
+        const cx = Math.floor(wx / spatial.cellSize) + 2048;
+        const cz = Math.floor(wz / spatial.cellSize) + 2048;
+        const bucket = spatial.grid.get(cx * spatial.stride + cz);
+        if (!bucket) return false;
+        const limitSq = (typeof rSq === 'number') ? rSq : spatial.rSq;
+        for (let k = 0; k < bucket.length; k++) {
+          const n = bucket[k];
+          const dx = wx - n.x;
+          const dz = wz - n.z;
+          if (dx * dx + dz * dz < limitSq) {
+            const ny = n.y || 0;
+            if (wy >= ny - 8.0) return true;
+          }
+        }
+        return false;
+      }
+
+      function carveMeshOutOfCorridor(mesh, spatial, halfW) {
+        const geom = mesh.geometry;
+        if (!geom || !geom.attributes || !geom.attributes.position) return 0;
+        if (!geom.boundingBox) geom.computeBoundingBox();
+        if (!geom.boundingBox) return 0;
+
+        _carveWorldBox.copy(geom.boundingBox).applyMatrix4(mesh.matrixWorld);
+        if (
+          _carveWorldBox.max.x < spatial.minX || _carveWorldBox.min.x > spatial.maxX ||
+          _carveWorldBox.max.y < spatial.minY || _carveWorldBox.min.y > spatial.maxY ||
+          _carveWorldBox.max.z < spatial.minZ || _carveWorldBox.min.z > spatial.maxZ
+        ) {
+          return 0;
+        }
+
+        const invCell = 1.0 / spatial.cellSize;
+        const stride = spatial.stride;
+        const grid = spatial.grid;
+        const cxMin = Math.floor(_carveWorldBox.min.x * invCell) + 2048;
+        const cxMax = Math.floor(_carveWorldBox.max.x * invCell) + 2048;
+        const czMin = Math.floor(_carveWorldBox.min.z * invCell) + 2048;
+        const czMax = Math.floor(_carveWorldBox.max.z * invCell) + 2048;
+        if ((cxMax - cxMin + 1) * (czMax - czMin + 1) <= 64) {
+          let hasAnyCell = false;
+          for (let cx = cxMin; cx <= cxMax && !hasAnyCell; cx++) {
+            const rowKey = cx * stride;
+            for (let cz = czMin; cz <= czMax; cz++) {
+              if (grid.has(rowKey + cz)) { hasAnyCell = true; break; }
+            }
+          }
+          if (!hasAnyCell) return 0;
+        }
+
+        const posAttr = geom.attributes.position;
+        const idxAttr = geom.index;
+        const triCount = idxAttr ? Math.floor(idxAttr.count / 3) : Math.floor(posAttr.count / 3);
+        if (triCount <= 0) return 0;
+
+        const m = mesh.matrixWorld.elements;
+        const m0 = m[0], m1 = m[1], m2 = m[2], m4 = m[4], m5 = m[5], m6 = m[6];
+        const m8 = m[8], m9 = m[9], m10 = m[10], m12 = m[12], m13 = m[13], m14 = m[14];
+        const clearR = (typeof halfW === 'number') ? (halfW + 10.0) : spatial.clearR;
+        const rSq = clearR * clearR;
+        const sMinY = spatial.minY, sMaxY = spatial.maxY;
+
+        const kept = [];
+        let removed = 0;
+        for (let t = 0; t < triCount; t++) {
+          const t3 = t * 3;
+          const i0 = idxAttr ? idxAttr.getX(t3) : t3;
+          const i1 = idxAttr ? idxAttr.getX(t3 + 1) : (t3 + 1);
+          const i2 = idxAttr ? idxAttr.getX(t3 + 2) : (t3 + 2);
+
+          const x0 = posAttr.getX(i0), y0 = posAttr.getY(i0), z0 = posAttr.getZ(i0);
+          const wy0 = m1 * x0 + m5 * y0 + m9 * z0 + m13;
+          const x1 = posAttr.getX(i1), y1 = posAttr.getY(i1), z1 = posAttr.getZ(i1);
+          const wy1 = m1 * x1 + m5 * y1 + m9 * z1 + m13;
+          const x2 = posAttr.getX(i2), y2 = posAttr.getY(i2), z2 = posAttr.getZ(i2);
+          const wy2 = m1 * x2 + m5 * y2 + m9 * z2 + m13;
+
+          if ((wy0 <= sMinY && wy1 <= sMinY && wy2 <= sMinY) || (wy0 >= sMaxY && wy1 >= sMaxY && wy2 >= sMaxY)) {
+            kept.push(i0, i1, i2);
+            continue;
+          }
+
+          const wx0 = m0 * x0 + m4 * y0 + m8 * z0 + m12;
+          const wz0 = m2 * x0 + m6 * y0 + m10 * z0 + m14;
+          const wx1 = m0 * x1 + m4 * y1 + m8 * z1 + m12;
+          const wz1 = m2 * x1 + m6 * y1 + m10 * z1 + m14;
+          const wx2 = m0 * x2 + m4 * y2 + m8 * z2 + m12;
+          const wz2 = m2 * x2 + m6 * y2 + m10 * z2 + m14;
+
+          const cx0 = Math.floor(wx0 * invCell) + 2048;
+          const cx1 = Math.floor(wx1 * invCell) + 2048;
+          const cx2 = Math.floor(wx2 * invCell) + 2048;
+          const cz0 = Math.floor(wz0 * invCell) + 2048;
+          const cz1 = Math.floor(wz1 * invCell) + 2048;
+          const cz2 = Math.floor(wz2 * invCell) + 2048;
+
+          if (cx0 === cx1 && cx0 === cx2 && cz0 === cz1 && cz0 === cz2 && !grid.has(cx0 * stride + cz0)) {
+            kept.push(i0, i1, i2);
+            continue;
+          }
+
+          const hit = isPointInRoadCorridor((wx0 + wx1 + wx2) / 3, (wy0 + wy1 + wy2) / 3, (wz0 + wz1 + wz2) / 3, spatial, rSq)
+            || isPointInRoadCorridor(wx0, wy0, wz0, spatial, rSq)
+            || isPointInRoadCorridor(wx1, wy1, wz1, spatial, rSq)
+            || isPointInRoadCorridor(wx2, wy2, wz2, spatial, rSq)
+            || isPointInRoadCorridor((wx0 + wx1) * 0.5, (wy0 + wy1) * 0.5, (wz0 + wz1) * 0.5, spatial, rSq)
+            || isPointInRoadCorridor((wx1 + wx2) * 0.5, (wy1 + wy2) * 0.5, (wz1 + wz2) * 0.5, spatial, rSq)
+            || isPointInRoadCorridor((wx2 + wx0) * 0.5, (wy2 + wy0) * 0.5, (wz2 + wz0) * 0.5, spatial, rSq);
+
+          if (hit) {
+            removed++;
+          } else {
+            kept.push(i0, i1, i2);
+          }
+        }
+
+        if (removed > 0) {
+          if (kept.length === 0) {
+            mesh.visible = false;
+          } else {
+            const newGeom = new THREE.BufferGeometry();
+            newGeom.attributes = geom.attributes;
+            newGeom.morphAttributes = geom.morphAttributes;
+            if (geom.boundingBox) newGeom.boundingBox = geom.boundingBox;
+            if (geom.boundingSphere) newGeom.boundingSphere = geom.boundingSphere;
+            newGeom.setIndex(kept);
+            mesh.geometry = newGeom;
+          }
+        }
+        return removed;
+      }
+
+      if (typeof window !== 'undefined') {
+        window.__apexCarveTest = { buildTrackSpatialGrid, carveMeshOutOfCorridor, isPointInRoadCorridor };
+      }
+
       function loadTrackGLBScenery(circuit, parentGroup) {
-        if (!circuit || !circuit.glbUrl || !parentGroup) return;
-        if (typeof window === 'undefined' || window.ENABLE_GLB_TRACK_SCENERY !== true) return;
+        if (trackGLBTimer) {
+          clearTimeout(trackGLBTimer);
+          trackGLBTimer = null;
+        }
         const seq = ++activeTrackGLBSeq;
-        const mountScenery = (raw) => {
+        if (!circuit || !circuit.glbUrl || !parentGroup) return;
+        if (typeof window === 'undefined') return;
+        if (window.FORCE_GLB_TRACK_SCENERY !== true) {
+          if (gfxSettings.glbTrackScenery === false || window.ENABLE_GLB_TRACK_SCENERY === false || isSoftwareWebGL) return;
+        }
+
+        const mountPreparedWrap = (cachedWrap) => {
           if (seq !== activeTrackGLBSeq || !parentGroup.parent) return;
-          const inst = raw.clone(true);
+          parentGroup.add(cachedWrap);
+        };
+
+        const prepareAndMount = (raw) => {
+          if (seq !== activeTrackGLBSeq || !parentGroup.parent) return;
           const tr = circuit.glbTransform || { pos: [0, 0, 0], rotX: 0, rotY: 0, scale: 1.0 };
           const wrap = new THREE.Group();
           wrap.name = `track_glb_scenery_${circuit.id}`;
           wrap.position.set(tr.pos[0] || 0, (tr.pos[1] || 0) - 0.35, tr.pos[2] || 0);
           wrap.rotation.set(0, tr.rotY || 0, 0);
           wrap.scale.setScalar(tr.scale || 1.0);
-          inst.rotation.x = tr.rotX || 0;
-          inst.traverse(o => {
+          raw.rotation.x = tr.rotX || 0;
+          wrap.add(raw);
+          wrap.updateMatrixWorld(true);
+
+          const halfW = TRACK_WIDTH * 0.5;
+          const spatial = buildTrackSpatialGrid(24.0, halfW + 10.0);
+          raw.traverse(o => {
             if (!o.isMesh) return;
             o.frustumCulled = true;
             o.castShadow = false;
@@ -1141,31 +1685,50 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
             const nm = (o.name || '').toLowerCase();
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             const mStr = mats.map(m => (m && m.name) ? m.name.toLowerCase() : '').join(' ');
-            if (/\b(gnd_road|road1|road2|road3|psroad|roadsfn|overlay_startgrid)\b|meshesroadroad/.test(nm + ' ' + mStr)) {
+            if (/\b(gnd_road|road1|road2|road3|psroad|roadsfn|overlay_startgrid|collision)\b|meshesroadroad/.test(nm + ' ' + mStr)) {
               o.visible = false;
+              return;
             }
+            carveMeshOutOfCorridor(o, spatial, halfW);
           });
-          wrap.add(inst);
+          trackGLBCache[circuit.id] = wrap;
           parentGroup.add(wrap);
         };
 
         if (trackGLBCache[circuit.id]) {
-          mountScenery(trackGLBCache[circuit.id]);
+          mountPreparedWrap(trackGLBCache[circuit.id]);
           return;
         }
-        try {
-          const loader = createGLTFLoader();
-          loader.load(circuit.glbUrl, (gltf) => {
-            const sc = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
-            if (!sc) return;
-            trackGLBCache[circuit.id] = sc;
-            mountScenery(sc);
-          }, undefined, (err) => {
-            console.warn('[APEX TRACK GLB] async scenery load skipped:', circuit.glbUrl, err && err.message ? err.message : err);
-          });
-        } catch (e) {
-          /* non-fatal fallback to procedural track scenery */
-        }
+        trackGLBTimer = setTimeout(() => {
+          trackGLBTimer = null;
+          if (seq !== activeTrackGLBSeq || !parentGroup.parent) return;
+          if (typeof window === 'undefined') return;
+          if (window.FORCE_GLB_TRACK_SCENERY !== true) {
+            if (gfxSettings.glbTrackScenery === false || window.ENABLE_GLB_TRACK_SCENERY === false || isSoftwareWebGL) return;
+          }
+          try {
+            const loader = createGLTFLoader();
+            const remoteUrl = `https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/${circuit.glbUrl}`;
+            const isFileProto = (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:');
+            const urls = isFileProto ? [remoteUrl, circuit.glbUrl] : [circuit.glbUrl, remoteUrl];
+            let attempt = 0;
+            const tryLoad = () => {
+              if (seq !== activeTrackGLBSeq || attempt >= urls.length) return;
+              const u = urls[attempt++];
+              loader.load(u, (gltf) => {
+                const sc = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
+                if (!sc) return;
+                prepareAndMount(sc);
+              }, undefined, (err) => {
+                console.warn('[APEX TRACK GLB] load attempt skipped:', u, err && err.message ? err.message : err);
+                tryLoad();
+              });
+            };
+            tryLoad();
+          } catch (e) {
+            /* non-fatal fallback to procedural PBR track scenery */
+          }
+        }, 150);
       }
 
       // Skidmarks & Smoke / Nitrous Flame / Exhaust Backfire Particles
@@ -1322,42 +1885,60 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           label: 'Aston Martin Vulcan AMR Pro',
           desc: '英國賽道專屬 7.0L V12 自然進氣超跑・雙層尾翼高下壓力 GLB 模型',
           defaultPaint: '#10b981',
-          urls: ['assets/models/cars/aston_martin_vulcan.glb']
+          urls: [
+            'assets/models/cars/aston_martin_vulcan.glb',
+            'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/aston_martin_vulcan.glb'
+          ]
         },
         {
           id: 'mclaren_senna',
           label: 'McLaren Senna GTR-Spec',
           desc: '沃金終極賽道機器・4.0L V8 雙渦輪＋巨型鵝頸主動尾翼 GLB 模型',
           defaultPaint: '#f97316',
-          urls: ['assets/models/cars/mclaren_senna.glb']
+          urls: [
+            'assets/models/cars/mclaren_senna.glb',
+            'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/mclaren_senna.glb'
+          ]
         },
         {
           id: 'zenvo_tsrs',
           label: 'Zenvo TSR-S Centripetal Wing',
           desc: '丹麥雙機械增壓 5.8L V8 頂級超跑・主動傾角離心尾翼 GLB 模型',
           defaultPaint: '#0284c7',
-          urls: ['assets/models/cars/zenvo_tsr-s.glb']
+          urls: [
+            'assets/models/cars/zenvo_tsr-s.glb',
+            'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/zenvo_tsr-s.glb'
+          ]
         },
         {
           id: 'pagani_huayra_r',
           label: 'Pagani Huayra R Evo Roadster',
           desc: '義大利藝術級賽道猛獸・HWA 6.0L V12 自然進氣長尾 GLB 模型',
           defaultPaint: '#cbd5e1',
-          urls: ['assets/models/cars/pagani_huayra_r_evo_roadster.glb']
+          urls: [
+            'assets/models/cars/pagani_huayra_r_evo_roadster.glb',
+            'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/pagani_huayra_r_evo_roadster.glb'
+          ]
         },
         {
           id: 'amg_one',
           label: 'Mercedes-AMG ONE F1 E-Hybrid',
           desc: 'F1 冠軍動力下放・1.6L V6 渦輪油電四馬達＋鯊魚鰭主動空力 GLB 模型',
           defaultPaint: '#94a3b8',
-          urls: ['assets/models/cars/amg 1.glb']
+          urls: [
+            'assets/models/cars/amg 1.glb',
+            'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/amg%201.glb'
+          ]
         },
         {
           id: 'porsche_919_evo',
           label: 'Porsche 919 Hybrid Evo LMP1',
           desc: '紐北與斯帕賽道紀錄保持者・1,160 HP 終極原型賽車 GLB 模型',
           defaultPaint: '#f8fafc',
-          urls: ['assets/models/cars/porsche_919_hybrid_evo.glb']
+          urls: [
+            'assets/models/cars/porsche_919_hybrid_evo.glb',
+            'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/porsche_919_hybrid_evo.glb'
+          ]
         }
       ];
 
@@ -2274,7 +2855,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
 
       function applyHiFiTemplateToSlot(slot) {
         disposeSlotHiFi(slot);
-        const isHeavyNonPlayer = slot.kind !== 'player' && carAssetState.stats && carAssetState.stats.tris > 150000;
+        const isHeavyNonPlayer = slot.kind !== 'player' && (isSoftwareWebGL || (carAssetState.stats && carAssetState.stats.tris > 150000));
         const enabled = !!carAssetState.template && carAssetState.scope[slot.kind] !== false && !isHeavyNonPlayer;
         slot.procedural.visible = !enabled;
         slot.rig = enabled ? null : slot.proceduralRig;
@@ -2546,19 +3127,23 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         if (!urls || !urls.length) return;
         let loader;
         try { loader = createGLTFLoader(); } catch (e) { garageUI.setStatus('✖ ' + e.message, 'err'); return; }
+        const isFileProto = (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:');
+        const effectiveUrls = isFileProto
+          ? [...urls.filter(u => /^https?:\/\//i.test(u)), ...urls.filter(u => !/^https?:\/\//i.test(u))]
+          : [...urls.filter(u => !/^https?:\/\//i.test(u)), ...urls.filter(u => /^https?:\/\//i.test(u))];
         const seq = ++carAssetState.loadSeq;
         carAssetState.loading = true;
         garageUI.setProgress(5);
         let attempt = 0;
         const tryNext = (lastErr) => {
           if (seq !== carAssetState.loadSeq) return;
-          if (attempt >= urls.length) {
+          if (attempt >= effectiveUrls.length) {
             carAssetState.loading = false;
             garageUI.setProgress(0);
-            garageUI.setStatus(`✖ 3D 模型下載失敗，已保留目前車輛（${lastErr && lastErr.message ? lastErr.message : '網路或 CORS 錯誤'}）`, 'err');
+            garageUI.setStatus(`✖ 3D 模型下載失敗（若以 file:// 直接開啟請改用 launch_apex_desktop.bat）（${lastErr && lastErr.message ? lastErr.message : 'CORS 或網路錯誤'}）`, 'err');
             return;
           }
-          const url = urls[attempt++];
+          const url = effectiveUrls[attempt++];
           garageUI.setStatus(`正在載入高擬真 3D 賽車模型「${label}」…`);
           loader.load(url, (gltf) => {
             if (seq !== carAssetState.loadSeq) return;
@@ -2732,6 +3317,8 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
           if (res) res.textContent = `${gfxSettings.asphaltRes}²`;
           const env = document.getElementById('btn-garage-envmap');
           if (env) { env.textContent = gfxSettings.envReflections ? 'ON' : 'OFF'; env.style.color = gfxSettings.envReflections ? '#34d399' : '#94a3b8'; }
+          const glbTrk = document.getElementById('btn-garage-glbtrack');
+          if (glbTrk) { glbTrk.textContent = (gfxSettings.glbTrackScenery !== false) ? 'ON' : 'OFF'; glbTrk.style.color = (gfxSettings.glbTrackScenery !== false) ? '#34d399' : '#94a3b8'; }
 
           const statsEl = document.getElementById('garage-stats');
           if (statsEl) {
@@ -2897,6 +3484,7 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         ghostMesh.rotation.x = gSlope * Math.sin(hDiff);
       }
 
+      let lastSwRenderSec = -10;
       function update3DSceneAndVisualFX(nowSec) {
         const pWorld = sdToWorld(simState.s, simState.d);
         const visualHeading = simState.heading + simState.driftAngle;
@@ -3136,7 +3724,10 @@ if (window.__apexTrace) window.__apexTrace('render.js', 'START');
         }
 
         updateVehicleRigs(nowSec);
-        renderer.render(scene, camera);
+        if (!isSoftwareWebGL || !carAssetState.loading || (nowSec - lastSwRenderSec) > 0.45) {
+          lastSwRenderSec = nowSec;
+          renderer.render(scene, camera);
+        }
         drawScreenVisualFX(nowSec);
       }
 

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Verify New Assets</title></head>
+<body>
+<iframe id="app" src="/index.html" style="width:1280px;height:720px;"></iframe>
+<pre id="status">BOOTING</pre>
+<script>
+const TARGET_CARS = [
+  { id: 'aston_vulcan', label: 'Aston Martin Vulcan AMR Pro' },
+  { id: 'mclaren_senna', label: 'McLaren Senna GTR-Spec' },
+  { id: 'zenvo_tsrs', label: 'Zenvo TSR-S Active Wing' },
+  { id: 'pagani_huayra_r', label: 'Pagani Huayra R Evo Roadster' },
+  { id: 'amg_one', label: 'Mercedes-AMG ONE F1 E-Hybrid' },
+  { id: 'porsche_919_evo', label: 'Porsche 919 Hybrid Evo LMP1' }
+];
+
+function waitUntil(fn, timeoutMs = 20000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      try {
+        const res = fn();
+        if (res) return resolve(res);
+      } catch (e) {}
+      if (Date.now() - start > timeoutMs) return reject(new Error('Timeout waiting for condition'));
+      setTimeout(tick, 120);
+    };
+    tick();
+  });
+}
+
+(async () => {
+  const report = { errors: [], cars: [], circuits: [], classBenchmarks: {} };
+  try {
+    const frame = document.getElementById('app');
+    const win = await waitUntil(() => {
+      const w = frame.contentWindow;
+      return (w && w.CIRCUITS && w.CAR_MODEL_PRESETS && w.carAssetState && w.selectCircuit && w.rebuildProBenchmarkForCurrentCar) ? w : null;
+    }, 25000);
+
+    // Cancel any slow remote GitHub boot fetch before testing local circuits & local GLBs
+    win.carAssetState.loadSeq++;
+    win.carAssetState.loading = false;
+
+    // 1. Test all 5 circuits + elevation ranges
+    for (let idx = 0; idx < win.CIRCUITS.length; idx++) {
+      win.selectCircuit(idx);
+      const c = win.CIRCUITS[idx];
+      // Sample 200 heights around track
+      let minY = Infinity, maxY = -Infinity;
+      for (let k = 0; k < 200; k++) {
+        const n = win.sampleTrackAtS((k / 200) * 5000);
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+      }
+      report.circuits.push({
+        idx,
+        id: c.id,
+        proLapTime: win.PRO_LAP_TIME,
+        minY: Number(minY.toFixed(1)),
+        maxY: Number(maxY.toFixed(1))
+      });
+    }
+
+    // 2. Test all 6 newly downloaded car GLBs through real loader + normalizer + rigHiFiWheels
+    for (const car of TARGET_CARS) {
+      const preset = win.CAR_MODEL_PRESETS.find(p => p.id === car.id);
+      if (!preset) {
+        report.cars.push({ id: car.id, ok: false, error: 'Preset missing' });
+        continue;
+      }
+      const prevSeq = win.carAssetState.loadSeq;
+      win.loadVehicleFromURLs(preset.urls, preset.label, preset.id);
+      try {
+        await waitUntil(() => !win.carAssetState.loading && win.carAssetState.loadedPresetId === car.id && win.carAssetState.loadSeq > prevSeq, 35000);
+        const st = win.carAssetState.stats;
+        // Verify rigged wheel X coordinates (F wheels > R wheels along +X forward!)
+        const rig = { FL: null, FR: null, RL: null, RR: null };
+        win.carAssetState.template.traverse(o => {
+          if (/^apex_steer_(FL|FR|RL|RR)$/.test(o.name)) {
+            const k = o.name.slice(-2);
+            rig[k] = Number(o.position.x.toFixed(3));
+          }
+        });
+        report.cars.push({
+          id: car.id,
+          ok: st.wheels === 4 && st.hasBody && (rig.FL > rig.RL) && (rig.FR > rig.RR),
+          wheels: st.wheels,
+          tris: st.tris,
+          roles: st.roles,
+          hasBody: st.hasBody,
+          wheelX: rig,
+          dims: {
+            l: Number(st.dims.length.toFixed(2)),
+            w: Number(st.dims.width.toFixed(2)),
+            h: Number(st.dims.height.toFixed(2))
+          }
+        });
+      } catch (e) {
+        report.cars.push({ id: car.id, ok: false, error: e.message });
+      }
+    }
+
+    // 3. Test Multi-Class PRO Benchmark Scaling on Spa (idx 3) across GT3 -> HYPER -> LMP1
+    win.selectCircuit(3);
+    for (const testId of ['procedural', 'mclaren_senna', 'porsche_919_evo']) {
+      win.carAssetState.presetId = testId;
+      win.rebuildProBenchmarkForCurrentCar();
+      report.classBenchmarks[testId] = win.PRO_LAP_TIME;
+    }
+
+    if (win.__APEX_ERRORS && win.__APEX_ERRORS.length) {
+      report.errors = win.__APEX_ERRORS;
+    }
+  } catch (err) {
+    report.errors.push(err.message);
+  }
+  document.getElementById('status').textContent = JSON.stringify(report);
+  try {
+    await fetch('/__report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report)
+    });
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

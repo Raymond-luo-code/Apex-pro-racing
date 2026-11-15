@@ -840,10 +840,19 @@ simState.bestLapTime = PRO_LAP_TIME;
         updateEnvironmentMap(currentCircuit.theme);
         garageUI.refresh();
       });
+      const btnGlbTrack = document.getElementById('btn-garage-glbtrack');
+      if (btnGlbTrack) {
+        btnGlbTrack.addEventListener('click', () => {
+          gfxSettings.glbTrackScenery = !(gfxSettings.glbTrackScenery !== false);
+          saveGfxSettings();
+          rebuild3DCircuitScene();
+          garageUI.refresh();
+        });
+      }
 
       garageUI.refresh();
       // Restore last online preset (custom local files cannot be restored after reload)
-      {
+      if (!carAssetState.loading) {
         const savedPreset = CAR_MODEL_PRESETS.find(p => p.id === carAssetState.presetId && p.urls);
         if (savedPreset) {
           loadVehicleFromURLs(savedPreset.urls, savedPreset.label, savedPreset.id);
@@ -902,7 +911,7 @@ simState.bestLapTime = PRO_LAP_TIME;
         : detectClientDevice();
       setInputMode(initialIsMobile);
       applyDeviceProfile(initialIsMobile);
-      if (typeof selectCarById === 'function') {
+      if (!carAssetState.loading && typeof selectCarById === 'function') {
         selectCarById(carAssetState.presetId || 'ferrari458');
       } else {
         renderHomeScreen();

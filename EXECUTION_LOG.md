@@ -985,3 +985,91 @@ Script error. at module(main.js:START):0:0
 - `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
 - `python scratch/test_proposal.py`：**44 / 44 PASSED**（含無頭 Chrome 啟動 `index.html`、`144271` chars、零 `#apex-crash-banner`）
 - `python scratch/verify_new_assets.py` (Headless Chrome WebGL)：**Errors: []**，`ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!`（`monza 80.42s`, `fuji 86.27s`, `hakone 94.983s`, `spa 100.276s`, `suzuka 88.636s`；Spa 多級距 `100.276 > 95.002 > 88.575`）
+
+---
+
+## 2026-11-21 — 全面實作剩餘升級計畫（Work Packages 1–4）
+
+### 1. Work Package 1 — 3D 賽道生物群系、場景細節與 dGPU 後製管線
+- **[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)**：為 5 條賽道 `CIRCUITS[0..4].theme` 新增專屬 `biome`（`monza_park` / `fuji_sunset` / `hakone_night` / `spa_ardennes` / `suzuka_bay`）、`skyTop`、`skyMid`、`skyHorizon`、`cloudTint`。
+- **[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)**：
+  - 新增程序化 GLSL 天空穹頂 `procedural_sky_dome`（瑞利大氣散射漸層 + FBM 動態雲層 + 雨天陰雲混合）；富士山僅顯示於 `fuji_sunset`（`mt_fuji_landmark`），鈴鹿賽道 `suzuka_bay` 新增 Motopia 摩天輪遠景地標。
+  - 新增 `armcoMap` / `concreteMap` 與連續式雙波紋 Armco 鋼質防撞護欄（含夜間反光條）、高架橋水泥護欄與橋墩貼圖、彎道外緣紅/白/藍 FIA TecPro 緩衝牆、岩質地形側裙、多層交錯針葉松與闊葉樹冠，以及高精度 Canvas 橫幅 `makeGantryBannerTexture()`。
+  - 啟用 `2048×2048` `PCFSoftShadowMap` 跟隨玩家位置之動態平行光陰影（`gfxSettings.dynamicShadows`），以及 4-pass 零相依原生 WebGL 高光輝光後製 `renderSceneWithOptionalBloom`（獨立 ACES 色調曲線，不使用 `#include <tonemapping_fragment>`；`isSoftwareWebGL` 自動降級跳過；`gfxSettings.bloomFx` 控制）。
+  - 於 [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js) 新增底盤擦撞／極限壓縮火花粒子 (`'spark'`)；全程未加入煞車碟盤熱紅光效。
+
+### 2. Work Package 2 — 自訂塗裝花紋、JDM GT-R GT500 與同級多車型 AI 陣容
+- **[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)** 與 **[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js)**：
+  - 新增 `getProceduralLiveryTexture()` 支援 4 種塗裝（`solid` 單色清漆 / `duotone` 雙色金屬 / `stripes` 賽車條紋 / `esports` 電競幾何）與副色 `accentHex`，整合至 `applyCustomLiveryColors()`、`buildProceduralBody()` 與車庫 `#gar-paint-customizer`。
+  - 新增 `nissan_gtr_gt500`（`JDM · CLASS TA`）於 `CAR_HANDLING_PROFILES`、`CAR_MODEL_PRESETS`、`CAR_CATALOG`，搭配寬體及標誌性四出圓形 LED 尾燈幾何，並強化分流器鰭片、鯊魚鰭與雙層尾翼區隔；更新各級距徽章色與分級距最佳單圈紀錄（PB）。
+  - 新增 `syncAIMultiCarModels()` 與 `aiModelTemplateCache`，依玩家車級（`GT3` / `JDM` / `HYPER` / `LMP1`）指派同級異款車模與獨立 AI 塗裝。
+
+### 3. Work Package 3 — 雨天濕地天候與 FIA 賽道旗號系統
+- **[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)**、**[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)**、**[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js)**、**[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)**：
+  - 預設晴天 `'dry'`，可於出賽設定 Step 3 或快捷選單 `#btn-weather-toggle` 切換 `'wet'`。
+  - 新增濕地專屬雨胎配方 `TIRE_COMPOUNDS.wet`（`W · WET`, `#38bdf8`, `wetGripBonus: 1.26`）；濕地路面抓地倍率為 `0.72`（`-28%`），裝配雨胎回復至 `~0.907`，並同步縮放 AI 濕地過彎與加減速步調，搭配 550 條 3D 雨絲 `rainSystem` 與後輪水霧 `'spray'`。
+  - 新增 FIA 旗號判定 `updateRaceFlags(dt)`（`yellow` 前車失控/緩行、`blue` 落後被套圈快車逼近、`checkered` 衝線完賽）並連動 HUD `#hud-flag-banner`。
+
+### 4. Work Package 4 — 電競風格 UI / HUD 細節強化
+- **[`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html)** 與 **[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)**：
+  - 為 `.carbon-bg` / `.af-panel` 加上碳纖維斜紋質感、為 `.af-btn` / `.af-choice` 加入斜向高光掃掠動畫、RPM `>= 8350` 時 `#pc-motec-pod` 與 `#hud-top-pill` 觸發 `.hud-redline-pulse` 紅線脈衝外框、CNC 鑽孔金屬觸控踏板與方向盤刻度環、MT 換檔撥片切角外觀，並於車庫畫質設定區新增 `#btn-garage-shadows` / `#btn-garage-bloom`（`#btn-garage-glbtrack` 預設顯示 `OFF`）。
+
+### 5. 全套實機與自動化測試結果 (2026-11-21)
+- `python scratch/check_syntax.py`：**7 / 7 OK**（`audio.js`、`circuits.js`、`flow.js`、`input.js`、`main.js`、`physics.js`、`render.js`）
+- `verify_track_geometry.py`：**ALL 5 CIRCUITS PASSED ZERO-FOLD, ZERO-OVERLAP, EMBEDDED-BASE, RUNOFF-BOUNDED SCENERY & GLB-OFF AUDIT**
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**ALL PROPOSAL TESTS PASSED: 44/44**（`index.html` `148776` chars，零 `#apex-crash-banner`）
+- `python scratch/verify_new_assets.py` (Headless Chrome WebGL)：**Errors: []**，`ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!`
+- `python scratch/test_all_upgrades.py` (Headless Chrome WebGL)：**ALL UPGRADES VERIFIED 100% SUCCESSFULLY!**（`errors: []`、5 條賽道生物群系／SkyDome／地標正確、`bloomCompileOk: true / bloomGlError: 0`、`brakeGlowCount: 0`、`nissan_gtr_gt500` JDM + 4 種塗裝 + 4 級距 AI 陣容、乾濕抓地 `1.00 -> 0.72 -> 0.9072`、雨絲顯示切換、黃/藍/方格旗與 DOM 控制項全數通過）
+- `launch_apex_desktop.bat --check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%**（`6/6` HTTP 200）
+
+---
+
+## 2026-11-21 // 修復四項實機駕駛與視覺異常（車頭方向／尾燈誤判／頭燈光錐／倒車偏航震盪）
+
+### 1. 根因診斷與修復內容
+1. **McLaren Senna 與 Pagani Huayra R 車頭倒反**（[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L2909-L2914) `normalizeVehicleScene`）：
+   - **根因**：Three.js `GLTFLoader` 會將節點空白轉為底線（如 `3DWheel_Front_L`、`Calliper_Front_L_02`），導致原本使用 `\b` 與 `\s*` 的 `isFront` / `isRear` 正則無法匹配，`frontCnt` 與 `rearCnt` 雙雙歸零而停留在 `baseRotY = -Math.PI / 2`（車頭朝 `-X`）。
+   - **修復**：改用 `(?:^|[^a-z])(...[_\s-]+...)` 邊界與分隔符正則（並補入 `red[_\s-]?glass` 尾燈參考），使兩車正確翻轉 `+Math.PI` 朝 `+X` 前進。
+2. **部分車款煞車時全車車架／防滾籠發紅發光**（[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L3224-L3256) `classifyHiFiMaterials`）：
+   - **根因**：舊正則 `/tail|.../` 未設單字邊界，導致 `"detail"` / `"details"` 字尾的子字串 `"tail"` 誤中 `bmw_details`、`chassis_details`、`Carbon1MDetails`、防滾籠等材質並歸類為 `role = 'taillight'`（煞車時套用 `emissiveIntensity = 2.2` 紅光）。
+   - **修復**：加入完整詞彙邊界 `TAIL_RE` / `HEAD_RE`、`NOT_LIGHT_RE` 排除清單（`details?` / `chassis` / `rollcage` / `carbon` / `body` 等）及面積上限過濾（`area < 1.6` 且 `< maxMatArea * 0.35`）。
+3. **夜晚頭燈光錐方向相反且在半空形成大片灰牆**（[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L3994-L4101) `headlightGroup`）：
+   - **根因**：`ConeGeometry(4.2, 42)` 窄尖端在 `+Y`、寬底在 `-Y`，經 `rotateZ(-Math.PI / 2)` 後寬底落在車頂後方 `-X`、尖端指向前方。
+   - **修復**：改用 `CylinderGeometry(0.16, 2.75, 34, 24, 1, true)` 搭配 `rotateZ(Math.PI / 2)`（窄端位於 `+2.18m` 車燈處、寬端向前擴散至 `+36.2m`），結合線性漸淡 Alpha 貼圖 `makeHeadlightBeamTexture()`、路面光斑 `makeHeadlightPoolTexture()`（`AdditiveBlending`）及前燈泡發光圓片。
+4. **娛樂版低速轉向／靜止倒車與逆向時誤報打滑與畫面鬼畜震動**（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L1313-L1357)、[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L4384-L4522)）：
+   - **根因**：Arcade 分支在倒車／低速／逆向時仍施加 `-headingDiff * 0.95` 修正，且 `gear === -1` 時再乘 `reverseYawFactor = -1` 反轉成 `+headingDiff * 0.95` 正回饋自旋；同時 `isOversteer` 與 `chaseCamRig` 前瞻偏移未過濾倒車與低速。
+   - **修復**：為 `arcadeAssist` 與 `straightCentering` 加入前進／速域／角度平順閘門 `forwardAlignFade`；直接於 `steerYaw` 處理倒車轉向符號並改為 `simState.heading += simState.yawRate * dt`；限定非碰撞的 `isOversteer` 僅在前進檔、非逆向且 `speedKmh > 45` 時觸發；`render.js` 在倒車或低速／逆向時將前瞻偏移倍率 `forwardLookScale` 平順衰減為 `0`。
+
+### 2. 全套實機驗證結果 (2026-11-21)
+- `python scratch/check_syntax.py`：**7 / 7 OK**
+- `verify_track_geometry.py`：**ALL 5 CIRCUITS PASSED ZERO-FOLD, ZERO-OVERLAP, EMBEDDED-BASE, RUNOFF-BOUNDED SCENERY & GLB-OFF AUDIT**
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**ALL PROPOSAL TESTS PASSED: 44/44**（`index.html` `148776` chars，零 `#apex-crash-banner`）
+- `python scratch/verify_new_assets.py`：**ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!**（`mclaren_senna`: `FL: 1.104, RL: -1.473`；`pagani_huayra_r`: `FL: 1.291, RL: -1.163`）
+- `python scratch/test_all_upgrades.py`：**ALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!**（`mclaren_senna` `frontNodeX=0.951 > rearNodeX=-1.472`、`pagani_huayra_r` `frontNodeX=1.184 > rearNodeX=-1.048`；`bmwDetailsRole='trim'` / `rollcageDetailRole='trim'` / `brakeLampRole='taillight'`；頭燈光束 `minX=2.18, maxX=36.2, frontMaxR=0.442 -> farMaxR=3.185`；Arcade 靜止倒車 `revMaxYaw=0, revOversteer=false, revHeadingDelta=0`、低速逆向 `wwOversteer=false, yawFlips=0`；Bloom GLSL 編譯零錯誤 `bloomGlError=0`）
+- `launch_apex_desktop.bat --check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%**（`6/6` HTTP 200）
+
+---
+
+## 2026-11-22 // 移除方塊程序化 GT-R 模型與修復天空遠裁剪單色塊破洞
+
+### 1. 修改與修復內容
+1. **移除粗糙程序化 GT-R 與防止高模 AI 車退化為方塊車**：
+   - 於 [`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js#L135-L140)、[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js#L175-L180) 與 [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L2340-L2380) 完整移除 `nissan_gtr_gt500` 項目、方塊幾何分支及 `CLASS_AI_ROSTERS.JDM`，並加入 `localStorage` 舊版 `presetId` 回退為 `ferrari458` 的保護。
+   - 於 [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L3310-L3330) `resolveSlotHiFiSource` 與 `applyHiFiTemplateToSlot` 移除異款高模尚待載入期間直接回傳 `null` 導致 AI 退回方塊幾何的分支，並將獨立 GPU 下非玩家高模多邊形上限由 `150,000` 放寬至 `350,000`（`mclaren_senna` `238k` 與 `pagani_huayra_r` `301k` 皆維持真實 GLB 外觀）。
+2. **消除賽道遠景突兀單色半球／破洞**（[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js#L8-L10) & `rebuild3DCircuitScene` & `update3DSceneAndVisualFX`）：
+   - **根因**：原本 `skyDomeMesh`（半徑 `2350m`）固定於世界原點 `(0,0,0)` 而 `camera.far = 2600`，當車輛行駛至斯帕等大賽道外圍區段時，遠端穹頂距離達 `3300–3550m > camera.far`，遭攝影機遠裁剪面切出巨大的圓弧破洞而露出單色 `scene.background`（`#3b5370`）。
+   - **修復**：將攝影機 `camera.far` 提升至 `4800`、`skyDomeMesh` 擴增為 `SphereGeometry(4200, 48, 28)`（`renderOrder = -1000`、`frustumCulled = false`）、地面 `groundGeo` 擴展為 `9600×9600`（UV `800×800`），且每幀在攝影機更新後執行 `activeSkyDomeMesh.position.copy(camera.position)`，確保天空穹頂始終與攝影機等距包裹無裁剪破洞；同步設定 `scene.background = new THREE.Color(th.skyHorizon || th.skyColor)`。
+
+### 2. 全套實機驗證結果 (2026-11-22)
+- `python scratch/check_syntax.py`：**7 / 7 OK**
+- `verify_track_geometry.py`：**ALL 5 CIRCUITS PASSED ZERO-FOLD, ZERO-OVERLAP, EMBEDDED-BASE, RUNOFF-BOUNDED SCENERY & GLB-OFF AUDIT**
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**ALL PROPOSAL TESTS PASSED: 44/44**
+- `python scratch/verify_new_assets.py`：**ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!**
+- `python scratch/test_all_upgrades.py`：**ALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!**（`gtrCheck.removedEverywhere = true`、Spa 遠端點驗證 `cameraFar = 4800 / domeRadius = 4200 / camDistDelta = 0`）
+- `launch_apex_desktop.bat --check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%**（`6/6` HTTP 200）

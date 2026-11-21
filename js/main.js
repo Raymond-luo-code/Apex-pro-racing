@@ -94,6 +94,11 @@ simState.bestLapTime = PRO_LAP_TIME;
             sp.className = 'w-2.5 h-1.5 rounded-sm bg-slate-800';
           }
         });
+        const isRedlinePulse = (simState.rpm >= 8350 && !simState.paused);
+        const motecPodEl = document.getElementById('pc-motec-pod');
+        if (motecPodEl) motecPodEl.classList.toggle('hud-redline-pulse', isRedlinePulse);
+        const topPillEl = document.getElementById('hud-top-pill');
+        if (topPillEl) topPillEl.classList.toggle('hud-redline-pulse', isRedlinePulse);
 
         const thrPct = Math.round(simState.throttleInput);
         const brkPct = Math.round(simState.brakeInput);
@@ -129,7 +134,8 @@ simState.bestLapTime = PRO_LAP_TIME;
 
         const node = sampleTrackAtS(simState.s);
         document.getElementById('hud-corner-banner').textContent = node.name;
-        document.getElementById('hud-surface-grip').textContent = `GRIP: ${Math.round(simState.surfaceGrip * 100)}%`;
+        const shownGripPct = Math.round(((simState.effectiveGrip !== undefined ? simState.effectiveGrip : simState.surfaceGrip) || 1) * 100);
+        document.getElementById('hud-surface-grip').textContent = `GRIP: ${shownGripPct}%${simState.weather === 'wet' ? ' · WET' : ''}`;
         document.getElementById('hud-downforce').textContent = `AERO: ${simState.downforceKgf} kgf`;
 
         document.getElementById('btn-recover-banner').classList.toggle('hidden', !simState.offTrack);
@@ -206,6 +212,24 @@ simState.bestLapTime = PRO_LAP_TIME;
           }
           if (tireLabelEl) tireLabelEl.textContent = tp.enLabel;
           tireBadgeEl.style.borderColor = tp.color;
+        }
+
+        const flagBannerEl = document.getElementById('hud-flag-banner');
+        if (flagBannerEl) {
+          const fl = simState.activeFlag || 'none';
+          if (fl === 'none') {
+            flagBannerEl.classList.add('hidden');
+          } else {
+            flagBannerEl.classList.remove('hidden');
+            flagBannerEl.textContent = simState.flagMessage || (fl === 'yellow' ? '🟨 YELLOW FLAG' : (fl === 'blue' ? '🟦 BLUE FLAG' : '🏁 CHECKERED FLAG'));
+            if (fl === 'yellow') {
+              flagBannerEl.className = 'flag-wave px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 font-mono-tech text-xs sm:text-sm font-black shadow-2xl tracking-wider border-2 border-amber-100 mt-1 pointer-events-none';
+            } else if (fl === 'blue') {
+              flagBannerEl.className = 'flag-wave px-4 py-1.5 rounded-full bg-sky-500 text-white font-mono-tech text-xs sm:text-sm font-black shadow-2xl tracking-wider border-2 border-sky-200 mt-1 pointer-events-none';
+            } else {
+              flagBannerEl.className = 'flag-wave px-5 py-1.5 rounded-full bg-slate-900 text-white font-mono-tech text-xs sm:text-sm font-black shadow-2xl tracking-wider border-2 border-white mt-1 pointer-events-none';
+            }
+          }
         }
 
         if (simState.mode === 'ai_race') {
@@ -691,6 +715,24 @@ simState.bestLapTime = PRO_LAP_TIME;
         e.currentTarget.textContent = simState.showTacticalLine ? 'ON (煞車/收油提示)' : 'OFF (純淨路面)';
       });
 
+      const btnWeatherToggle = document.getElementById('btn-weather-toggle');
+      if (btnWeatherToggle) {
+        const refreshWeatherBtn = () => {
+          const isW = (simState.weather === 'wet');
+          btnWeatherToggle.textContent = isW ? '🌧 雨天濕地 WET' : '☀ 晴朗乾地 DRY';
+          btnWeatherToggle.className = `px-2 py-1 rounded bg-slate-800 ${isW ? 'text-sky-400' : 'text-amber-300'} font-mono-tech text-[11px]`;
+        };
+        refreshWeatherBtn();
+        btnWeatherToggle.addEventListener('click', () => {
+          if (typeof setWeatherMode === 'function') {
+            setWeatherMode(simState.weather === 'wet' ? 'dry' : 'wet');
+          } else {
+            simState.weather = (simState.weather === 'wet') ? 'dry' : 'wet';
+          }
+          refreshWeatherBtn();
+        });
+      }
+
       document.getElementById('btn-toggle-touch').addEventListener('click', (e) => {
         const drawer = document.getElementById('touch-controls-drawer');
         const isHidden = drawer.classList.toggle('hidden');
@@ -840,6 +882,23 @@ simState.bestLapTime = PRO_LAP_TIME;
         updateEnvironmentMap(currentCircuit.theme);
         garageUI.refresh();
       });
+      const btnGarageShadows = document.getElementById('btn-garage-shadows');
+      if (btnGarageShadows) {
+        btnGarageShadows.addEventListener('click', () => {
+          gfxSettings.dynamicShadows = !gfxSettings.dynamicShadows;
+          saveGfxSettings();
+          if (typeof applyShadowMapSetting === 'function') applyShadowMapSetting();
+          garageUI.refresh();
+        });
+      }
+      const btnGarageBloom = document.getElementById('btn-garage-bloom');
+      if (btnGarageBloom) {
+        btnGarageBloom.addEventListener('click', () => {
+          gfxSettings.bloomFx = !gfxSettings.bloomFx;
+          saveGfxSettings();
+          garageUI.refresh();
+        });
+      }
       const btnGlbTrack = document.getElementById('btn-garage-glbtrack');
       if (btnGlbTrack) {
         btnGlbTrack.addEventListener('click', () => {
@@ -896,6 +955,7 @@ simState.bestLapTime = PRO_LAP_TIME;
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        if (typeof window.resizeBloomTarget === 'function') window.resizeBloomTarget();
       });
 
       // --------------------------------------------------------------------------

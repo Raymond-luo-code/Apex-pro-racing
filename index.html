@@ -543,9 +543,38 @@
     }
 
     .carbon-bg {
-      background-color: #090d16;
-      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
-      background-size: 16px 16px;
+      background-color: #070b14;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.018) 0px, rgba(255, 255, 255, 0.018) 2px, transparent 2px, transparent 6px),
+        repeating-linear-gradient(-45deg, rgba(15, 23, 42, 0.45) 0px, rgba(15, 23, 42, 0.45) 2px, transparent 2px, transparent 6px),
+        radial-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 0);
+      background-size: 16px 16px, 16px 16px, 24px 24px;
+    }
+
+    @keyframes redline-pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.45), 0 0 14px rgba(239, 68, 68, 0.35);
+      }
+      50% {
+        box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.95), 0 0 26px rgba(239, 68, 68, 0.72);
+      }
+    }
+
+    .hud-redline-pulse {
+      animation: redline-pulse 0.24s infinite;
+    }
+
+    @keyframes flag-wave {
+      0%, 100% {
+        transform: skewX(-2deg) scale(1);
+      }
+      50% {
+        transform: skewX(2deg) scale(1.03);
+      }
+    }
+
+    .flag-wave {
+      animation: flag-wave 0.65s ease-in-out infinite;
     }
 
     @keyframes pulse-fast {
@@ -587,9 +616,13 @@
       height: 74px;
       border-radius: 9999px;
       border: 2px solid rgba(226, 232, 240, 0.34);
+      outline: 3px dashed rgba(56, 189, 248, 0.28);
+      outline-offset: 4px;
       font-size: 1.65rem;
       color: #f8fafc;
-      background: radial-gradient(circle at 32% 28%, rgba(51, 65, 85, 0.86), rgba(9, 13, 24, 0.92));
+      background:
+        conic-gradient(from -40deg, rgba(56, 189, 248, 0.18) 0deg 80deg, transparent 80deg 360deg),
+        radial-gradient(circle at 32% 28%, rgba(51, 65, 85, 0.86), rgba(9, 13, 24, 0.92));
       box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.16), 0 6px 16px rgba(0, 0, 0, 0.5);
     }
 
@@ -599,6 +632,7 @@
       border-radius: 14px;
       border: 2px solid rgba(248, 113, 113, 0.75);
       background:
+        radial-gradient(circle, rgba(2, 6, 23, 0.85) 2.2px, transparent 2.8px) 0 0 / 16px 16px,
         repeating-linear-gradient(0deg, rgba(248, 113, 113, 0.14) 0px, rgba(248, 113, 113, 0.14) 4px, rgba(15, 23, 42, 0.86) 4px, rgba(15, 23, 42, 0.86) 11px),
         linear-gradient(180deg, rgba(127, 29, 29, 0.55), rgba(15, 23, 42, 0.92));
       box-shadow: inset 0 1px 0 rgba(254, 202, 202, 0.25), 0 10px 22px rgba(0, 0, 0, 0.55);
@@ -615,6 +649,7 @@
       border-radius: 14px;
       border: 2px solid rgba(52, 211, 153, 0.82);
       background:
+        radial-gradient(circle, rgba(2, 6, 23, 0.85) 2.2px, transparent 2.8px) 0 0 / 16px 16px,
         repeating-linear-gradient(90deg, rgba(52, 211, 153, 0.12) 0px, rgba(52, 211, 153, 0.12) 4px, rgba(15, 23, 42, 0.86) 4px, rgba(15, 23, 42, 0.86) 11px),
         linear-gradient(180deg, rgba(6, 78, 59, 0.55), rgba(15, 23, 42, 0.92));
       box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.28), 0 10px 24px rgba(0, 0, 0, 0.58);
@@ -623,6 +658,13 @@
     .touch-pedal-gas.active {
       border-color: #6ee7b7;
       box-shadow: 0 0 22px rgba(16, 185, 129, 0.6), inset 0 2px 8px rgba(0, 0, 0, 0.65);
+    }
+
+    .touch-paddle-left {
+      clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+    }
+    .touch-paddle-right {
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
     }
 
     .af-track-svg {
@@ -709,6 +751,8 @@
     }
 
     .af-btn {
+      position: relative;
+      overflow: hidden;
       appearance: none;
       border: 1px solid rgba(255, 255, 255, .14);
       cursor: pointer;
@@ -727,6 +771,23 @@
       gap: 12px;
       line-height: 1.1;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 6px 18px rgba(2, 6, 23, .45);
+    }
+
+    .af-btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -80%;
+      width: 55%;
+      height: 100%;
+      background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+      transform: skewX(-22deg);
+      transition: left .42s ease;
+      pointer-events: none;
+    }
+
+    .af-btn:hover::after {
+      left: 135%;
     }
 
     .af-btn:hover {
@@ -828,7 +889,11 @@
     }
 
     .af-panel {
-      background: linear-gradient(160deg, rgba(15, 23, 42, .93), rgba(2, 6, 23, .9));
+      background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.014) 0px, rgba(255, 255, 255, 0.014) 2px, transparent 2px, transparent 6px),
+        repeating-linear-gradient(-45deg, rgba(15, 23, 42, 0.36) 0px, rgba(15, 23, 42, 0.36) 2px, transparent 2px, transparent 6px),
+        linear-gradient(160deg, rgba(15, 23, 42, .93), rgba(2, 6, 23, .9));
+      background-size: 12px 12px, 12px 12px, 100% 100%;
       border: 1px solid rgba(148, 163, 184, .18);
       border-radius: 18px;
       backdrop-filter: blur(10px);
@@ -1550,6 +1615,23 @@
       opacity: .14;
       filter: blur(12px);
       pointer-events: none;
+    }
+
+    .af-choice::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -85%;
+      width: 55%;
+      height: 100%;
+      background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+      transform: skewX(-20deg);
+      transition: left .48s ease;
+      pointer-events: none;
+    }
+
+    .af-choice:hover::after {
+      left: 135%;
     }
 
     .af-choice .ico {
@@ -2417,7 +2499,7 @@
 
     <!-- Top-Center Sleek Integrated Telemetry, Corner Target Speed & Timing Pill -->
     <div class="flex flex-col items-center mx-auto">
-      <div class="hud-minimal rounded-full px-3.5 py-1 flex items-center gap-2.5 sm:gap-3 font-mono-tech shadow-xl">
+      <div id="hud-top-pill" class="hud-minimal rounded-full px-3.5 py-1 flex items-center gap-2.5 sm:gap-3 font-mono-tech shadow-xl">
         <!-- Live Speed & Gear directly inside the top pill -->
         <div class="flex items-baseline gap-1 pr-2 border-r border-slate-700/70">
           <button id="btn-top-gear"
@@ -2506,6 +2588,12 @@
       <div id="hud-final-lap"
         class="hidden px-5 py-2 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-mono-tech text-sm sm:text-base font-black shadow-2xl tracking-wider border-2 border-white animate-bounce mt-1 pointer-events-none">
         🏁 FINAL LAP // 最終圈全力衝刺！
+      </div>
+
+      <!-- FIA Race Flag Telemetry Banner (Yellow / Blue / Checkered) -->
+      <div id="hud-flag-banner"
+        class="hidden flag-wave px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 font-mono-tech text-xs sm:text-sm font-black shadow-2xl tracking-wider border-2 border-amber-100 mt-1 pointer-events-none">
+        🟨 YELLOW FLAG // 前方賽道警告
       </div>
 
       <!-- Critical Physics & Braking Advisory Alerts (Hidden by default, only shown when triggered!) -->
@@ -2654,6 +2742,13 @@
           </button>
         </div>
         <div class="flex items-center justify-between">
+          <span class="text-slate-300">賽道天候條件</span>
+          <button id="btn-weather-toggle"
+            class="px-2 py-1 rounded bg-slate-800 text-amber-300 font-mono-tech text-[11px]">
+            ☀ 晴朗乾地 DRY
+          </button>
+        </div>
+        <div class="flex items-center justify-between">
           <span class="text-slate-300">3D 賽道走線光帶</span>
           <button id="btn-toggle-line"
             class="px-2 py-1 rounded bg-slate-800 text-emerald-400 font-mono-tech text-[11px]">
@@ -2707,10 +2802,10 @@
     <div id="mobile-mt-shifters" class="hidden pointer-events-auto flex flex-col items-center gap-1.5 mb-2">
       <div class="flex items-center gap-2">
         <button id="touch-btn-geardown"
-          class="touch-btn px-4 py-2 rounded-xl border border-red-400/60 text-red-300 font-mono-tech font-extrabold text-sm shadow-xl flex items-center gap-1 active:scale-90"
+          class="touch-btn touch-paddle-left px-4 py-2 rounded-xl border border-red-400/60 text-red-300 font-mono-tech font-extrabold text-sm shadow-xl flex items-center gap-1 active:scale-90"
           title="退檔補油 (鍵盤 Q)">Q 退檔</button>
         <button id="touch-btn-gearup"
-          class="touch-btn px-4 py-2 rounded-xl border border-emerald-400/60 text-emerald-300 font-mono-tech font-extrabold text-sm shadow-xl flex items-center gap-1 active:scale-90"
+          class="touch-btn touch-paddle-right px-4 py-2 rounded-xl border border-emerald-400/60 text-emerald-300 font-mono-tech font-extrabold text-sm shadow-xl flex items-center gap-1 active:scale-90"
           title="升檔 (鍵盤 E)">E 升檔</button>
       </div>
     </div>
@@ -2799,7 +2894,7 @@
     </div>
 
     <!-- Sleek Integrated Cockpit MoTeC Telemetry Pod (PC Mode) -->
-    <div
+    <div id="pc-motec-pod"
       class="pointer-events-auto hud-minimal rounded-2xl px-4 py-2 border border-slate-700/70 shadow-2xl flex items-center gap-4">
       <div
         class="hidden sm:grid grid-cols-2 gap-1 p-1 bg-slate-950/75 rounded-lg border border-slate-800/80 text-[9px] font-mono-tech">
@@ -3321,9 +3416,19 @@
               class="px-2 py-1 rounded bg-slate-800 text-emerald-400 font-mono-tech text-[11px]">ON</button>
           </div>
           <div class="flex items-center justify-between">
+            <span>即時動態陰影 (PCF Shadows)</span>
+            <button id="btn-garage-shadows"
+              class="px-2 py-1 rounded bg-slate-800 text-emerald-400 font-mono-tech text-[11px]">ON</button>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>高光輝光後製 (GPU Bloom)</span>
+            <button id="btn-garage-bloom"
+              class="px-2 py-1 rounded bg-slate-800 text-emerald-400 font-mono-tech text-[11px]">ON</button>
+          </div>
+          <div class="flex items-center justify-between">
             <span>3D 實景賽道模型 (GLB Scenery)</span>
             <button id="btn-garage-glbtrack"
-              class="px-2 py-1 rounded bg-slate-800 text-emerald-400 font-mono-tech text-[11px]">ON</button>
+              class="px-2 py-1 rounded bg-slate-800 text-slate-400 font-mono-tech text-[11px]">OFF</button>
           </div>
         </div>
       </div>

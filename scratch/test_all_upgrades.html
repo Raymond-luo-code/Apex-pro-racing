@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Test All Upgrades</title>
+</head>
+
+<body>
+  <iframe id="app" src="/index.html" style="width:1280px;height:720px;"></iframe>
+  <pre id="status">BOOTING</pre>
+  <script>
+    function waitUntil(fn, timeoutMs = 25000) {
+      return new Promise((resolve, reject) => {
+        const start = Date.now();
+        const tick = () => {
+          try {
+            const res = fn();
+            if (res) return resolve(res);
+          } catch (e) { }
+          if (Date.now() - start > timeoutMs) return reject(new Error('Timeout waiting for condition'));
+          setTimeout(tick, 100);
+        };
+        tick();
+      });
+    }
+
+    (async () => {
+      const report = {
+        errors: [],
+        circuits: [],
+        bloomCompileOk: false,
+        bloomGlError: -1,
+        brakeGlowCount: -1,
+        gtrCheck: {},
+        liveries: [],
+        aiClasses: {},
+        weather: {},
+        flags: {},
+        uiDom: {},
+        bugFixes: {
+          orientation: {},
+          taillightIsolation: {},
+          headlightBeam: {},
+          reverseStability: {}
+        }
+      };
+
+      try {
+        const frame = document.getElementById('app');
+        const win = await waitUntil(() => {
+          const w = frame.contentWindow;
+          return (
+            w &&
+            w.THREE &&
+            w.CIRCUITS &&
+            w.CAR_MODEL_PRESETS &&
+            w.CAR_CATALOG &&
+            w.CAR_HANDLING_PROFILES &&
+            w.carAssetState &&
+            w.simState &&
+            w.renderer &&
+            w.scene &&
+            w.circuitSceneryGroup &&
+            w.rainSystem &&
+            w.selectCircuit &&
+            w.setWeatherMode &&
+            w.setTireCompound &&
+            w.stepPhysics &&
+            w.updateRaceFlags &&
+            w.syncAIMultiCarModels &&
+            w.applyCustomLiveryColors &&
+            w.getProceduralLiveryTexture &&
+            w.ensureBloomResources &&
+            w.classifyHiFiMaterials &&
+            w.loadVehicleFromURLs &&
+            w.setPhysicsEdition &&
+            w.sampleTrackAtS &&
+            w.headlightGroup &&
+            w.update3DSceneAndVisualFX &&
+            w.resetSession
+          ) ? w : null;
+        }, 30000);
+
+        const doc = frame.contentDocument;
+
+        // Hook errors inside app iframe
+        const origErr = win.console.error.bind(win.console);
+        win.console.error = (...args) => {
+          report.errors.push('console.error: ' + args.map(String).join(' '));
+          origErr(...args);
+        };
+        win.addEventListener('error', (ev) => {
+          report.errors.push('window.error: ' + (ev.message || ev.type));
+        });
+        win.addEventListener('unhandledrejection', (ev) => {
+          report.errors.push('unhandledrejection: ' + String(ev.reason));
+        });
+
+        // Cancel any background remote CDN fetch before local deterministic checks
+        win.carAssetState.loadSeq++;
+        win.carAssetState.loading = false;
+
+        // ------------------------------------------------------------------
+        // 1. Circuits: Biome, SkyDome ShaderMaterial, Mt Fuji & Suzuka landmarks
+        // ------------------------------------------------------------------
+        for (let idx = 0; idx < win.CIRCUITS.length; idx++) {
+          win.selectCircuit(idx);
+          const c = win.CIRCUITS[idx];
+          let hasSkyDome = false;
+          let skyIsShaderMat = false;
+          let hasMtFujiMesh = false;
+          let hasFerrisTorus = false;
+          let texturedBanners = 0;
+
+          win.circuitSceneryGroup.traverse(obj => {
+            if (obj.name === 'procedural_sky_dome') {
+              hasSkyDome = true;
+              skyIsShaderMat = !!(obj.material && obj.material.isShaderMaterial && obj.material.uniforms && obj.material.uniforms.uTopColor);
+            }
+            if (obj.name === 'mt_fuji_landmark') {
+              hasMtFujiMesh = true;
+            }
+            if (obj.isMesh && obj.geometry) {
+              const gp = obj.geometry.parameters || {};
+              // Suzuka Motopia Ferris wheel ring (TorusGeometry radius 110)
+              if (obj.geometry.type === 'TorusGeometry' && gp.radius >= 55) {
+                hasFerrisTorus = true;
+              }
+              if (obj.material && obj.material.map && obj.geometry.type === 'PlaneGeometry' && gp.width >= 15) {
+                texturedBanners++;
+              }
+            }
+          });
+
+          report.circuits.push({
+            idx,
+            id: c.id,
+            biome: c.theme && c.theme.biome,
+            hasSkyDome,
+            skyIsShaderMat,
+            hasMtFujiMesh,
+            hasFerrisTorus,
+            texturedBanners
+          });
+        }
+
+        // ------------------------------------------------------------------
+        // 2. Force-test Bloom Shader Compilation & Rendering in WebGL
+        // ------------------------------------------------------------------
+        const br = win.ensureBloomResources(320, 180, true);
+        if (br) {
+          const gl = win.renderer.getContext();
+          win.renderer.setRenderTarget(br.sceneRT);
+          win.renderer.render(win.scene, win.camera || br.orthoCam);
+
+          br.quadMesh.material = br.brightMat;
+          br.brightMat.uniforms.tDiffuse.value = br.sceneRT.texture;
+          win.renderer.setRenderTarget(br.rtA);
+          win.renderer.render(br.postScene, br.orthoCam);
+
+          br.quadMesh.material = br.blurMat;
+          br.blurMat.uniforms.tDiffuse.value = br.rtA.texture;
+          br.blurMat.uniforms.uTexel.value.set(1 / br.sw, 0);
+          win.renderer.setRenderTarget(br.rtB);
+          win.renderer.render(br.postScene, br.orthoCam);
+
+          br.quadMesh.material = br.compMat;
+          br.compMat.uniforms.tBase.value = br.sceneRT.texture;
+          br.compMat.uniforms.tBloom.value = br.rtB.texture;
+          win.renderer.setRenderTarget(null);
+          win.renderer.render(br.postScene, br.orthoCam);
+
+          report.bloomGlError = gl.getError();
+          report.bloomCompileOk = (report.bloomGlError === 0);
+        }
+
+        // Verify ZERO brake disc thermal glow anywhere in scene
+        let glowCount = 0;
+        win.scene.traverse(obj => {
+          if (obj.name && /brake.?disc.?glow/i.test(obj.name)) glowCount++;
+        });
+        report.brakeGlowCount = glowCount;
+
+        // ------------------------------------------------------------------
+        // 3. GT-R Removed, Liveries & Multi-Class AI Grid (GT3 / HYPER / LMP1)
+        // ------------------------------------------------------------------
+        const gtrRemoved =
+          !win.CAR_CATALOG.some(c => c.id === 'nissan_gtr_gt500') &&
+          !win.CAR_MODEL_PRESETS.some(p => p.id === 'nissan_gtr_gt500') &&
+          !win.CAR_HANDLING_PROFILES['nissan_gtr_gt500'];
+
+        win.useProceduralVehicle('procedural', 'BMW M4 GT3 EVO', '#ef4444');
+
+        for (const pat of ['solid', 'duotone', 'stripes', 'esports']) {
+          win.applyCustomLiveryColors('#ef4444', '#fbbf24', pat, '#38bdf8');
+          const tex = win.getProceduralLiveryTexture(pat, '#ef4444', '#38bdf8');
+          report.liveries.push({
+            pattern: pat,
+            applied: win.carAssetState.liveryPattern,
+            texWidth: tex && tex.image ? tex.image.width : (pat === 'solid' ? 0 : -1)
+          });
+        }
+
+        report.gtrCheck = { removedEverywhere: gtrRemoved };
+
+        // AI multi-class matching check
+        for (const [cls, pid] of [
+          ['GT3', 'procedural'],
+          ['HYPER', 'mclaren_senna'],
+          ['LMP1', 'porsche_919_evo']
+        ]) {
+          win.syncAIMultiCarModels(pid);
+          report.aiClasses[cls] = (win.aiCars || []).map(a => ({
+            preset: a.assignedPresetId,
+            pattern: a.liveryPattern
+          }));
+        }
+
+        // SkyDome tracks camera.position cleanly at far circuit perimeter (no far-clip hole)
+        win.selectCircuit(3); // Spa
+        win.simState.inspectMode = false;
+        win.simState.inShowcaseMode = false;
+        win.simState.cameraMode = 2;
+        win.simState.s = 2800;
+        win.simState.d = 0;
+        win.update3DSceneAndVisualFX(3.0);
+        const skyObj = win.circuitSceneryGroup.getObjectByName('procedural_sky_dome');
+        report.bugFixes.skyDomeTracking = {
+          cameraFar: win.camera ? win.camera.far : null,
+          domeRadius: skyObj && skyObj.geometry && skyObj.geometry.parameters ? skyObj.geometry.parameters.radius : null,
+          camDistDelta: (skyObj && win.camera) ? Number(skyObj.position.distanceTo(win.camera.position).toFixed(4)) : null
+        };
+
+        // ------------------------------------------------------------------
+        // 4. Wet Weather, Rain System, Wet Tire, and FIA Race Flags
+        // ------------------------------------------------------------------
+        win.simState.inspectMode = false;
+        win.simState.inShowcaseMode = false;
+        win.simState.paused = false;
+        win.simState.countdownActive = false;
+        win.simState.gear = 1;
+        win.simState.s = 100;
+        win.simState.d = 0;
+        win.simState.offTrack = false;
+        win.simState.speedMs = 40;
+
+        win.setWeatherMode('dry');
+        win.setTireCompound('medium');
+        win.stepPhysics(0.016);
+        win.update3DSceneAndVisualFX(1.0);
+        const dryMediumGrip = win.simState.effectiveGrip;
+        const rainDryVisible = !!win.rainSystem.visible;
+
+        win.setWeatherMode('wet');
+        win.stepPhysics(0.016);
+        win.update3DSceneAndVisualFX(2.0);
+        const wetMediumGrip = win.simState.effectiveGrip;
+        const rainWetVisible = !!win.rainSystem.visible;
+
+        win.setTireCompound('wet');
+        win.stepPhysics(0.016);
+        const wetRainTireGrip = win.simState.effectiveGrip;
+
+        report.weather = {
+          dryMediumGrip: Number(dryMediumGrip.toFixed(4)),
+          wetMediumGrip: Number(wetMediumGrip.toFixed(4)),
+          wetRainTireGrip: Number(wetRainTireGrip.toFixed(4)),
+          rainDryVisible,
+          rainWetVisible
+        };
+
+        // Restore dry and verify FIA Flags
+        win.setWeatherMode('dry');
+        win.simState.mode = 'ai_race';
+        win.simState.countdownActive = false;
+        win.simState.lap = 1;
+        win.simState.s = 200;
+        win.simState.speedMs = 30;
+        win.simState.lapElapsed = 10.0;
+        win.simState.checkeredFlagTimer = 0;
+
+        const resetAICarsClear = () => {
+          (win.aiCars || []).forEach((ai, i) => {
+            ai.lap = 1;
+            ai.s = 2200 + i * 100;
+            ai.speedMs = 55;
+            ai.spinTimer = 0;
+            ai.stateLabel = 'RACING';
+          });
+        };
+
+        resetAICarsClear();
+        win.updateRaceFlags(0.016);
+        const flagNone = win.simState.activeFlag;
+
+        resetAICarsClear();
+        win.aiCars[0].s = 265; // 65m ahead
+        win.aiCars[0].speedMs = 5;
+        win.aiCars[0].spinTimer = 1.5;
+        win.updateRaceFlags(0.016);
+        const flagYellow = win.simState.activeFlag;
+
+        resetAICarsClear();
+        win.aiCars[0].lap = 2; // 1 lap ahead of player
+        win.aiCars[0].s = 155; // 45m behind player
+        win.aiCars[0].speedMs = 62;
+        win.updateRaceFlags(0.016);
+        const flagBlue = win.simState.activeFlag;
+
+        win.simState.checkeredFlagTimer = 2.5;
+        win.updateRaceFlags(0.016);
+        const flagCheckered = win.simState.activeFlag;
+
+        report.flags = { flagNone, flagYellow, flagBlue, flagCheckered };
+
+        // ------------------------------------------------------------------
+        // 5. UI / DOM Controls Verification
+        // ------------------------------------------------------------------
+        const btnHomeGar = doc.getElementById('btn-home-garage');
+        if (btnHomeGar) btnHomeGar.click();
+        await new Promise(r => setTimeout(r, 150));
+
+        report.uiDom = {
+          hasTopPill: !!doc.getElementById('hud-top-pill'),
+          hasFlagBanner: !!doc.getElementById('hud-flag-banner'),
+          hasWeatherBtn: !!doc.getElementById('btn-weather-toggle'),
+          hasMotecPod: !!doc.getElementById('pc-motec-pod'),
+          hasShadowsBtn: !!doc.getElementById('btn-garage-shadows'),
+          hasBloomBtn: !!doc.getElementById('btn-garage-bloom'),
+          glbTrackDefault: (doc.getElementById('btn-garage-glbtrack') || {}).textContent?.trim(),
+          liveryPatternBtns: doc.querySelectorAll('#gar-paint-customizer [data-pick-pattern]').length,
+          liveryAccentBtns: doc.querySelectorAll('#gar-paint-customizer [data-pick-accent]').length,
+          wetTireBtn: doc.querySelectorAll('#gar-paint-customizer [data-pick-tire="wet"]').length
+        };
+
+        // ------------------------------------------------------------------
+        // 6. Targeted Regression Checks for the 4 Reported Bug Fixes
+        // ------------------------------------------------------------------
+        // 6A. McLaren Senna & Pagani Huayra R Forward (+X) Orientation + Zero False Taillights
+        for (const pid of ['mclaren_senna', 'pagani_huayra_r']) {
+          const preset = win.CAR_MODEL_PRESETS.find(p => p.id === pid);
+          const prevSeq = win.carAssetState.loadSeq;
+          win.loadVehicleFromURLs(preset.urls, preset.label, preset.id);
+          await waitUntil(() => !win.carAssetState.loading && win.carAssetState.loadedPresetId === pid && win.carAssetState.loadSeq > prevSeq, 35000);
+          win.carAssetState.template.updateMatrixWorld(true);
+          let frontNodeX = null, rearNodeX = null, flSteerX = null, rlSteerX = null;
+          const misclassifiedTail = [];
+          win.carAssetState.template.traverse(o => {
+            const nm = o.name || '';
+            if (/^apex_steer_FL$/.test(nm)) flSteerX = Number(o.position.x.toFixed(3));
+            if (/^apex_steer_RL$/.test(nm)) rlSteerX = Number(o.position.x.toFixed(3));
+            if (/^(?:Calliper|3DWheel)[_\s-]+Front[_\s-]+L/i.test(nm)) {
+              const b = new win.THREE.Box3().setFromObject(o);
+              if (!b.isEmpty()) frontNodeX = Number(b.getCenter(new win.THREE.Vector3()).x.toFixed(3));
+            }
+            if (/^(?:Calliper|3DWheel)[_\s-]+Rear[_\s-]+L/i.test(nm)) {
+              const b = new win.THREE.Box3().setFromObject(o);
+              if (!b.isEmpty()) rearNodeX = Number(b.getCenter(new win.THREE.Vector3()).x.toFixed(3));
+            }
+            if (o.isMesh && o.material) {
+              const ms = Array.isArray(o.material) ? o.material : [o.material];
+              ms.forEach(m => {
+                if (m && m.userData && m.userData.apexRole === 'taillight' && /carbon|detail|paint|interior|chassis|calliper|caliper/i.test(m.name || '')) {
+                  misclassifiedTail.push(m.name);
+                }
+              });
+            }
+          });
+          report.bugFixes.orientation[pid] = { frontNodeX, rearNodeX, flSteerX, rlSteerX, misclassifiedTail };
+        }
+
+        // 6B. Unit Check classifyHiFiMaterials never tags "details" / "rollcage" as taillight
+        {
+          const grp = new win.THREE.Group();
+          const detMat = new win.THREE.MeshStandardMaterial({ name: 'bmw_details' });
+          const cageMat = new win.THREE.MeshStandardMaterial({ name: 'rollcage_detail' });
+          const tailMat = new win.THREE.MeshStandardMaterial({ name: 'brake_lamp' });
+          const mDet = new win.THREE.Mesh(new win.THREE.BoxGeometry(3.8, 1.2, 1.8), detMat);
+          mDet.name = 'chassis_details_geo';
+          const mCage = new win.THREE.Mesh(new win.THREE.BoxGeometry(1.4, 0.9, 1.2), cageMat);
+          mCage.name = 'interior_rollcage_detail';
+          const mTail = new win.THREE.Mesh(new win.THREE.BoxGeometry(0.08, 0.12, 0.35), tailMat);
+          mTail.name = 'taillight_lens_L';
+          grp.add(mDet, mCage, mTail);
+          grp.updateMatrixWorld(true);
+          win.classifyHiFiMaterials(grp);
+          report.bugFixes.taillightIsolation = {
+            bmwDetailsRole: detMat.userData.apexRole,
+            rollcageDetailRole: cageMat.userData.apexRole,
+            brakeLampRole: tailMat.userData.apexRole
+          };
+        }
+
+        // 6C. Night Headlight Beam Forward Spread Check
+        {
+          const beamL = win.headlightGroup.getObjectByName('headlight_beam_L');
+          beamL.updateMatrixWorld(true);
+          const posAttr = beamL.geometry.attributes.position;
+          const vTmp = new win.THREE.Vector3();
+          let minX = Infinity, maxX = -Infinity, frontMaxR = 0, farMaxR = 0;
+          for (let i = 0; i < posAttr.count; i++) {
+            vTmp.fromBufferAttribute(posAttr, i).applyMatrix4(beamL.matrix);
+            if (vTmp.x < minX) minX = vTmp.x;
+            if (vTmp.x > maxX) maxX = vTmp.x;
+            const r = Math.hypot(vTmp.z - beamL.position.z, vTmp.y - beamL.position.y);
+            if (vTmp.x < 5.0) frontMaxR = Math.max(frontMaxR, r);
+            if (vTmp.x > 30.0) farMaxR = Math.max(farMaxR, r);
+          }
+          report.bugFixes.headlightBeam = {
+            minX: Number(minX.toFixed(2)),
+            maxX: Number(maxX.toFixed(2)),
+            frontMaxR: Number(frontMaxR.toFixed(3)),
+            farMaxR: Number(farMaxR.toFixed(3))
+          };
+        }
+
+        // 6D. Reverse Standstill & Low-Speed Wrong-Way Arcade Stability
+        {
+          win.setPhysicsEdition('arcade');
+          win.simState.mode = 'solo';
+          win.simState.paused = false;
+          win.simState.inShowcaseMode = false;
+          win.simState.countdownActive = false;
+          win.simState.offTrack = false;
+          win.simState.colLatVel = 0;
+          win.simState._inCollisionContact = 0;
+          const node = win.sampleTrackAtS(200);
+
+          // Standstill Reverse near +-PI wrap
+          win.simState.s = 200;
+          win.simState.d = 0;
+          win.simState.gear = -1;
+          win.simState.speedMs = 0;
+          win.simState.speedKmh = 0;
+          win.simState.yawRate = 0;
+          win.simState.steerInput = 0;
+          win.simState.throttleInput = 0;
+          win.simState.brakeInput = 0;
+          const startHRev = node.heading + 3.10;
+          win.simState.heading = startHRev;
+          let revMaxYaw = 0, revOversteer = false;
+          for (let f = 0; f < 60; f++) {
+            win.stepPhysics(1 / 60);
+            revMaxYaw = Math.max(revMaxYaw, Math.abs(win.simState.yawRate));
+            if (win.simState.isOversteer) revOversteer = true;
+          }
+          const revHeadingDelta = Math.abs(win.simState.heading - startHRev);
+
+          // Low-speed wrong-way turn
+          win.simState.s = 200;
+          win.simState.d = 0;
+          win.simState.gear = 1;
+          win.simState.speedMs = 5;
+          win.simState.speedKmh = 18;
+          win.simState.yawRate = 0;
+          win.simState.steerInput = 0.8;
+          win.simState.heading = node.heading + 2.95;
+          let wwOversteer = false, yawFlips = 0, prevSign = 0;
+          for (let f = 0; f < 60; f++) {
+            win.simState.speedMs = 5;
+            win.simState.speedKmh = 18;
+            win.stepPhysics(1 / 60);
+            if (win.simState.isOversteer) wwOversteer = true;
+            const sgn = Math.sign(win.simState.yawRate);
+            if (f > 5 && sgn !== 0 && prevSign !== 0 && sgn !== prevSign) yawFlips++;
+            if (sgn !== 0) prevSign = sgn;
+          }
+
+          report.bugFixes.reverseStability = {
+            revMaxYaw: Number(revMaxYaw.toFixed(4)),
+            revOversteer,
+            revHeadingDelta: Number(revHeadingDelta.toFixed(4)),
+            wwOversteer,
+            yawFlips
+          };
+          win.setPhysicsEdition('realistic');
+        }
+      } catch (err) {
+        report.errors.push('Test harness exception: ' + (err.stack || err.message));
+      }
+
+      document.getElementById('status').textContent = JSON.stringify(report, null, 2);
+      try {
+        await fetch('/__report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(report)
+        });
+      } catch (e) { }
+    })();
+  </script>
+</body>
+
+</html>

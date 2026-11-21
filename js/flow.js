@@ -359,7 +359,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
 
         if (clsEl) {
           clsEl.textContent = meta.classLabel;
-          clsEl.style.color = meta.carClass === 'LMP1' ? '#f43f5e' : (meta.carClass === 'HYPER' ? '#f59e0b' : '#38bdf8');
+          clsEl.style.color = meta.carClass === 'LMP1' ? '#38bdf8' : (meta.carClass === 'HYPER' ? '#c084fc' : (meta.carClass === 'JDM' ? '#2dd4bf' : '#fb923c'));
         }
         if (nameEl) nameEl.textContent = meta.name;
         if (recEl) recEl.textContent = String(Object.keys(personalRecords).length);
@@ -413,6 +413,9 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
             applyCustomLiveryColors(null, null);
           }
         }
+        if (typeof window.syncAIMultiCarModels === 'function') {
+          window.syncAIMultiCarModels(presetId);
+        }
         if (typeof window.rebuildProBenchmarkForCurrentCar === 'function') {
           window.rebuildProBenchmarkForCurrentCar();
         }
@@ -454,7 +457,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
 
         if (clsEl) {
           clsEl.textContent = meta.classLabel;
-          clsEl.style.color = meta.carClass === 'LMP1' ? '#f43f5e' : (meta.carClass === 'HYPER' ? '#f59e0b' : '#38bdf8');
+          clsEl.style.color = meta.carClass === 'LMP1' ? '#38bdf8' : (meta.carClass === 'HYPER' ? '#c084fc' : (meta.carClass === 'JDM' ? '#2dd4bf' : '#fb923c'));
         }
         if (nameEl) nameEl.textContent = meta.name;
         if (origEl) origEl.textContent = meta.origin;
@@ -493,6 +496,15 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           const isOrigLivery = (carAssetState.livery === 'original');
           const curPaint = (carAssetState.paintHex || '#ef4444').toLowerCase();
           const curRim = (carAssetState.rimHex || '#94a3b8').toLowerCase();
+          const curPat = carAssetState.liveryPattern || 'solid';
+          const curAcc = (carAssetState.accentHex || '#f8fafc').toLowerCase();
+          const LIVERY_PATTERNS = [
+            { id: 'solid', label: '單色清漆' },
+            { id: 'duotone', label: '雙色金屬' },
+            { id: 'stripes', label: '賽車條紋' },
+            { id: 'esports', label: '電競幾何' }
+          ];
+          const ACCENT_SWATCHES = ['#f8fafc', '#fbbf24', '#38bdf8', '#ef4444'];
           paintCustEl.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;">
               <span style="font-size:11px;color:#cbd5e1;font-weight:700;">🎨 車身烤漆 (Clearcoat)</span>
@@ -505,6 +517,21 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                   const active = !isOrigLivery && (s.hex.toLowerCase() === curPaint);
                   return `<button type="button" data-pick-paint="${s.hex}" title="${s.name} (MeshPhysical 清漆烤漆)"
                     style="width:21px;height:21px;border-radius:999px;background:${s.hex};border:${active ? '2.5px solid #fff' : '1.5px solid rgba(255,255,255,0.25)'};box-shadow:${active ? '0 0 10px ' + s.hex : 'none'};cursor:pointer;transition:transform 0.15s;transform:${active ? 'scale(1.14)' : 'scale(1)'};"></button>`;
+                }).join('')}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;flex-wrap:wrap;">
+              <span style="font-size:11px;color:#cbd5e1;font-weight:700;">🏁 賽車彩繪樣式</span>
+              <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                ${LIVERY_PATTERNS.map(p => {
+                  const active = !isOrigLivery && (curPat === p.id);
+                  return `<button type="button" data-pick-pattern="${p.id}"
+                    style="padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;background:${active ? 'rgba(249,115,22,0.22)' : 'rgba(15,23,42,0.85)'};color:${active ? '#fb923c' : '#cbd5e1'};border:1px solid ${active ? '#fb923c' : 'rgba(148,163,184,0.3)'};cursor:pointer;">${p.label}</button>`;
+                }).join('')}
+                ${ACCENT_SWATCHES.map(hex => {
+                  const active = !isOrigLivery && (curAcc === hex.toLowerCase());
+                  return `<button type="button" data-pick-accent="${hex}" title="副色塗裝 ${hex}"
+                    style="width:15px;height:15px;border-radius:4px;background:${hex};border:${active ? '2px solid #fff' : '1px solid rgba(255,255,255,0.25)'};cursor:pointer;"></button>`;
                 }).join('')}
               </div>
             </div>
@@ -523,7 +550,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
             ${typeof TIRE_COMPOUNDS !== 'undefined' ? `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <span style="font-size:11px;color:#cbd5e1;font-weight:700;">🛞 輪胎配方</span>
-              <div style="display:flex;gap:6px;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
                 ${Object.values(TIRE_COMPOUNDS).map(tc => {
                   const active = (simState.tireCompound || 'medium') === tc.id;
                   return `<button type="button" data-pick-tire="${tc.id}" title="${tc.summary}"
@@ -539,6 +566,24 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
               const hex = btn.getAttribute('data-pick-paint');
               if (typeof applyCustomLiveryColors === 'function') {
                 applyCustomLiveryColors(hex, null);
+              }
+              renderGarageScreen();
+            });
+          });
+          paintCustEl.querySelectorAll('[data-pick-pattern]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const pat = btn.getAttribute('data-pick-pattern');
+              if (typeof applyCustomLiveryColors === 'function') {
+                applyCustomLiveryColors(null, null, pat, null);
+              }
+              renderGarageScreen();
+            });
+          });
+          paintCustEl.querySelectorAll('[data-pick-accent]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const hex = btn.getAttribute('data-pick-accent');
+              if (typeof applyCustomLiveryColors === 'function') {
+                applyCustomLiveryColors(null, null, null, hex);
               }
               renderGarageScreen();
             });
@@ -781,7 +826,17 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
             }
           ];
           const carClassTag = getActiveCarMeta().carClass || 'GT3';
+          const isWet = (simState.weather === 'wet');
           bodyEl.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 14px;flex-wrap:wrap;">
+              <span style="font-size:12px;font-weight:800;color:#cbd5e1;letter-spacing:.04em;">🌦 天候條件 WEATHER：</span>
+              <button type="button" data-pick-weather="dry" style="padding:6px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;border:1.5px solid ${!isWet ? '#fbbf24' : 'rgba(148,163,184,0.28)'};background:${!isWet ? 'rgba(251,191,36,0.18)' : 'rgba(15,23,42,0.85)'};color:${!isWet ? '#fde68a' : '#94a3b8'};">
+                ☀ 晴朗乾地 DRY (100% 抓地)
+              </button>
+              <button type="button" data-pick-weather="wet" style="padding:6px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;border:1.5px solid ${isWet ? '#38bdf8' : 'rgba(148,163,184,0.28)'};background:${isWet ? 'rgba(56,189,248,0.2)' : 'rgba(15,23,42,0.85)'};color:${isWet ? '#7dd3fc' : '#94a3b8'};">
+                🌧 雨天濕地 WET (-28% 抓地 · 建議 W 雨胎)
+              </button>
+            </div>
             <div class="af-choice-grid" style="max-width:1180px;">
               ${tracks.map(t => {
                 const pbKey = `${t.idx}_${simState.edition}_${carClassTag}`;
@@ -1486,6 +1541,19 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           if (modeCard) {
             setGameMode(modeCard.dataset.pickMode);
             openSetupStep(3);
+            return;
+          }
+          const wBtn = e.target.closest('[data-pick-weather]');
+          if (wBtn) {
+            e.stopPropagation();
+            if (typeof setWeatherMode === 'function') setWeatherMode(wBtn.dataset.pickWeather);
+            const wtBtn = document.getElementById('btn-weather-toggle');
+            if (wtBtn) {
+              const isW = (simState.weather === 'wet');
+              wtBtn.textContent = isW ? '🌧 雨天濕地 WET' : '☀ 晴朗乾地 DRY';
+              wtBtn.className = `px-2 py-1 rounded bg-slate-800 ${isW ? 'text-sky-400' : 'text-amber-300'} font-mono-tech text-[11px]`;
+            }
+            renderSetupStep(3);
             return;
           }
           const trackCard = e.target.closest('[data-pick-track]');

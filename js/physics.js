@@ -4,176 +4,910 @@
 'use strict';
 if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
+function buildClassSpec(carClass, cornerGripMult, accelMult, launchMult, brakeDecelMult, topSpeedKmh, aeroDragFactor, aeroDownforceCoeff, baseMuLat, weightKg, shiftEff) {
+  return {
+    carClass,
+    cornerGripMult,
+    accelMult,
+    launchMult,
+    brakeDecelMult,
+    topSpeedKmh,
+    aeroDragFactor,
+    aeroDownforceCoeff,
+    baseMuLat,
+    weightKg,
+    shiftEff
+  };
+}
+
 const CAR_HANDLING_PROFILES = {
   procedural: {
     name: 'APEX GT3 PROTOTYPE',
     carClass: 'GT3',
-    classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
-    wheelbase: 2.56,              // meters (short wheelbase = agile turn-in)
-    maxSteerDeg: 23.5,            // front wheel mechanical lock (deg)
-    baseMuLat: 1.48,              // baseline mechanical lateral grip
-    understeerCoeff: 0.00095,     // Milliken understeer gradient (s^2/m^2)
-    turnInAgility: 1.15,          // front axle responsiveness multiplier
-    highSpeedLockFactor: 0.35,    // lock limit at 260+ km/h
-    steerRampRate: 2.80,          // steering wheel deflection speed (rad/s)
-    autoCenterDamping: 0.005,     // self-centering strength
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 305, 1.00, 0.135, 1.48, 1245, 0.955),
+    wheelbase: 2.56,
+    maxSteerDeg: 23.5,
+    baseMuLat: 1.48,
+    understeerCoeff: 0.00095,
+    turnInAgility: 1.15,
+    highSpeedLockFactor: 0.35,
+    steerRampRate: 2.80,
+    autoCenterDamping: 0.005,
+    powerFactor: 1.00,
+    launchFactor: 1.00,
     accelFactor: 1.00,
     aeroDragFactor: 1.00,
+    aeroDownforceCoeff: 0.135,
     brakeFactor: 1.00,
-    weightKg: 1245
+    weightKg: 1245,
+    maxGears: 6,
+    idleRpm: 1150,
+    redlineRpm: 8800,
+    shiftCutSec: 0.08,
+    pitchTone: 1.00,
+    bodyRollMult: 1.00
   },
   ferrari458: {
     name: 'FERRARI 458 ITALIA GT3',
     carClass: 'GT3',
-    classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
-    wheelbase: 2.65,              // mid-engine balanced wheelbase
-    maxSteerDeg: 22.0,            // GT3 homologated mechanical lock
-    baseMuLat: 1.46,              // progressive mechanical grip
-    understeerCoeff: 0.00110,     // balanced mid-engine understeer gradient
-    turnInAgility: 1.10,          // smooth mid-engine turn-in
-    highSpeedLockFactor: 0.31,    // higher high-speed stability
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 308, 0.985, 0.134, 1.46, 1215, 0.955),
+    wheelbase: 2.65,
+    maxSteerDeg: 22.0,
+    baseMuLat: 1.46,
+    understeerCoeff: 0.00110,
+    turnInAgility: 1.10,
+    highSpeedLockFactor: 0.31,
     steerRampRate: 2.60,
     autoCenterDamping: 0.006,
+    powerFactor: 1.03,
+    launchFactor: 1.03,
     accelFactor: 1.03,
     aeroDragFactor: 0.985,
+    aeroDownforceCoeff: 0.134,
     brakeFactor: 1.00,
-    weightKg: 1215
+    weightKg: 1215,
+    maxGears: 6,
+    idleRpm: 1150,
+    redlineRpm: 8800,
+    shiftCutSec: 0.08,
+    pitchTone: 1.06,
+    bodyRollMult: 1.00
   },
   porsche911: {
     name: 'PORSCHE 911 GT3 R (992)',
     carClass: 'GT3',
-    classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
-    wheelbase: 2.50,              // short rear-engine wheelbase
-    maxSteerDeg: 24.0,            // agile steering lock
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 306, 0.995, 0.138, 1.52, 1250, 0.955),
+    wheelbase: 2.50,
+    maxSteerDeg: 24.0,
     baseMuLat: 1.52,
-    understeerCoeff: 0.00082,     // sharp front bite on trail braking
+    understeerCoeff: 0.00082,
     turnInAgility: 1.24,
     highSpeedLockFactor: 0.33,
     steerRampRate: 2.85,
     autoCenterDamping: 0.005,
-    accelFactor: 1.055,           // RR traction advantage out of corners
+    powerFactor: 1.055,
+    launchFactor: 1.055,
+    accelFactor: 1.055,
     aeroDragFactor: 0.995,
-    brakeFactor: 1.045,           // rear engine weight distribution aids four-wheel braking
-    weightKg: 1250
+    aeroDownforceCoeff: 0.138,
+    brakeFactor: 1.045,
+    weightKg: 1250,
+    maxGears: 6,
+    idleRpm: 1150,
+    redlineRpm: 9000,
+    shiftCutSec: 0.08,
+    pitchTone: 1.08,
+    bodyRollMult: 0.96
   },
   amggt3: {
     name: 'MERCEDES-AMG GT3 EVO',
     carClass: 'GT3',
-    classSpec: { cornerGripMult: 1.0, accelMult: 1.0, brakeDecelMult: 1.0, topSpeedKmh: 300 },
-    wheelbase: 2.66,              // front-mid engine long wheelbase tourer
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 312, 0.955, 0.130, 1.43, 1285, 0.955),
+    wheelbase: 2.66,
     maxSteerDeg: 21.5,
     baseMuLat: 1.43,
-    understeerCoeff: 0.00122,     // rock-solid high-speed stability
+    understeerCoeff: 0.00122,
     turnInAgility: 1.02,
-    highSpeedLockFactor: 0.29,    // extremely stable at high speed
+    highSpeedLockFactor: 0.29,
     steerRampRate: 2.45,
     autoCenterDamping: 0.0065,
-    accelFactor: 1.04,            // 6.2L V8 torque
-    aeroDragFactor: 0.955,        // highest straight-line top speed
+    powerFactor: 1.04,
+    launchFactor: 1.04,
+    accelFactor: 1.04,
+    aeroDragFactor: 0.955,
+    aeroDownforceCoeff: 0.130,
     brakeFactor: 1.015,
-    weightKg: 1285
+    weightKg: 1285,
+    maxGears: 6,
+    idleRpm: 1100,
+    redlineRpm: 7600,
+    shiftCutSec: 0.08,
+    pitchTone: 0.88,
+    bodyRollMult: 1.02
   },
   aston_vulcan: {
     name: 'ASTON MARTIN VULCAN AMR PRO',
     carClass: 'HYPER',
-    classSpec: { cornerGripMult: 1.06, accelMult: 1.12, brakeDecelMult: 1.06, topSpeedKmh: 322 },
+    classSpec: buildClassSpec('HYPER', 1.15, 1.32, 1.22, 1.08, 320, 1.105, 0.235, 1.60, 1350, 0.975),
     wheelbase: 2.79,
-    maxSteerDeg: 22.5,
-    baseMuLat: 1.58,
-    understeerCoeff: 0.00088,
-    turnInAgility: 1.22,
-    highSpeedLockFactor: 0.33,
-    steerRampRate: 2.75,
-    autoCenterDamping: 0.0055,
-    accelFactor: 1.14,
-    aeroDragFactor: 0.92,
-    brakeFactor: 1.07,
-    weightKg: 1350
+    maxSteerDeg: 22.8,
+    baseMuLat: 1.60,
+    understeerCoeff: 0.00078,
+    turnInAgility: 1.28,
+    highSpeedLockFactor: 0.34,
+    steerRampRate: 2.82,
+    autoCenterDamping: 0.0053,
+    powerFactor: 1.32,
+    launchFactor: 1.22,
+    accelFactor: 1.32,
+    aeroDragFactor: 1.105,
+    aeroDownforceCoeff: 0.235,
+    brakeFactor: 1.08,
+    weightKg: 1350,
+    maxGears: 6,
+    gearSpeeds: [0, 76, 128, 180, 232, 280, 326],
+    idleRpm: 1200,
+    redlineRpm: 8500,
+    shiftCutSec: 0.055,
+    pitchTone: 1.10,
+    bodyRollMult: 0.74
   },
   mclaren_senna: {
     name: 'MCLAREN SENNA GTR-SPEC',
     carClass: 'HYPER',
-    classSpec: { cornerGripMult: 1.08, accelMult: 1.14, brakeDecelMult: 1.09, topSpeedKmh: 325 },
+    classSpec: buildClassSpec('HYPER', 1.17, 1.45, 1.30, 1.10, 330, 1.108, 0.210, 1.64, 1198, 0.985),
     wheelbase: 2.67,
-    maxSteerDeg: 23.5,
+    maxSteerDeg: 23.6,
     baseMuLat: 1.64,
-    understeerCoeff: 0.00078,
-    turnInAgility: 1.30,
-    highSpeedLockFactor: 0.34,
-    steerRampRate: 2.90,
+    understeerCoeff: 0.00072,
+    turnInAgility: 1.36,
+    highSpeedLockFactor: 0.35,
+    steerRampRate: 2.95,
     autoCenterDamping: 0.005,
-    accelFactor: 1.16,
-    aeroDragFactor: 0.91,
+    powerFactor: 1.45,
+    launchFactor: 1.30,
+    accelFactor: 1.45,
+    aeroDragFactor: 1.108,
+    aeroDownforceCoeff: 0.210,
     brakeFactor: 1.10,
-    weightKg: 1198
+    weightKg: 1198,
+    maxGears: 7,
+    gearSpeeds: [0, 76, 122, 168, 212, 254, 294, 336],
+    idleRpm: 1200,
+    redlineRpm: 8500,
+    shiftCutSec: 0.04,
+    pitchTone: 1.04,
+    bodyRollMult: 0.70
   },
   zenvo_tsrs: {
     name: 'ZENVO TSR-S ACTIVE WING',
     carClass: 'HYPER',
-    classSpec: { cornerGripMult: 1.06, accelMult: 1.15, brakeDecelMult: 1.06, topSpeedKmh: 328 },
+    classSpec: buildClassSpec('HYPER', 1.10, 1.52, 1.30, 1.04, 336, 1.102, 0.145, 1.54, 1495, 0.982),
     wheelbase: 2.72,
     maxSteerDeg: 22.8,
-    baseMuLat: 1.57,
-    understeerCoeff: 0.00085,
+    baseMuLat: 1.54,
+    understeerCoeff: 0.00084,
     turnInAgility: 1.24,
     highSpeedLockFactor: 0.32,
-    steerRampRate: 2.78,
-    autoCenterDamping: 0.0055,
-    accelFactor: 1.18,
-    aeroDragFactor: 0.89,
-    brakeFactor: 1.06,
-    weightKg: 1495
+    steerRampRate: 2.80,
+    autoCenterDamping: 0.0054,
+    powerFactor: 1.52,
+    launchFactor: 1.30,
+    accelFactor: 1.52,
+    aeroDragFactor: 1.102,
+    aeroDownforceCoeff: 0.145,
+    brakeFactor: 1.04,
+    weightKg: 1495,
+    maxGears: 7,
+    gearSpeeds: [0, 78, 124, 170, 216, 260, 302, 342],
+    idleRpm: 1100,
+    redlineRpm: 7700,
+    shiftCutSec: 0.04,
+    pitchTone: 0.94,
+    bodyRollMult: 0.85
   },
   pagani_huayra_r: {
     name: 'PAGANI HUAYRA R EVO ROADSTER',
     carClass: 'HYPER',
-    classSpec: { cornerGripMult: 1.09, accelMult: 1.17, brakeDecelMult: 1.09, topSpeedKmh: 332 },
+    classSpec: buildClassSpec('HYPER', 1.18, 1.65, 1.34, 1.12, 348, 1.078, 0.220, 1.65, 1060, 0.985),
     wheelbase: 2.79,
-    maxSteerDeg: 23.2,
-    baseMuLat: 1.66,
-    understeerCoeff: 0.00075,
-    turnInAgility: 1.32,
-    highSpeedLockFactor: 0.34,
-    steerRampRate: 2.92,
-    autoCenterDamping: 0.005,
-    accelFactor: 1.19,
-    aeroDragFactor: 0.88,
-    brakeFactor: 1.10,
-    weightKg: 1060
+    maxSteerDeg: 23.5,
+    baseMuLat: 1.65,
+    understeerCoeff: 0.00070,
+    turnInAgility: 1.38,
+    highSpeedLockFactor: 0.35,
+    steerRampRate: 2.98,
+    autoCenterDamping: 0.0049,
+    powerFactor: 1.65,
+    launchFactor: 1.34,
+    accelFactor: 1.65,
+    aeroDragFactor: 1.078,
+    aeroDownforceCoeff: 0.220,
+    brakeFactor: 1.12,
+    weightKg: 1060,
+    maxGears: 6,
+    gearSpeeds: [0, 84, 138, 192, 246, 298, 354],
+    idleRpm: 1300,
+    redlineRpm: 9200,
+    shiftCutSec: 0.04,
+    pitchTone: 1.20,
+    bodyRollMult: 0.68
   },
   amg_one: {
     name: 'MERCEDES-AMG ONE F1 E-HYBRID',
     carClass: 'LMP1',
-    classSpec: { cornerGripMult: 1.12, accelMult: 1.24, brakeDecelMult: 1.12, topSpeedKmh: 345 },
+    classSpec: buildClassSpec('LMP1', 1.10, 1.44, 1.40, 1.05, 352, 0.905, 0.145, 1.56, 1695, 0.988),
     wheelbase: 2.72,
-    maxSteerDeg: 23.5,
-    baseMuLat: 1.72,
-    understeerCoeff: 0.00072,
-    turnInAgility: 1.35,
-    highSpeedLockFactor: 0.35,
-    steerRampRate: 2.98,
-    autoCenterDamping: 0.005,
-    accelFactor: 1.25,
-    aeroDragFactor: 0.84,
-    brakeFactor: 1.13,
-    weightKg: 1695
+    maxSteerDeg: 23.2,
+    baseMuLat: 1.56,
+    understeerCoeff: 0.00075,
+    turnInAgility: 1.32,
+    highSpeedLockFactor: 0.34,
+    steerRampRate: 2.94,
+    autoCenterDamping: 0.0051,
+    powerFactor: 1.44,
+    launchFactor: 1.40,
+    accelFactor: 1.44,
+    aeroDragFactor: 0.905,
+    aeroDownforceCoeff: 0.145,
+    brakeFactor: 1.05,
+    weightKg: 1695,
+    maxGears: 7,
+    gearSpeeds: [0, 82, 130, 178, 224, 270, 314, 358],
+    idleRpm: 1300,
+    redlineRpm: 11000,
+    shiftCutSec: 0.035,
+    pitchTone: 1.32,
+    bodyRollMult: 0.78
   },
   porsche_919_evo: {
     name: 'PORSCHE 919 HYBRID EVO LMP1',
     carClass: 'LMP1',
-    classSpec: { cornerGripMult: 1.20, accelMult: 1.35, brakeDecelMult: 1.18, topSpeedKmh: 362 },
+    classSpec: buildClassSpec('LMP1', 1.46, 2.42, 1.85, 1.22, 369, 1.335, 0.445, 1.90, 849, 0.992),
     wheelbase: 2.85,
-    maxSteerDeg: 24.5,
-    baseMuLat: 1.88,
-    understeerCoeff: 0.00062,
-    turnInAgility: 1.48,
+    maxSteerDeg: 24.8,
+    baseMuLat: 1.90,
+    understeerCoeff: 0.00035,
+    turnInAgility: 1.58,
+    highSpeedLockFactor: 0.41,
+    steerRampRate: 3.25,
+    autoCenterDamping: 0.0046,
+    powerFactor: 2.42,
+    launchFactor: 1.85,
+    accelFactor: 2.42,
+    aeroDragFactor: 1.335,
+    aeroDownforceCoeff: 0.445,
+    brakeFactor: 1.22,
+    weightKg: 849,
+    maxGears: 7,
+    gearSpeeds: [0, 105, 150, 196, 240, 285, 330, 376],
+    idleRpm: 2400,
+    redlineRpm: 9200,
+    shiftCutSec: 0.025,
+    pitchTone: 1.18,
+    bodyRollMult: 0.42
+  },
+  // --- STREET / CLASS A ---
+  nissan_xtrail: {
+    name: 'NISSAN X-TRAIL e-POWER SUV',
+    carClass: 'STREET',
+    classSpec: buildClassSpec('STREET', 0.56, 0.34, 0.52, 0.56, 185, 1.365, 0.004, 0.84, 1680, 0.992),
+    wheelbase: 2.71,
+    maxSteerDeg: 26.0,
+    baseMuLat: 0.84,
+    understeerCoeff: 0.00220,
+    turnInAgility: 0.78,
+    highSpeedLockFactor: 0.22,
+    steerRampRate: 2.10,
+    autoCenterDamping: 0.0075,
+    powerFactor: 0.34,
+    launchFactor: 0.52,
+    accelFactor: 0.34,
+    aeroDragFactor: 1.365,
+    aeroDownforceCoeff: 0.004,
+    brakeFactor: 0.56,
+    weightKg: 1680,
+    maxGears: 6,
+    gearSpeeds: [0, 44, 74, 104, 134, 162, 192],
+    idleRpm: 900,
+    redlineRpm: 6200,
+    shiftCutSec: 0.02,
+    pitchTone: 0.72,
+    bodyRollMult: 2.20
+  },
+  lamborghini_countach: {
+    name: 'LAMBORGHINI COUNTACH 5000 QV',
+    carClass: 'STREET',
+    classSpec: buildClassSpec('STREET', 0.68, 0.65, 0.78, 0.64, 293, 0.650, 0.014, 0.98, 1490, 0.935),
+    wheelbase: 2.50,
+    maxSteerDeg: 22.0,
+    baseMuLat: 0.98,
+    understeerCoeff: 0.00145,
+    turnInAgility: 0.96,
+    highSpeedLockFactor: 0.26,
+    steerRampRate: 2.32,
+    autoCenterDamping: 0.0062,
+    powerFactor: 0.65,
+    launchFactor: 0.78,
+    accelFactor: 0.65,
+    aeroDragFactor: 0.650,
+    aeroDownforceCoeff: 0.014,
+    brakeFactor: 0.64,
+    weightKg: 1490,
+    maxGears: 5,
+    gearSpeeds: [0, 74, 122, 174, 232, 300],
+    idleRpm: 1000,
+    redlineRpm: 7500,
+    shiftCutSec: 0.16,
+    pitchTone: 0.94,
+    bodyRollMult: 1.45
+  },
+  ferrari_f40_lbw: {
+    name: 'LB-WORKS FERRARI F40 WIDEBODY',
+    carClass: 'STREET',
+    classSpec: buildClassSpec('STREET', 0.78, 0.88, 0.96, 0.74, 324, 0.675, 0.034, 1.12, 1220, 0.945),
+    wheelbase: 2.45,
+    maxSteerDeg: 23.0,
+    baseMuLat: 1.12,
+    understeerCoeff: 0.00120,
+    turnInAgility: 1.08,
+    highSpeedLockFactor: 0.28,
+    steerRampRate: 2.52,
+    autoCenterDamping: 0.0058,
+    powerFactor: 0.88,
+    launchFactor: 0.96,
+    accelFactor: 0.88,
+    aeroDragFactor: 0.675,
+    aeroDownforceCoeff: 0.034,
+    brakeFactor: 0.74,
+    weightKg: 1220,
+    maxGears: 5,
+    gearSpeeds: [0, 82, 134, 188, 250, 330],
+    idleRpm: 1050,
+    redlineRpm: 7750,
+    shiftCutSec: 0.14,
+    pitchTone: 0.98,
+    bodyRollMult: 1.30
+  },
+  lamborghini_aventador: {
+    name: 'LAMBORGHINI AVENTADOR LP 700-4',
+    carClass: 'STREET',
+    classSpec: buildClassSpec('STREET', 0.82, 1.18, 1.30, 0.80, 348, 0.762, 0.044, 1.15, 1575, 0.970),
+    wheelbase: 2.70,
+    maxSteerDeg: 22.5,
+    baseMuLat: 1.15,
+    understeerCoeff: 0.00125,
+    turnInAgility: 1.04,
+    highSpeedLockFactor: 0.29,
+    steerRampRate: 2.52,
+    autoCenterDamping: 0.0056,
+    powerFactor: 1.18,
+    launchFactor: 1.30,
+    accelFactor: 1.18,
+    aeroDragFactor: 0.762,
+    aeroDownforceCoeff: 0.044,
+    brakeFactor: 0.80,
+    weightKg: 1575,
+    maxGears: 7,
+    gearSpeeds: [0, 78, 126, 174, 220, 266, 312, 355],
+    idleRpm: 1100,
+    redlineRpm: 8500,
+    shiftCutSec: 0.075,
+    pitchTone: 1.08,
+    bodyRollMult: 1.20
+  },
+  // --- GT3 / CLASS S ADDITIONS ---
+  ferrari_296_gt3: {
+    name: 'FERRARI 296 GT3',
+    carClass: 'GT3',
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 308, 0.980, 0.140, 1.50, 1250, 0.955),
+    wheelbase: 2.66,
+    maxSteerDeg: 23.0,
+    baseMuLat: 1.50,
+    understeerCoeff: 0.00090,
+    turnInAgility: 1.18,
+    highSpeedLockFactor: 0.33,
+    steerRampRate: 2.78,
+    autoCenterDamping: 0.0052,
+    powerFactor: 1.03,
+    launchFactor: 1.03,
+    accelFactor: 1.03,
+    aeroDragFactor: 0.98,
+    aeroDownforceCoeff: 0.140,
+    brakeFactor: 1.02,
+    weightKg: 1250,
+    maxGears: 6,
+    idleRpm: 1150,
+    redlineRpm: 8500,
+    shiftCutSec: 0.075,
+    pitchTone: 1.02,
+    bodyRollMult: 0.98
+  },
+  ferrari_488_gt3: {
+    name: 'FERRARI 488 GT3 EVO',
+    carClass: 'GT3',
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 307, 0.985, 0.136, 1.48, 1260, 0.955),
+    wheelbase: 2.65,
+    maxSteerDeg: 22.5,
+    baseMuLat: 1.48,
+    understeerCoeff: 0.00098,
+    turnInAgility: 1.14,
+    highSpeedLockFactor: 0.32,
+    steerRampRate: 2.70,
+    autoCenterDamping: 0.0055,
+    powerFactor: 1.02,
+    launchFactor: 1.02,
+    accelFactor: 1.02,
+    aeroDragFactor: 0.985,
+    aeroDownforceCoeff: 0.136,
+    brakeFactor: 1.01,
+    weightKg: 1260,
+    maxGears: 6,
+    idleRpm: 1150,
+    redlineRpm: 8200,
+    shiftCutSec: 0.08,
+    pitchTone: 0.98,
+    bodyRollMult: 1.00
+  },
+  lamborghini_huracan_gt3: {
+    name: 'LAMBORGHINI HURACAN GT3 EVO2',
+    carClass: 'GT3',
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 309, 0.975, 0.138, 1.49, 1230, 0.955),
+    wheelbase: 2.62,
+    maxSteerDeg: 23.2,
+    baseMuLat: 1.49,
+    understeerCoeff: 0.00092,
+    turnInAgility: 1.16,
+    highSpeedLockFactor: 0.33,
+    steerRampRate: 2.75,
+    autoCenterDamping: 0.0053,
+    powerFactor: 1.035,
+    launchFactor: 1.035,
+    accelFactor: 1.035,
+    aeroDragFactor: 0.975,
+    aeroDownforceCoeff: 0.138,
+    brakeFactor: 1.02,
+    weightKg: 1230,
+    maxGears: 6,
+    idleRpm: 1150,
+    redlineRpm: 8600,
+    shiftCutSec: 0.08,
+    pitchTone: 1.05,
+    bodyRollMult: 0.98
+  },
+  mclaren_650s_gt3: {
+    name: 'MCLAREN 650S GT3',
+    carClass: 'GT3',
+    classSpec: buildClassSpec('GT3', 1.0, 1.0, 1.0, 1.0, 306, 0.985, 0.140, 1.51, 1240, 0.955),
+    wheelbase: 2.67,
+    maxSteerDeg: 23.4,
+    baseMuLat: 1.51,
+    understeerCoeff: 0.00086,
+    turnInAgility: 1.20,
+    highSpeedLockFactor: 0.34,
+    steerRampRate: 2.82,
+    autoCenterDamping: 0.0051,
+    powerFactor: 1.025,
+    launchFactor: 1.025,
+    accelFactor: 1.025,
+    aeroDragFactor: 0.985,
+    aeroDownforceCoeff: 0.140,
+    brakeFactor: 1.03,
+    weightKg: 1240,
+    maxGears: 6,
+    idleRpm: 1150,
+    redlineRpm: 8300,
+    shiftCutSec: 0.075,
+    pitchTone: 1.00,
+    bodyRollMult: 0.96
+  },
+  // --- HYPER / CLASS R ADDITIONS ---
+  mclaren_p1_gtr: {
+    name: 'MCLAREN P1 GTR TRACK',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 1.15, 1.52, 1.34, 1.08, 342, 1.045, 0.165, 1.62, 1350, 0.985),
+    wheelbase: 2.67,
+    maxSteerDeg: 23.5,
+    baseMuLat: 1.62,
+    understeerCoeff: 0.00076,
+    turnInAgility: 1.33,
+    highSpeedLockFactor: 0.35,
+    steerRampRate: 2.92,
+    autoCenterDamping: 0.005,
+    powerFactor: 1.52,
+    launchFactor: 1.34,
+    accelFactor: 1.52,
+    aeroDragFactor: 1.045,
+    aeroDownforceCoeff: 0.165,
+    brakeFactor: 1.08,
+    weightKg: 1350,
+    maxGears: 7,
+    gearSpeeds: [0, 78, 126, 174, 220, 264, 306, 348],
+    idleRpm: 1200,
+    redlineRpm: 8500,
+    shiftCutSec: 0.04,
+    pitchTone: 1.04,
+    bodyRollMult: 0.74
+  },
+  ferrari_fxxk_evo: {
+    name: 'FERRARI FXX-K EVO',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 1.18, 1.62, 1.36, 1.11, 345, 1.088, 0.240, 1.64, 1255, 0.988),
+    wheelbase: 2.65,
+    maxSteerDeg: 23.6,
+    baseMuLat: 1.64,
+    understeerCoeff: 0.00072,
+    turnInAgility: 1.36,
+    highSpeedLockFactor: 0.35,
+    steerRampRate: 2.96,
+    autoCenterDamping: 0.005,
+    powerFactor: 1.62,
+    launchFactor: 1.36,
+    accelFactor: 1.62,
+    aeroDragFactor: 1.088,
+    aeroDownforceCoeff: 0.240,
+    brakeFactor: 1.11,
+    weightKg: 1255,
+    maxGears: 7,
+    gearSpeeds: [0, 80, 128, 176, 222, 266, 310, 352],
+    idleRpm: 1250,
+    redlineRpm: 9250,
+    shiftCutSec: 0.035,
+    pitchTone: 1.18,
+    bodyRollMult: 0.68
+  },
+  lamborghini_essenza: {
+    name: 'LAMBORGHINI ESSENZA SCV12',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 1.17, 1.38, 1.26, 1.09, 324, 1.115, 0.248, 1.63, 1280, 0.980),
+    wheelbase: 2.71,
+    maxSteerDeg: 23.4,
+    baseMuLat: 1.63,
+    understeerCoeff: 0.00074,
+    turnInAgility: 1.34,
+    highSpeedLockFactor: 0.35,
+    steerRampRate: 2.90,
+    autoCenterDamping: 0.005,
+    powerFactor: 1.38,
+    launchFactor: 1.26,
+    accelFactor: 1.38,
+    aeroDragFactor: 1.115,
+    aeroDownforceCoeff: 0.248,
+    brakeFactor: 1.09,
+    weightKg: 1280,
+    maxGears: 6,
+    gearSpeeds: [0, 78, 130, 182, 234, 282, 330],
+    idleRpm: 1200,
+    redlineRpm: 8500,
+    shiftCutSec: 0.05,
+    pitchTone: 1.12,
+    bodyRollMult: 0.70
+  },
+  ferrari_laferrari: {
+    name: 'FERRARI LAFERRARI',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 0.96, 1.44, 1.40, 0.94, 353, 0.896, 0.076, 1.38, 1365, 0.985),
+    wheelbase: 2.65,
+    maxSteerDeg: 23.0,
+    baseMuLat: 1.38,
+    understeerCoeff: 0.00092,
+    turnInAgility: 1.22,
+    highSpeedLockFactor: 0.33,
+    steerRampRate: 2.78,
+    autoCenterDamping: 0.0052,
+    powerFactor: 1.44,
+    launchFactor: 1.40,
+    accelFactor: 1.44,
+    aeroDragFactor: 0.896,
+    aeroDownforceCoeff: 0.076,
+    brakeFactor: 0.94,
+    weightKg: 1365,
+    maxGears: 7,
+    gearSpeeds: [0, 82, 130, 178, 226, 272, 316, 360],
+    idleRpm: 1200,
+    redlineRpm: 9250,
+    shiftCutSec: 0.04,
+    pitchTone: 1.15,
+    bodyRollMult: 1.00
+  },
+  mclaren_p1: {
+    name: 'MCLAREN P1',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 1.00, 1.44, 1.30, 0.96, 350, 0.922, 0.118, 1.42, 1395, 0.982),
+    wheelbase: 2.67,
+    maxSteerDeg: 23.0,
+    baseMuLat: 1.42,
+    understeerCoeff: 0.00088,
+    turnInAgility: 1.24,
+    highSpeedLockFactor: 0.33,
+    steerRampRate: 2.80,
+    autoCenterDamping: 0.0052,
+    powerFactor: 1.44,
+    launchFactor: 1.30,
+    accelFactor: 1.44,
+    aeroDragFactor: 0.922,
+    aeroDownforceCoeff: 0.118,
+    brakeFactor: 0.96,
+    weightKg: 1395,
+    maxGears: 7,
+    gearSpeeds: [0, 80, 128, 176, 222, 268, 312, 356],
+    idleRpm: 1150,
+    redlineRpm: 8500,
+    shiftCutSec: 0.045,
+    pitchTone: 1.02,
+    bodyRollMult: 0.92
+  },
+  ferrari_sf90_xx: {
+    name: 'FERRARI SF90 XX STRADALE',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 1.03, 1.44, 1.66, 0.98, 338, 1.024, 0.110, 1.46, 1560, 0.985),
+    wheelbase: 2.65,
+    maxSteerDeg: 23.2,
+    baseMuLat: 1.46,
+    understeerCoeff: 0.00084,
+    turnInAgility: 1.26,
+    highSpeedLockFactor: 0.34,
+    steerRampRate: 2.84,
+    autoCenterDamping: 0.0051,
+    powerFactor: 1.44,
+    launchFactor: 1.66,
+    accelFactor: 1.44,
+    aeroDragFactor: 1.024,
+    aeroDownforceCoeff: 0.110,
+    brakeFactor: 0.98,
+    weightKg: 1560,
+    maxGears: 8,
+    gearSpeeds: [0, 72, 110, 148, 186, 224, 262, 302, 344],
+    idleRpm: 1150,
+    redlineRpm: 8000,
+    shiftCutSec: 0.04,
+    pitchTone: 1.00,
+    bodyRollMult: 0.90
+  },
+  lamborghini_revuelto: {
+    name: 'LAMBORGHINI REVUELTO V12 HYBRID',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 0.97, 1.34, 1.54, 0.93, 351, 0.848, 0.080, 1.38, 1772, 0.985),
+    wheelbase: 2.78,
+    maxSteerDeg: 22.8,
+    baseMuLat: 1.38,
+    understeerCoeff: 0.00095,
+    turnInAgility: 1.20,
+    highSpeedLockFactor: 0.32,
+    steerRampRate: 2.76,
+    autoCenterDamping: 0.0053,
+    powerFactor: 1.34,
+    launchFactor: 1.54,
+    accelFactor: 1.34,
+    aeroDragFactor: 0.848,
+    aeroDownforceCoeff: 0.080,
+    brakeFactor: 0.93,
+    weightKg: 1772,
+    maxGears: 8,
+    gearSpeeds: [0, 74, 114, 154, 194, 234, 274, 316, 358],
+    idleRpm: 1150,
+    redlineRpm: 9500,
+    shiftCutSec: 0.04,
+    pitchTone: 1.14,
+    bodyRollMult: 1.08
+  },
+  lamborghini_centenario: {
+    name: 'LAMBORGHINI CENTENARIO LP 770-4',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 0.95, 1.24, 1.36, 0.90, 350, 0.790, 0.080, 1.36, 1520, 0.976),
+    wheelbase: 2.70,
+    maxSteerDeg: 22.6,
+    baseMuLat: 1.36,
+    understeerCoeff: 0.00095,
+    turnInAgility: 1.18,
+    highSpeedLockFactor: 0.32,
+    steerRampRate: 2.72,
+    autoCenterDamping: 0.0054,
+    powerFactor: 1.24,
+    launchFactor: 1.36,
+    accelFactor: 1.24,
+    aeroDragFactor: 0.790,
+    aeroDownforceCoeff: 0.080,
+    brakeFactor: 0.90,
+    weightKg: 1520,
+    maxGears: 7,
+    gearSpeeds: [0, 80, 128, 176, 222, 268, 314, 356],
+    idleRpm: 1100,
+    redlineRpm: 8500,
+    shiftCutSec: 0.06,
+    pitchTone: 1.09,
+    bodyRollMult: 1.05
+  },
+  lamborghini_veneno: {
+    name: 'LAMBORGHINI VENENO',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 0.98, 1.25, 1.36, 0.92, 354, 0.770, 0.096, 1.38, 1450, 0.976),
+    wheelbase: 2.70,
+    maxSteerDeg: 22.8,
+    baseMuLat: 1.38,
+    understeerCoeff: 0.00092,
+    turnInAgility: 1.21,
+    highSpeedLockFactor: 0.33,
+    steerRampRate: 2.76,
+    autoCenterDamping: 0.0053,
+    powerFactor: 1.25,
+    launchFactor: 1.36,
+    accelFactor: 1.25,
+    aeroDragFactor: 0.770,
+    aeroDownforceCoeff: 0.096,
+    brakeFactor: 0.92,
+    weightKg: 1450,
+    maxGears: 7,
+    gearSpeeds: [0, 82, 130, 178, 226, 272, 318, 360],
+    idleRpm: 1100,
+    redlineRpm: 8500,
+    shiftCutSec: 0.06,
+    pitchTone: 1.08,
+    bodyRollMult: 1.00
+  },
+  lamborghini_sc20: {
+    name: 'LAMBORGHINI SC20 SQUADRA CORSE',
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 0.98, 1.25, 1.36, 0.92, 338, 0.885, 0.095, 1.39, 1510, 0.976),
+    wheelbase: 2.70,
+    maxSteerDeg: 23.0,
+    baseMuLat: 1.39,
+    understeerCoeff: 0.00090,
+    turnInAgility: 1.23,
+    highSpeedLockFactor: 0.33,
+    steerRampRate: 2.78,
+    autoCenterDamping: 0.0052,
+    powerFactor: 1.25,
+    launchFactor: 1.36,
+    accelFactor: 1.25,
+    aeroDragFactor: 0.885,
+    aeroDownforceCoeff: 0.095,
+    brakeFactor: 0.92,
+    weightKg: 1510,
+    maxGears: 7,
+    gearSpeeds: [0, 78, 124, 170, 214, 258, 302, 344],
+    idleRpm: 1100,
+    redlineRpm: 8500,
+    shiftCutSec: 0.06,
+    pitchTone: 1.09,
+    bodyRollMult: 1.02
+  },
+  // --- LMP1 / VISION GT / CLASS X ADDITIONS ---
+  lamborghini_terzo: {
+    name: 'LAMBORGHINI TERZO MILLENNIO',
+    carClass: 'LMP1',
+    classSpec: buildClassSpec('LMP1', 1.30, 1.95, 1.72, 1.16, 350, 1.255, 0.320, 1.74, 1200, 0.996),
+    wheelbase: 2.75,
+    maxSteerDeg: 24.0,
+    baseMuLat: 1.74,
+    understeerCoeff: 0.00052,
+    turnInAgility: 1.44,
     highSpeedLockFactor: 0.37,
-    steerRampRate: 3.15,
+    steerRampRate: 3.08,
     autoCenterDamping: 0.0048,
+    powerFactor: 1.95,
+    launchFactor: 1.72,
+    accelFactor: 1.95,
+    aeroDragFactor: 1.255,
+    aeroDownforceCoeff: 0.320,
+    brakeFactor: 1.16,
+    weightKg: 1200,
+    maxGears: 4,
+    gearSpeeds: [0, 120, 200, 280, 358],
+    idleRpm: 1800,
+    redlineRpm: 16000,
+    shiftCutSec: 0.01,
+    pitchTone: 1.48,
+    bodyRollMult: 0.50
+  },
+  alpine_vision: {
+    name: 'ALPINE VISION GRAN TURISMO',
+    carClass: 'LMP1',
+    classSpec: buildClassSpec('LMP1', 1.28, 1.30, 1.25, 1.14, 322, 1.068, 0.250, 1.72, 900, 0.988),
+    wheelbase: 2.72,
+    maxSteerDeg: 24.2,
+    baseMuLat: 1.72,
+    understeerCoeff: 0.00058,
+    turnInAgility: 1.45,
+    highSpeedLockFactor: 0.38,
+    steerRampRate: 3.08,
+    autoCenterDamping: 0.0049,
+    powerFactor: 1.30,
+    launchFactor: 1.25,
+    accelFactor: 1.30,
+    aeroDragFactor: 1.068,
+    aeroDownforceCoeff: 0.250,
+    brakeFactor: 1.14,
+    weightKg: 900,
+    maxGears: 7,
+    gearSpeeds: [0, 74, 118, 162, 206, 248, 288, 328],
+    idleRpm: 1400,
+    redlineRpm: 9000,
+    shiftCutSec: 0.035,
+    pitchTone: 1.12,
+    bodyRollMult: 0.55
+  },
+  mazda_furai: {
+    name: 'MAZDA FURAI CONCEPT PROTOTYPE',
+    carClass: 'LMP1',
+    classSpec: buildClassSpec('LMP1', 1.32, 1.36, 1.30, 1.16, 318, 1.162, 0.240, 1.76, 675, 0.988),
+    wheelbase: 2.79,
+    maxSteerDeg: 24.2,
+    baseMuLat: 1.76,
+    understeerCoeff: 0.00055,
+    turnInAgility: 1.48,
+    highSpeedLockFactor: 0.38,
+    steerRampRate: 3.12,
+    autoCenterDamping: 0.0048,
+    powerFactor: 1.36,
+    launchFactor: 1.30,
     accelFactor: 1.36,
-    aeroDragFactor: 0.78,
-    brakeFactor: 1.20,
-    weightKg: 849
+    aeroDragFactor: 1.162,
+    aeroDownforceCoeff: 0.240,
+    brakeFactor: 1.16,
+    weightKg: 675,
+    maxGears: 6,
+    gearSpeeds: [0, 78, 128, 178, 226, 274, 324],
+    idleRpm: 1600,
+    redlineRpm: 9800,
+    shiftCutSec: 0.035,
+    pitchTone: 1.35,
+    bodyRollMult: 0.52
+  },
+  mazda_lm_vision: {
+    name: 'MAZDA LM55 VISION GRAN TURISMO',
+    carClass: 'LMP1',
+    classSpec: buildClassSpec('LMP1', 1.38, 2.02, 1.62, 1.19, 358, 1.218, 0.360, 1.82, 880, 0.992),
+    wheelbase: 2.82,
+    maxSteerDeg: 24.6,
+    baseMuLat: 1.82,
+    understeerCoeff: 0.00044,
+    turnInAgility: 1.54,
+    highSpeedLockFactor: 0.40,
+    steerRampRate: 3.20,
+    autoCenterDamping: 0.0047,
+    powerFactor: 2.02,
+    launchFactor: 1.62,
+    accelFactor: 2.02,
+    aeroDragFactor: 1.218,
+    aeroDownforceCoeff: 0.360,
+    brakeFactor: 1.19,
+    weightKg: 880,
+    maxGears: 7,
+    gearSpeeds: [0, 96, 144, 190, 236, 280, 322, 364],
+    idleRpm: 1800,
+    redlineRpm: 10500,
+    shiftCutSec: 0.025,
+    pitchTone: 1.36,
+    bodyRollMult: 0.46
+  },
+  // --- F1 / CLASS F1 ---
+  f1_2026_sf26: {
+    name: 'SCUDERIA FERRARI SF-26 F1 (2026)',
+    carClass: 'F1',
+    classSpec: buildClassSpec('F1', 1.54, 2.42, 1.65, 1.24, 364, 1.392, 0.525, 1.92, 768, 0.995),
+    wheelbase: 3.40,
+    maxSteerDeg: 25.5,
+    baseMuLat: 1.92,
+    understeerCoeff: 0.00028,
+    turnInAgility: 1.72,
+    highSpeedLockFactor: 0.44,
+    steerRampRate: 3.45,
+    autoCenterDamping: 0.0044,
+    powerFactor: 2.42,
+    launchFactor: 1.65,
+    accelFactor: 2.42,
+    aeroDragFactor: 1.392,
+    aeroDownforceCoeff: 0.525,
+    brakeFactor: 1.24,
+    weightKg: 768,
+    maxGears: 8,
+    gearSpeeds: [0, 108, 152, 194, 234, 272, 308, 340, 375],
+    idleRpm: 4000,
+    redlineRpm: 15000,
+    shiftCutSec: 0.015,
+    pitchTone: 1.42,
+    bodyRollMult: 0.35
   }
 };
 CAR_HANDLING_PROFILES.porsche911_locked = CAR_HANDLING_PROFILES.porsche911;
@@ -182,6 +916,24 @@ CAR_HANDLING_PROFILES.amggt3_locked = CAR_HANDLING_PROFILES.amggt3;
 function getCurrentCarHandling() {
   const id = (typeof carAssetState !== 'undefined' && carAssetState && carAssetState.presetId) ? carAssetState.presetId : 'procedural';
   return CAR_HANDLING_PROFILES[id] || CAR_HANDLING_PROFILES.procedural;
+}
+
+function getCarDrivetrainSpec(carProfile) {
+  const cp = carProfile || getCurrentCarHandling();
+  const maxGears = Math.max(4, Math.min(8, cp.maxGears || 6));
+  const gearSpeeds = (Array.isArray(cp.gearSpeeds) && cp.gearSpeeds.length > maxGears) ? cp.gearSpeeds : GEAR_MAX_SPEED;
+  return {
+    maxGears,
+    gearSpeeds,
+    idleRpm: cp.idleRpm || 1150,
+    redlineRpm: cp.redlineRpm || 8800,
+    shiftCutSec: (cp.shiftCutSec !== undefined) ? cp.shiftCutSec : 0.08,
+    pitchTone: cp.pitchTone || 1.00
+  };
+}
+
+function getCarMaxGears(carProfile) {
+  return getCarDrivetrainSpec(carProfile).maxGears;
 }
 
 // Phase 2: Three GT3 Racing Tire Compounds (Soft / Medium / Hard)
@@ -238,6 +990,133 @@ const TIRE_COMPOUNDS = {
   }
 };
 
+const CAR_SETUP_PRESETS = {
+  low_drag: {
+    id: 'low_drag',
+    label: '低風阻極速',
+    aeroWing: 1,
+    brakeBias: 59,
+    gearRatio: 'long',
+    suspension: 'stiff'
+  },
+  balanced: {
+    id: 'balanced',
+    label: '標準均衡',
+    aeroWing: 3,
+    brakeBias: 58,
+    gearRatio: 'standard',
+    suspension: 'balanced'
+  },
+  high_downforce: {
+    id: 'high_downforce',
+    label: '高下壓彎道',
+    aeroWing: 5,
+    brakeBias: 56,
+    gearRatio: 'short',
+    suspension: 'soft'
+  }
+};
+
+const TRACK_SURFACE_STATES = {
+  green: { id: 'green', label: '綠地新鋪 (98%)', gripMult: 0.98 },
+  fast: { id: 'fast', label: '標準賽事 (100%)', gripMult: 1.00 },
+  optimum: { id: 'optimum', label: '最佳橡膠 (102%)', gripMult: 1.02 }
+};
+
+function clampCarSetup(raw) {
+  const s = raw || {};
+  const aeroWing = Math.max(1, Math.min(5, Math.round(Number(s.aeroWing) || 3)));
+  const brakeBias = Math.max(52, Math.min(64, Math.round(Number(s.brakeBias) || 58)));
+  const gearRatio = ['short', 'standard', 'long'].includes(s.gearRatio) ? s.gearRatio : 'standard';
+  const suspension = ['soft', 'balanced', 'stiff'].includes(s.suspension) ? s.suspension : 'balanced';
+  return { aeroWing, brakeBias, gearRatio, suspension };
+}
+
+function loadSavedCarSetup() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('apexpro.carSetup') || 'null');
+    if (raw) return clampCarSetup(raw);
+  } catch (e) { /* ignore */ }
+  return { aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' };
+}
+
+function getCarSetupPhysicsMods(setupObj) {
+  const st = clampCarSetup(setupObj || (typeof simState !== 'undefined' && simState ? simState.carSetup : null));
+  const aeroDelta = st.aeroWing - 3; // -2..+2 (0 at neutral default 3)
+  const biasDelta = (st.brakeBias - 58) / 6; // 0 at neutral default 58%
+  const gearMap = {
+    short: { speedScale: 0.94, accelMult: 1.055 },
+    standard: { speedScale: 1.00, accelMult: 1.00 },
+    long: { speedScale: 1.05, accelMult: 0.96 }
+  };
+  const suspMap = {
+    soft: { kerbGrip: 0.89, kerbVibMult: 0.80, turnInMult: 0.96 },
+    balanced: { kerbGrip: 0.85, kerbVibMult: 1.00, turnInMult: 1.00 },
+    stiff: { kerbGrip: 0.82, kerbVibMult: 1.18, turnInMult: 1.05 }
+  };
+  const gm = gearMap[st.gearRatio] || gearMap.standard;
+  const sm = suspMap[st.suspension] || suspMap.balanced;
+  return {
+    aeroWing: st.aeroWing,
+    brakeBias: st.brakeBias,
+    gearRatio: st.gearRatio,
+    suspension: st.suspension,
+    dragMult: 1.0 + aeroDelta * 0.045,
+    downforceMult: 1.0 + aeroDelta * 0.11,
+    aeroCornerBonus: aeroDelta * 0.018,
+    lockupBonus: biasDelta * 0.025,
+    trailBonusDelta: -biasDelta * 0.03,
+    gearSpeedScale: gm.speedScale,
+    gearAccelMult: gm.accelMult,
+    kerbGrip: sm.kerbGrip,
+    kerbVibMult: sm.kerbVibMult,
+    turnInMult: sm.turnInMult
+  };
+}
+
+function setCarSetup(patch) {
+  simState.carSetup = clampCarSetup(Object.assign({}, simState.carSetup || {}, patch || {}));
+  try { localStorage.setItem('apexpro.carSetup', JSON.stringify(simState.carSetup)); } catch (e) { /* ignore */ }
+  return simState.carSetup;
+}
+
+function applyCarSetupPreset(presetId) {
+  const p = CAR_SETUP_PRESETS[presetId] || CAR_SETUP_PRESETS.balanced;
+  return setCarSetup({ aeroWing: p.aeroWing, brakeBias: p.brakeBias, gearRatio: p.gearRatio, suspension: p.suspension });
+}
+
+function refreshSessionTrackConditions() {
+  const cir = (typeof currentCircuit !== 'undefined' && currentCircuit) ? currentCircuit : null;
+  const baseTemps = (cir && cir.defaultTempC) ? cir.defaultTempC : { ambient: 23, track: 35 };
+  const isNight = !!(cir && cir.theme && cir.theme.isNight);
+  const isSunset = !!(cir && cir.theme && cir.theme.hasSunsetFlare);
+  const isWet = (simState.weather === 'wet');
+  const surfId = isWet ? 'wet' : (TRACK_SURFACE_STATES[simState.surfaceState] ? simState.surfaceState : 'fast');
+  const surfMult = isWet ? 0.72 : (TRACK_SURFACE_STATES[surfId] ? TRACK_SURFACE_STATES[surfId].gripMult : 1.0);
+  const ambientTempC = Math.round(baseTemps.ambient + (isWet ? -4 : 0));
+  const trackTempC = Math.round(baseTemps.track + (isWet ? -9 : 0) + (surfId === 'optimum' ? 2 : 0));
+  simState.trackConditions = {
+    weather: isWet ? 'wet' : 'dry',
+    surfaceState: surfId,
+    ambientTempC,
+    trackTempC,
+    timeOfDay: isNight ? 'night' : (isSunset ? 'sunset' : 'day'),
+    effectiveGripMult: surfMult,
+    sessionDateISO: new Date().toISOString()
+  };
+  return simState.trackConditions;
+}
+
+function getSessionConditionsSnapshot() {
+  return simState.trackConditions || refreshSessionTrackConditions();
+}
+
+function setTrackSurfaceState(stateId) {
+  if (!TRACK_SURFACE_STATES[stateId]) return;
+  simState.surfaceState = stateId;
+  refreshSessionTrackConditions();
+}
+
 function getCurrentTireProfile() {
   return TIRE_COMPOUNDS[simState.tireCompound] || TIRE_COMPOUNDS.medium;
 }
@@ -250,6 +1129,7 @@ function setTireCompound(compoundId) {
 function setWeatherMode(mode) {
   const nextMode = (mode === 'wet') ? 'wet' : 'dry';
   simState.weather = nextMode;
+  refreshSessionTrackConditions();
   if (typeof window !== 'undefined' && typeof window.updateWeatherVisuals === 'function') {
     window.updateWeatherVisuals();
   }
@@ -367,7 +1247,11 @@ const simState = {
 
   // Phase 2: Tire Compound, Ignition Cut & Rigid-Body Collision State
   tireCompound: 'medium',
+  carSetup: loadSavedCarSetup(),
   weather: 'dry', // 'dry' | 'wet'
+  surfaceState: 'fast', // 'green' | 'fast' | 'optimum'
+  trackConditions: null,
+  customGhostMeta: null,
   effectiveGrip: 1.0,
   activeFlag: 'none', // 'none' | 'yellow' | 'blue' | 'checkered'
   flagMessage: '',
@@ -537,12 +1421,19 @@ function selectCircuit(index) {
 
   buildTrackGeometryData();
   const activeH = getCurrentCarHandling();
-  window.selectedCarClassSpec = (activeH && activeH.carClass && activeH.carClass !== 'GT3' && activeH.classSpec) ? activeH.classSpec : null;
+  window.selectedCarClassSpec = (activeH && activeH.carClass && activeH.carClass !== 'GT3' && activeH.classSpec)
+    ? Object.assign({ carClass: activeH.carClass }, activeH.classSpec)
+    : null;
   generateProBenchmarkLap(window.selectedCarClassSpec);
   rebuild3DCircuitScene();
 
-  simState.bestLapTime = currentCircuit.proLapTime;
-  simState.pbTelemetrySamples = [];
+  const keepCustomGhost = !!(simState.customGhostMeta && simState.customGhostMeta.circuitId === currentCircuit.id);
+  if (!keepCustomGhost) {
+    simState.bestLapTime = currentCircuit.proLapTime;
+    simState.pbTelemetrySamples = [];
+    simState.customGhostMeta = null;
+  }
+  refreshSessionTrackConditions();
   document.getElementById('hud-best-time').textContent = formatLapTime(simState.bestLapTime);
   document.getElementById('lbl-track-short').textContent = currentCircuit.shortLabel;
   document.getElementById('hud-track-badge').textContent = currentCircuit.badgeText;
@@ -552,7 +1443,7 @@ function selectCircuit(index) {
   CIRCUITS.forEach((_, i) => {
     const card = document.getElementById(`card-track-${i}`);
     if (!card) return;
-    const borderColors = ['border-emerald-400', 'border-indigo-400', 'border-rose-400', 'border-amber-400', 'border-cyan-400'];
+    const borderColors = ['border-emerald-400', 'border-indigo-400', 'border-rose-400', 'border-amber-400', 'border-cyan-400', 'border-sky-400', 'border-yellow-400', 'border-red-400', 'border-orange-400'];
     card.className = (i === currentCircuitIndex)
       ? `cursor-pointer rounded-xl p-3.5 border-2 ${borderColors[i] || 'border-cyan-400'} bg-slate-900 transition`
       : 'cursor-pointer rounded-xl p-3.5 border-2 border-slate-800 bg-slate-900 transition';
@@ -562,6 +1453,7 @@ function selectCircuit(index) {
 }
 
 function resetSession(triggerCountdown = true) {
+  refreshSessionTrackConditions();
   simState.s = 0;
   simState.d = 0;
   simState.lap = 1;
@@ -582,11 +1474,12 @@ function resetSession(triggerCountdown = true) {
   document.getElementById('bench-0-300').textContent = '--.--s';
 
   const startNode = sampleTrackAtS(0);
+  const dtReset = getCarDrivetrainSpec(getCurrentCarHandling());
   simState.heading = startNode.heading;
   simState.speedMs = 0;
   simState.speedKmh = 0;
   simState.gear = 1;
-  simState.rpm = 1200;
+  simState.rpm = dtReset.idleRpm || 1200;
   simState.yawRate = 0;
   simState.driftAngle = 0;
   simState.nosAmount = 100;
@@ -631,7 +1524,9 @@ function resetSession(triggerCountdown = true) {
   simState._backfireCooldown = 0;
   simState._sparkCooldown = 0;
   simState._sprayCooldown = 0;
-  simState.effectiveGrip = (simState.weather === 'wet') ? 0.72 : 1.0;
+  simState.effectiveGrip = (simState.weather === 'wet')
+    ? 0.72
+    : (TRACK_SURFACE_STATES[simState.surfaceState] ? TRACK_SURFACE_STATES[simState.surfaceState].gripMult : 1.0);
   simState.activeFlag = 'none';
   simState.flagMessage = '';
   simState.checkeredFlagTimer = 0;
@@ -833,9 +1728,15 @@ function stepAnalogSteering(currentSteer, rawLeft, rawRight, spdKmh, dt, carProf
 // Classifies upcoming corner demand into 'none', 'lift', 'trail', or 'heavy'
 // to prevent panic stomping that induces ABS lockup and corner-exit speed loss.
 function computeDrivingCue(s, currSpeedKmh, brkNorm, thrNorm) {
-  if (currSpeedKmh < 45) return { tier: 'none', targetKmh: 300, reqDecel: 0 };
-  const maxScan = Math.min(165, Math.max(145, currSpeedKmh * 0.75));
-  let minTargetKmh = 300;
+  const cp = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+  const isGT3 = (!cp || !cp.carClass || cp.carClass === 'GT3');
+  const maxTopKmh = (!isGT3 && cp.classSpec && cp.classSpec.topSpeedKmh) ? Math.max(300, cp.classSpec.topSpeedKmh) : 300;
+  if (currSpeedKmh < 45) return { tier: 'none', targetKmh: maxTopKmh, reqDecel: 0 };
+
+  const maxScan = isGT3
+    ? Math.min(165, Math.max(145, currSpeedKmh * 0.75))
+    : Math.min(225, Math.max(145, currSpeedKmh * 0.78));
+  let minTargetKmh = maxTopKmh;
   let distToMin = maxScan;
   let maxCurvAhead = 0;
 
@@ -858,13 +1759,22 @@ function computeDrivingCue(s, currSpeedKmh, brkNorm, thrNorm) {
   }
   const reqDecel = (vNow > vTgt) ? (vNow * vNow - vTgt * vTgt) / (2 * Math.max(16, distToMin)) : 0;
 
+  let brakeScale = 1.0;
+  if (!isGT3) {
+    const dfCoeff = (cp.aeroDownforceCoeff !== undefined) ? cp.aeroDownforceCoeff : 0.135;
+    const weightKg = Math.max(550, cp.weightKg || 1245);
+    const dfRatio = (dfCoeff * vNow * vNow) / weightKg;
+    const aeroExtra = Math.pow(Math.max(0, dfRatio - 0.55), 0.90) * 0.28;
+    brakeScale = Math.max(0.55, (cp.brakeFactor || 1.0) * (1.0 + aeroExtra));
+  }
+
   let tier = 'none';
-  // Trigger braking/lift cues strictly by actual deceleration demand ahead (no early distance false positives)
-  if (reqDecel > 6.8 || proAhead.brake > 62) {
+  // Trigger braking/lift cues strictly by actual deceleration demand ahead (scaled by class braking capability)
+  if (reqDecel > 6.8 * brakeScale || proAhead.brake > 62) {
     tier = (currSpeedKmh > minTargetKmh + 8) ? 'heavy' : 'trail';
-  } else if (reqDecel > 2.6 || (proAhead.brake > 32 && proAhead.brake <= 62)) {
+  } else if (reqDecel > 2.6 * brakeScale || (proAhead.brake > 32 && proAhead.brake <= 62)) {
     tier = (currSpeedKmh > minTargetKmh + 5) ? 'trail' : (maxCurvAhead > 0.0018 && thrNorm > 0.60 ? 'lift' : 'none');
-  } else if (reqDecel > 0.65 || (currSpeedKmh > minTargetKmh + 2 && maxCurvAhead > 0.0015 && thrNorm > 0.60) || (proAhead.brake >= 12 && currSpeedKmh > minTargetKmh + 2)) {
+  } else if (reqDecel > 0.65 * brakeScale || (currSpeedKmh > minTargetKmh + 2 && maxCurvAhead > 0.0015 && thrNorm > 0.60) || (proAhead.brake >= 12 && currSpeedKmh > minTargetKmh + 2)) {
     tier = 'lift';
   }
 
@@ -933,12 +1843,14 @@ function stepPhysics(dt) {
       updateCountdownUI();
     } else {
       updateCountdownUI();
+      const dtLaunch = getCarDrivetrainSpec(carProfile);
+      const launchRpmSpan = Math.max(2000, (dtLaunch.redlineRpm || 8800) - (dtLaunch.idleRpm || 1150));
       if (brk > 0.10 || thr <= 0.15) {
         // Holding brake / idle: Launch clutch holds stationary while player revs engine!
         simState.speedMs = 0;
         simState.speedKmh = 0;
         simState.lapElapsed = 0;
-        simState.rpm = Math.round(1200 + thr * 6800 + Math.sin(performance.now() * 0.04) * (thr * 180));
+        simState.rpm = Math.round((dtLaunch.idleRpm || 1150) + thr * launchRpmSpan * 0.89 + Math.sin(performance.now() * 0.04) * (thr * 180));
         if (simState.mode === 'ai_race') stepAIRivals(dt);
         return;
       } else {
@@ -947,7 +1859,7 @@ function stepPhysics(dt) {
         simState.speedMs = Math.min(28, simState.speedMs + creepAccel * dt);
         simState.speedKmh = simState.speedMs * 3.6;
         simState.s += simState.speedMs * dt;
-        simState.rpm = Math.round(1800 + thr * 6500);
+        simState.rpm = Math.round((dtLaunch.idleRpm || 1150) + 600 + thr * launchRpmSpan * 0.85);
         simState.lapElapsed = 0;
         if (simState.s > 0.5 && !simState.hasJumpStarted) {
           simState.hasJumpStarted = true;
@@ -983,9 +1895,13 @@ function stepPhysics(dt) {
     simState.surfaceGrip = 1.00;
     simState.steerResistance = 1.00;
   }
+  const setupMods = getCarSetupPhysicsMods();
   const isWet = (simState.weather === 'wet');
-  const weatherGripMult = isWet ? (0.72 * (tireProfile.wetGripBonus || 1.0)) : 1.0;
-  const effectiveGrip = simState.surfaceGrip * weatherGripMult;
+  const condSnap = simState.trackConditions || refreshSessionTrackConditions();
+  const drySurfaceMult = isWet ? 1.0 : ((condSnap && condSnap.effectiveGripMult) ? condSnap.effectiveGripMult : 1.0);
+  const weatherGripMult = isWet ? (0.72 * (tireProfile.wetGripBonus || 1.0)) : drySurfaceMult;
+  const kerbSetupMult = simState.onKerb ? (setupMods.kerbGrip / 0.85) : 1.0;
+  const effectiveGrip = simState.surfaceGrip * kerbSetupMult * weatherGripMult;
   simState.effectiveGrip = effectiveGrip;
 
   // RFC Module 2 & Proposal Sec. 5: Suspension Deflection + Lockup Chassis Shudder
@@ -998,7 +1914,7 @@ function stepPhysics(dt) {
   if (simState.onKerb && simState.speedKmh > 10) {
     simState.kerbTime = (simState.kerbTime || 0) + dt;
     const omega = 2 * Math.PI * (28 + (simState.speedKmh / 300) * 20); // 28-48 Hz matching velocity
-    const amp = Math.min(0.034, 0.010 + (simState.speedKmh / 280) * 0.024);
+    const amp = Math.min(0.034, 0.010 + (simState.speedKmh / 280) * 0.024) * setupMods.kerbVibMult;
     const damping = Math.exp(-6.0 * (simState.kerbTime % 0.22));
     simState.suspensionDispY = amp * damping * Math.cos(omega * simState.kerbTime) + lockupShudder;
     simState.chassisVibrationAmp = amp;
@@ -1022,7 +1938,13 @@ function stepPhysics(dt) {
   }
 
   const vMs = simState.speedMs;
-  simState.downforceKgf = Math.round(0.68 * vMs * vMs);
+  const dfCoeff = (carProfile.aeroDownforceCoeff !== undefined) ? carProfile.aeroDownforceCoeff : 0.135;
+  simState.downforceKgf = Math.round(dfCoeff * vMs * vMs * setupMods.downforceMult);
+  const dtSpec = getCarDrivetrainSpec(carProfile);
+  const weightKg = Math.max(550, carProfile.weightKg || 1245);
+  const dfRatio = simState.downforceKgf / weightKg;
+  const brakeMult = (carProfile.brakeFactor || 1.0) * (tireProfile.brakeBonus || 1.0);
+  const aeroBrakeExtra = Math.pow(Math.max(0, dfRatio - 0.55), 0.90) * 0.28;
 
   simState.inSlipstream = false;
   const wakeTargets = (simState.mode === 'ai_race')
@@ -1071,14 +1993,16 @@ function stepPhysics(dt) {
         }
       } else {
         simState.reverseHoldTimer = 0;
+        if (simState.gear > dtSpec.maxGears) {
+          simState.gear = dtSpec.maxGears;
+        }
         if ((simState._autoShiftCooldown || 0) <= 0) {
           let targetGear = simState.gear;
           // Wide hysteresis band between upshift (92% gear max) and downshift (78% lower gear max)
-          // prevents high-frequency gear hunting during 0.08s ignition cut or cornering drag
-          while (targetGear < 6 && simState.speedKmh >= GEAR_MAX_SPEED[targetGear] * 0.92) {
+          while (targetGear < dtSpec.maxGears && simState.speedKmh >= dtSpec.gearSpeeds[targetGear] * setupMods.gearSpeedScale * 0.92) {
             targetGear++;
           }
-          while (targetGear > 1 && simState.speedKmh < GEAR_MAX_SPEED[targetGear - 1] * 0.78) {
+          while (targetGear > 1 && simState.speedKmh < dtSpec.gearSpeeds[targetGear - 1] * setupMods.gearSpeedScale * 0.78) {
             targetGear--;
           }
           if (targetGear !== simState.gear) {
@@ -1087,7 +2011,7 @@ function stepPhysics(dt) {
             simState._autoShiftCooldown = 0.25;
             document.getElementById('hud-gear').textContent = String(targetGear);
             if (isUpshift) {
-              simState.ignitionCutTimer = 0.08;
+              simState.ignitionCutTimer = dtSpec.shiftCutSec;
             }
             if (typeof soundEngine !== 'undefined' && soundEngine) {
               if (typeof soundEngine.triggerShiftClunk === 'function') soundEngine.triggerShiftClunk(isUpshift);
@@ -1112,6 +2036,8 @@ function stepPhysics(dt) {
         }
       }
     }
+  } else if (simState.gear > dtSpec.maxGears) {
+    simState.gear = dtSpec.maxGears;
   }
 
   if (simState.gear === -1) {
@@ -1135,26 +2061,24 @@ function stepPhysics(dt) {
     }
     simState.speedKmh = simState.speedMs * 3.6;
     simState.longG = -1.2 * (revGas > 0.05 ? 1 : -0.5);
-    simState.rpm = Math.round(1150 + (simState.speedKmh / 36) * 3800);
+    simState.rpm = Math.round(dtSpec.idleRpm + (simState.speedKmh / 36) * 3800);
   } else {
     // ----------------------------------------------------------------------
-    // FORWARD GEAR DYNAMICS (Gears 1 - 6)
+    // FORWARD GEAR DYNAMICS (Gears 1 - maxGears)
     // ----------------------------------------------------------------------
-    const baseGearMaxV = GEAR_MAX_SPEED[simState.gear] || 305;
-    const gearMaxV = (simState.gear === 6 && carProfile.classSpec && carProfile.classSpec.topSpeedKmh > 305)
-      ? carProfile.classSpec.topSpeedKmh
-      : baseGearMaxV;
+    const gearMaxV = (dtSpec.gearSpeeds[simState.gear] || dtSpec.gearSpeeds[dtSpec.maxGears] || 305) * setupMods.gearSpeedScale;
     const normRpm = Math.min(1.03, Math.max(0.16, simState.speedKmh / gearMaxV));
-    simState.rpm = Math.round(1150 + normRpm * 7650);
-    const revLimiterCut = (!simState.autoTransmission && simState.rpm > 8780) ? 0.10 : 1.0;
+    simState.rpm = Math.round(dtSpec.idleRpm + normRpm * (dtSpec.redlineRpm - dtSpec.idleRpm));
+    const revLimiterCut = (!simState.autoTransmission && simState.rpm > (dtSpec.redlineRpm - 20)) ? 0.10 : 1.0;
 
-    // Calibrated 0-100 km/h (3.48s) and 0-300 km/h (~40s) Power & Drag Model + Per-Chassis & Tire Multipliers
+    // Calibrated Power & Drag Model + Per-Chassis, Aero Traction, Tire & Car Setup Multipliers
     const vEff = Math.max(vMs, 12.5);
-    const accelMult = (carProfile.accelFactor || 1.0) * (tireProfile.accelMult || 1.0);
-    const dragMult = carProfile.aeroDragFactor || 1.0;
-    const brakeMult = (carProfile.brakeFactor || 1.0) * (tireProfile.brakeBonus || 1.0);
-    const maxMechanicalGripAccel = 8.25 * accelMult;
-    const specificPower = 338.0 * accelMult;
+    const powerMult = (carProfile.powerFactor || carProfile.accelFactor || 1.0) * (tireProfile.accelMult || 1.0) * setupMods.gearAccelMult;
+    const launchMult = (carProfile.launchFactor || carProfile.accelFactor || 1.0) * (tireProfile.accelMult || 1.0) * setupMods.gearAccelMult;
+    const dragMult = (carProfile.aeroDragFactor || 1.0) * setupMods.dragMult;
+    const aeroTractionAccel = Math.max(0, dfRatio - 0.55) * 2.4;
+    const maxMechanicalGripAccel = 8.25 * launchMult + aeroTractionAccel;
+    const specificPower = 338.0 * powerMult;
     const rawEngineAccel = Math.min(maxMechanicalGripAccel, specificPower / vEff);
 
     const aeroDragCoeff = (simState.inSlipstream ? 0.00046 : 0.000557) * dragMult;
@@ -1163,13 +2087,14 @@ function stepPhysics(dt) {
     const corneringInducedDrag = Math.abs(simState.latG) * 0.38;
     const dragAccel = aeroDragCoeff * vMs * vMs + rollingResistance + corneringInducedDrag;
 
-    const lockupThreshold = (0.88 + (simState.downforceKgf / 6500)) * (isWet ? 0.86 : 1.0);
+    const steerBiasGate = Math.abs(simState.steerInput) < 0.25 ? setupMods.lockupBonus : 0;
+    const lockupThreshold = (0.88 + Math.min(0.09, dfRatio * 0.045) + steerBiasGate) * (isWet ? 0.86 : 1.0);
     simState.isBrakeLockup = (brk > lockupThreshold && simState.speedKmh > 45);
     if (simState.isBrakeLockup && Math.random() < 0.08) simState.lockupCount++;
 
     const effectiveBrakeDecel = (simState.isBrakeLockup
       ? 12.8 * effectiveGrip
-      : brk * 19.2 * effectiveGrip) * brakeMult;
+      : brk * 19.2 * effectiveGrip * (1.0 + aeroBrakeExtra)) * brakeMult;
 
     // High-RPM throttle lift-off turbo blow-off flutter & exhaust pop (strictly debounced)
     if (prevThr > 65 && simState.throttleInput <= 25 && simState.speedKmh > 115 && (simState._backfireCooldown || 0) <= 0) {
@@ -1211,9 +2136,10 @@ function stepPhysics(dt) {
     }
   }
 
-  const baseWeightKg = 1400 + simState.downforceKgf;
-  const longShiftKg = Math.max(-290, Math.min(320, -simState.longG * 185));
-  const latShiftKg = Math.max(-280, Math.min(280, simState.latG * 165));
+  const baseWeightKg = (weightKg + 120) + simState.downforceKgf;
+  const massScale = weightKg / 1245;
+  const longShiftKg = Math.max(-290 * massScale, Math.min(320 * massScale, -simState.longG * 145 * massScale));
+  const latShiftKg = Math.max(-280 * massScale, Math.min(280 * massScale, simState.latG * 135 * massScale));
 
   simState.tireLoads.fl = Math.round(Math.max(80, baseWeightKg * 0.24 + longShiftKg * 0.5 + latShiftKg * 0.5));
   simState.tireLoads.fr = Math.round(Math.max(80, baseWeightKg * 0.24 + longShiftKg * 0.5 - latShiftKg * 0.5));
@@ -1224,7 +2150,7 @@ function stepPhysics(dt) {
   const trailBlend = (brk > 0.04 && brk <= 0.84)
     ? Math.min(1.0, (brk - 0.04) / 0.18) * (brk > 0.65 ? Math.max(0, 1.0 - (brk - 0.65) / 0.19) : 1.0)
     : 0;
-  const trailBrakeBonus = 1.0 + trailBlend * 0.12;
+  const trailBrakeBonus = 1.0 + trailBlend * Math.max(0.02, 0.12 + setupMods.trailBonusDelta);
 
   // Smooth longitudinal-to-lateral weight transfer (replaces hard 0.78 step switch at 75% throttle)
   const thrLoad = Math.max(0, (thr - 0.35) / 0.65);
@@ -1233,8 +2159,8 @@ function stepPhysics(dt) {
   const throttleWeightTransfer = 1.0 - thrLoad * steerLoad * chassisPowerPush;
   const lockupPenalty = simState.isBrakeLockup ? 0.30 : 1.0;
 
-  const baseMuLat = (isReal ? carProfile.baseMuLat : (carProfile.baseMuLat * 1.48)) * (tireProfile.peakMuG / 1.52);
-  const aeroBonusG = (simState.downforceKgf / carProfile.weightKg) * 0.45;
+  const baseMuLat = ((isReal ? carProfile.baseMuLat : (carProfile.baseMuLat * 1.48)) + setupMods.aeroCornerBonus) * (tireProfile.peakMuG / 1.52);
+  const aeroBonusG = Math.pow(Math.max(0, dfRatio), 0.88) * 1.15;
   const maxLatG = (baseMuLat + aeroBonusG) * effectiveGrip * trailBrakeBonus * throttleWeightTransfer * lockupPenalty;
   const maxLatAccelMs2 = maxLatG * 9.81;
 
@@ -1306,13 +2232,13 @@ function stepPhysics(dt) {
       : 0;
     // Smooth speed-tapered turn-in agility (eliminates hard step discontinuity at 35 m/s = 126 km/h)
     const lowSpdBlend = 1.0 - smoothstepBand(75, 195, simState.speedKmh);
-    const turnInBonus = (vMs > 2.5) ? (1.0 + (carProfile.turnInAgility - 1.0) * lowSpdBlend) : 1.0;
+    const turnInBonus = ((vMs > 2.5) ? (1.0 + (carProfile.turnInAgility - 1.0) * lowSpdBlend) : 1.0) * setupMods.turnInMult;
     targetYawRate = steerYaw * turnInBonus + straightCentering;
     simState.driftAngle *= Math.pow(0.01, dt);
   } else {
     const arcadeAssist = forwardAlignFade * (trackNode.curvature * vMs * 0.48 - headingDiff * 0.95);
     const driftBoost = (!isReversing && simState.isDrifting) ? 1.35 : 1.0;
-    targetYawRate = arcadeAssist + steerYaw * driftBoost * carProfile.turnInAgility;
+    targetYawRate = arcadeAssist + steerYaw * driftBoost * carProfile.turnInAgility * setupMods.turnInMult;
     if (!isReversing && simState.isDrifting) {
       const targetDrift = simState.steerInput * 0.24;
       simState.driftAngle += (targetDrift - simState.driftAngle) * Math.min(1, 8 * dt);
@@ -1339,7 +2265,9 @@ function stepPhysics(dt) {
 
   simState.heading += simState.yawRate * dt;
   simState.latG = (vMs * simState.yawRate) / 9.81;
-  simState.tireSlipRatio = Math.min(1.35, Math.hypot(simState.latG / maxLatG, simState.longG / 2.2));
+  const maxLongG = Math.max(1.2, (19.2 * (1.0 + aeroBrakeExtra) * brakeMult) / 9.81);
+  const slipLongScale = (carProfile.carClass === 'GT3') ? 2.2 : Math.max(1.25, maxLongG * 1.12);
+  simState.tireSlipRatio = Math.min(1.35, Math.hypot(simState.latG / Math.max(0.5, maxLatG), simState.longG / slipLongScale));
 
   // Phase 1: Progressive Driving Cue computation (tarmac line & subtle guidance; Heavy Brake HUD popup removed per user feedback)
   const cueRes = computeDrivingCue(simState.s, simState.speedKmh, brk, thr);
@@ -1407,8 +2335,9 @@ function stepPhysics(dt) {
   }
   updateSmokeParticles(dt);
 
-  const targetPitch = Math.max(-0.065, Math.min(0.065, simState.longG * 0.028));
-  const targetRoll = Math.max(-0.085, Math.min(0.085, simState.latG * 0.035));
+  const rollMult = carProfile.bodyRollMult || 1.0;
+  const targetPitch = Math.max(-0.085, Math.min(0.085, simState.longG * 0.028 * rollMult));
+  const targetRoll = Math.max(-0.11, Math.min(0.11, simState.latG * 0.035 * rollMult));
   simState.pitchRad += (targetPitch - simState.pitchRad) * Math.min(1, 10 * dt);
   simState.rollRad += (targetRoll - simState.rollRad) * Math.min(1, 10 * dt);
 
@@ -1505,7 +2434,12 @@ function stepPhysics(dt) {
       throttle: Math.round(simState.throttleInput),
       brake: Math.round(simState.brakeInput),
       steer: Math.round(simState.steerInput * 450),
-      latG: simState.latG
+      latG: simState.latG,
+      longG: simState.longG,
+      gear: simState.gear,
+      rpm: simState.rpm,
+      onKerb: simState.onKerb ? 1 : 0,
+      offTrack: simState.offTrack ? 1 : 0
     });
   }
 
@@ -1525,7 +2459,12 @@ function stepPhysics(dt) {
         throttle: Math.round(simState.throttleInput),
         brake: Math.round(simState.brakeInput),
         steer: Math.round(simState.steerInput * 450),
-        latG: simState.latG
+        latG: simState.latG,
+        longG: simState.longG,
+        gear: simState.gear,
+        rpm: simState.rpm,
+        onKerb: simState.onKerb ? 1 : 0,
+        offTrack: simState.offTrack ? 1 : 0
       });
     }
     simState.lastCompletedLapSamples = simState.currentLapSamples.slice();
@@ -2399,17 +3338,19 @@ function stepAIRivals(dt) {
 
       translateAnalogPedals(ai, aiRawThrottle, aiRawBrake, aiRawTrail, dt, aiThrCap);
 
-      // Identical 6-speed automatic transmission & 0.08s upshift ignition cut as Player (stepPhysics)
+      const activeDtSpec = isNonGT3Class ? getCarDrivetrainSpec(activeProfile) : { maxGears: 6, gearSpeeds: GEAR_MAX_SPEED, shiftCutSec: 0.08 };
+      // Automatic transmission & upshift ignition cut matching Player (stepPhysics)
       ai.ignitionCutTimer = Math.max(0, (ai.ignitionCutTimer || 0) - dt);
       ai._autoShiftCooldown = Math.max(0, (ai._autoShiftCooldown || 0) - dt);
       const aiSpdKmh = ai.speedMs * 3.6;
       if (!ai.gear || ai.gear < 1) ai.gear = 1;
+      if (ai.gear > activeDtSpec.maxGears) ai.gear = activeDtSpec.maxGears;
       if (ai._autoShiftCooldown <= 0) {
         let tg = ai.gear;
-        while (tg < 6 && aiSpdKmh >= GEAR_MAX_SPEED[tg] * 0.92) tg++;
-        while (tg > 1 && aiSpdKmh < GEAR_MAX_SPEED[tg - 1] * 0.78) tg--;
+        while (tg < activeDtSpec.maxGears && aiSpdKmh >= activeDtSpec.gearSpeeds[tg] * 0.92) tg++;
+        while (tg > 1 && aiSpdKmh < activeDtSpec.gearSpeeds[tg - 1] * 0.78) tg--;
         if (tg !== ai.gear) {
-          if (tg > ai.gear) ai.ignitionCutTimer = 0.08;
+          if (tg > ai.gear) ai.ignitionCutTimer = activeDtSpec.shiftCutSec;
           ai.gear = tg;
           ai._autoShiftCooldown = 0.25;
         }
@@ -2431,18 +3372,28 @@ function stepAIRivals(dt) {
         }
       }
 
-      // Identical longitudinal powertrain & cornering-induced tire scrub equation as Player (stepPhysics L971-1008)
+      // Identical longitudinal powertrain & cornering-induced tire scrub equation as Player
       const aiThr = ai.throttleInput / 100;
       const aiBrk = ai.brakeInput / 100;
       const vEff = Math.max(Math.abs(ai.speedMs), 12.5);
-      const rawEngineAccel = Math.min(8.25 * (cSpec.accelMult || 1.0), (338.0 * (cSpec.accelMult || 1.0)) / vEff);
+      const aiPowerMult = isNonGT3Class ? (activeProfile.powerFactor || activeProfile.accelFactor || 1.0) : (cSpec.accelMult || 1.0);
+      const aiLaunchMult = isNonGT3Class ? (activeProfile.launchFactor || activeProfile.accelFactor || 1.0) : (cSpec.accelMult || 1.0);
+      const aiWeightKg = isNonGT3Class ? Math.max(550, activeProfile.weightKg || 1245) : 1245;
+      const aiDfCoeff = isNonGT3Class && activeProfile.aeroDownforceCoeff !== undefined ? activeProfile.aeroDownforceCoeff : 0.135;
+      const aiDfRatio = isNonGT3Class ? ((aiDfCoeff * ai.speedMs * ai.speedMs) / aiWeightKg) : 0;
+      const aiAeroTrac = isNonGT3Class ? (Math.max(0, aiDfRatio - 0.55) * 2.4) : 0;
+      const aiAeroBrakeExtra = isNonGT3Class ? (Math.pow(Math.max(0, aiDfRatio - 0.55), 0.90) * 0.28) : 0;
+      const aiMaxLatEst = isNonGT3Class ? Math.max(0.75, (activeProfile.baseMuLat || 1.48) + Math.pow(Math.max(0, aiDfRatio), 0.88) * 1.15) : 1.35;
+
+      const rawEngineAccel = Math.min(8.25 * aiLaunchMult + aiAeroTrac, (338.0 * aiPowerMult) / vEff);
       const aiLatG = (ai.speedMs * ai.speedMs * absCurv) / 9.81;
       const throttleWeightTransfer = (aiThr > 0.35 && absCurv > 0.0015)
-        ? (1.0 - ((aiThr - 0.35) / 0.65) * Math.min(1.0, aiLatG / 1.35) * 0.18)
+        ? (1.0 - ((aiThr - 0.35) / 0.65) * Math.min(1.0, aiLatG / aiMaxLatEst) * 0.18)
         : 1.0;
       const aiWetMult = (simState.weather === 'wet') ? 0.78 : 1.0;
       const aiDriveAccel = aiThr * rawEngineAccel * aiShiftCutMult * throttleWeightTransfer * tierPowerMult * arch.drivePowerMult * aiWetMult;
-      const aiBrakeDecel = aiBrk * (ai.style === 'late_braker' ? 20.2 : 19.2) * (cSpec.brakeDecelMult || 1.0) * aiWetMult;
+      const aiBrakeBase = (cSpec.brakeDecelMult || 1.0) * (1.0 + aiAeroBrakeExtra);
+      const aiBrakeDecel = aiBrk * (ai.style === 'late_braker' ? 20.2 : 19.2) * aiBrakeBase * aiWetMult;
       const aiClassAeroMult = isNonGT3Class ? (activeProfile.aeroDragFactor || 1.0) : 1.0;
       const aiAeroCoeff = (aiInSlipstream ? 0.00046 : 0.000557) * aiClassAeroMult;
       const aiCornerDrag = aiLatG * 0.38;
@@ -2451,7 +3402,7 @@ function stepAIRivals(dt) {
       const aiNetAccel = aiDriveAccel - aiBrakeDecel - aiDrag - aiEngineBrk;
       ai.speedMs = Math.max(0, ai.speedMs + aiNetAccel * dt);
 
-      const aiMaxDeg = getDynamicMaxSteerDeg(ai.speedMs * 3.6, CAR_HANDLING_PROFILES.procedural, true);
+      const aiMaxDeg = getDynamicMaxSteerDeg(ai.speedMs * 3.6, isNonGT3Class ? activeProfile : CAR_HANDLING_PROFILES.procedural, true);
       const aiMaxLatSpeed = Math.max(2.2, ai.speedMs * Math.sin((aiMaxDeg * Math.PI) / 180) * 0.62);
       const latGain = (ai.stateLabel === 'SIDE BY SIDE') ? 1.65 : 2.8;
       const desiredLatVel = Math.max(-11.5, Math.min(11.5, (targetD - ai.d) * latGain));
@@ -2461,7 +3412,8 @@ function stepAIRivals(dt) {
       const desiredHeading = wrapAngle(node.heading + desiredSteerAngle);
       const headErr = wrapAngle(desiredHeading - ai.heading);
       const curvatureFeedforward = (node.curvature || 0) * ai.speedMs * 0.92;
-      ai.yawRate = Math.max(-2.5, Math.min(2.5, curvatureFeedforward + headErr * 9.5));
+      const aiMaxYaw = isNonGT3Class ? 3.5 : 2.5;
+      ai.yawRate = Math.max(-aiMaxYaw, Math.min(aiMaxYaw, curvatureFeedforward + headErr * 9.5));
       ai.heading = wrapAngle(ai.heading + ai.yawRate * dt);
       ai.vLat *= Math.exp(-8.0 * dt);
 
@@ -2494,7 +3446,17 @@ function stepAIRivals(dt) {
 
 window.CAR_HANDLING_PROFILES = CAR_HANDLING_PROFILES;
 window.getCurrentCarHandling = getCurrentCarHandling;
+window.getCarDrivetrainSpec = getCarDrivetrainSpec;
+window.getCarMaxGears = getCarMaxGears;
 window.TIRE_COMPOUNDS = TIRE_COMPOUNDS;
+window.CAR_SETUP_PRESETS = CAR_SETUP_PRESETS;
+window.TRACK_SURFACE_STATES = TRACK_SURFACE_STATES;
+window.getCarSetupPhysicsMods = getCarSetupPhysicsMods;
+window.setCarSetup = setCarSetup;
+window.applyCarSetupPreset = applyCarSetupPreset;
+window.setTrackSurfaceState = setTrackSurfaceState;
+window.refreshSessionTrackConditions = refreshSessionTrackConditions;
+window.getSessionConditionsSnapshot = getSessionConditionsSnapshot;
 window.getCurrentTireProfile = getCurrentTireProfile;
 window.setTireCompound = setTireCompound;
 window.setWeatherMode = setWeatherMode;

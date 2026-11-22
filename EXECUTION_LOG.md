@@ -1098,3 +1098,94 @@ Script error. at module(main.js:START):0:0
 - `python scratch/verify_new_assets.py`：**ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!**（`spa`: `proLapTime: 138.139, minY: -48.4, maxY: 53.8`；`Class Benchmarks on Spa: procedural 138.139 / mclaren_senna 129.868 / porsche_919_evo 119.774`）
 - `python scratch/test_all_upgrades.py`：**ALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!**（`spaRealTrack`: `totalLen=6818.2`, `elevSpanY=102.32`, `glbSpaCheck: ok=true, meshCount=5, spanX=2166.6, spanY=113.3, spanZ=1439.3, centerDeltaX=37.9`）
 - `launch_apex_desktop.bat --check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%!**（`6/6` HTTP 200，`spa_francorchamps.glb` `2,513,616 bytes`）
+
+---
+
+## 📋 2026-11-22｜Phase 1–4 連貫實作：真實 1:1 賽道管線、九大賽道擴充、車輛調校/賽道條件、可回看紀錄資料庫與分級防洗榜排行榜
+
+### 1. 本次已完成修改與產出內容
+1. **Phase 1：蒙扎與鈴鹿 1:1 真實 3D 賽道重建（OpenF1 + TUMFTM 融合管線）**：
+   - 建立通用自動化腳本 [`scratch/build_real_track.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/build_real_track.py) 與 [`scratch/update_circuits_js.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/update_circuits_js.py)，將 OpenF1 2024 3D GPS 遙測剛體 ICP 對齊 TUMFTM `*.csv` 賽道寬度/中心線，以均勻弧長零折疊鬆弛（Catmull-Rom）匯出 PBR `.glb`（並將舊 82.5MB/46MB 檔案大幅瘦身至約 `1.6MB–2.2MB`）：
+     - [`assets/models/tracks/monza.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/monza.glb)（`2,061,356 bytes`）
+     - [`assets/models/tracks/suzuka_circuit.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/suzuka_circuit.glb)（`2,180,828 bytes`，含 8 字型立體交叉 C2 高斯平順抬升 `dy=13.1m`、`bridge_nodes=15`）
+2. **Phase 2：擴充世界九大知名賽道與動態賽道環境**：
+   - 新增 4 條 1:1 真實賽道模型與 [`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js) 完整資料（連同 Monza、Fuji、Hakone、Spa、Suzuka 共 9 條賽道，並同步所有實解 GT3 `proLapTime` 基準與匯出 `window.estimateClassProLapTime`）：
+     - Silverstone：[`assets/models/tracks/silverstone.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/silverstone.glb)（`2,172,332 bytes`）
+     - Interlagos：[`assets/models/tracks/interlagos.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/interlagos.glb)（`1,674,176 bytes`）
+     - Red Bull Ring / Spielberg：[`assets/models/tracks/red_bull_ring.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/red_bull_ring.glb)（`1,621,112 bytes`）
+     - COTA Austin：[`assets/models/tracks/cota_austin.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/cota_austin.glb)（`2,032,348 bytes`）
+   - 對比圖驗證：[`all_rebuilt_tracks_verification.png`](file:///C:/Users/raymo/.gemini/antigravity/brain/cfd58b47-e6c4-4542-a9aa-430b016e1717/all_rebuilt_tracks_verification.png)。
+   - [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)：新增 COTA 地標塔台 `cota_texas`、將周邊 `hillCoords` 外移至遠景山丘安全距離，並將 `isBridgeNode(node)` 交叉判斷收斂為 `dxz < 36.0`（移除誤觸斜坡高差），確保 9 條賽道立體交叉與護欄/路肩零誤判。
+3. **Phase 3：車輛物理調校 (`Car Setup`) 與賽道條件快照 (`Session Track Conditions`)**：
+   - [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)：實作 `CAR_SETUP_PRESETS`（`low_drag`、`balanced`、`high_downforce`）與四維參數（尾翼 `aeroWing` 1–5、煞車平衡 `brakeBias` 52–64%、齒比 `short/standard/long`、懸吊 `soft/balanced/stiff`，預設 `balanced` 下各項乘數精確保持 `1.0`）；新增 `TRACK_SURFACE_STATES`（`green 98% / fast 100% / optimum 102%`）、路面/環境溫度、時段與天候快照（`refreshSessionTrackConditions`、`getSessionConditionsSnapshot`），並擴充 `currentLapSamples` 紀錄檔位、轉速、縱向 G 值與路肩/草地狀態。
+4. **Phase 4：IndexedDB 圈速紀錄資料庫、嚴格分級防洗榜排行榜與 MoTeC 雙圈遙測疊加**：
+   - [`js/records.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/records.js)：建立 `ApexProRecordsDB`（IndexedDB 持久化 + `localStorage['apexpro.records']` 自動遷移 + JSON 匯出/匯入），並以規範對應 `resolveCarClass` 防竄改校驗將排行榜嚴格隔離於 `(circuitId, carClass, edition, weather)` 分區（支援 `per_car / per_driver / all` 去重與 PRO/Gold/Silver/Bronze 分級基準）。
+   - [`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html)、[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js)、[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)：新增 `#scr-records` 紀錄與排行榜總覽、車庫調校面板、Step 3 九賽道分類篩選與路面狀態切換、結算頁組別排名徽章，以及升級版 MoTeC 遙測分析視窗（`#tel-meta-strip`、雙圈疊加比對 `#select-telemetry-compare`、Channel 3 `#chart-delta` Δt 曲線、同步游標檢視與一鍵載入 Ghost `#btn-telemetry-load-ghost`）。
+   - [`apex_desktop_app.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/apex_desktop_app.py)：補充新 4 條賽道 `.glb` `HEAD` 健康檢查。
+
+### 2. 全套實機驗證結果 (2026-11-22)
+- `python scratch/check_syntax.py`：**8 / 8 OK**（含新增 `js/records.js`）
+- `verify_track_geometry.py`：**ALL 9 CIRCUITS PASSED ZERO-FOLD, ZERO-OVERLAP, EMBEDDED-BASE, RUNOFF-BOUNDED SCENERY & GLB-OFF AUDIT!**（Suzuka `bridge_nodes=15 (dy=13.2m)`，其餘賽道均 `road_folds=0 | runoff_folds=0 | same_overlaps=0 | scenery_hits=0 | pier_hits=0`）
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**ALL PROPOSAL TESTS PASSED: 44/44**（`index.html booted cleanly (158937 chars, zero #apex-crash-banner)`）
+- `python scratch/verify_new_assets.py`：**ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!**（實測全 9 條賽道 GT3 `proLapTime` 基準與全 6 台車 `.glb` 正常載入）
+- `python scratch/test_all_upgrades.py`：**ALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!**（全 9 種天候地景 + 全 7 條重建/新增賽道 `.glb` WebGL 載入 `ok: true, meshCount: 5`）
+- `python scratch/test_records_and_setup.py`：**ALL LAP RECORDS DB, CLASS LEADERBOARD, SETUP PHYSICS & MOTEC OVERLAY TESTS PASSED 100%!**（含 7 秒加速短齒比 `214.3 > 209.26 km/h`、尾翼 1 尾速 `283.67 > 274.75 km/h`、IndexedDB 重載持久化、跨組/跨版/跨天候零滲透與類組防洗榜 `spoofSanitized=1`、MoTeC Δt 與 Ghost 載入）
+- [`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat) `--check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%!**（`10/10` HTTP 200）
+
+---
+
+## 📋 2026-11-22｜導入 23 台全新 `.glb` 車輛（總計 33 台）與 5 大組別分類車庫重構
+
+### 1. 本次已完成修改與產出內容
+1. **完整導入 `assets/models/cars/` 全部 23 台全新本地 `.glb` 模型（全車庫擴充至 33 台、5 大競技組別）**：
+   - **新增兩大獨立分級**：`STREET · CLASS A`（翠綠 `#34d399`，4 台：[`nissan_x-trail.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/cars/nissan_x-trail.glb)、[`lamborghini_countach_5000qv__www.vecarz.com.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/cars/lamborghini_countach_5000qv__www.vecarz.com.glb)、[`lb-works_ferrari_f40__www.vecarz.com.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/cars/lb-works_ferrari_f40__www.vecarz.com.glb)、[`lamborghini_aventador.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/cars/lamborghini_aventador.glb)）與 `F1 · CLASS F1`（緋紅 `#f43f5e`，1 台：[`f1_2026_sf26.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/cars/f1_2026_sf26.glb)）。
+   - **既有組別大幅擴充**：`GT3` 增至 8 台（新增 `ferrari_296_gt3.glb`、`ferrari_488_gt3.glb`、`lamborghini_huracan_gt3.glb`、`mclaren_650s_gt3.glb`）；`HYPER` 增至 14 台（細分 7 台賽道版＋ 7 台街道旗艦，含 `2014_ferrari_laferrari.glb`、`mclaren_p1.glb`、`2015_mclaren_p1_gtr.glb`、`2018_ferrari_fxx-k_evo.glb`、`2023_ferrari_sf90_xx_stradale.glb`、`free_lamborghini_revuelto.glb`、`free__lamborghini_centenario_lp-770.glb`、`lamborghini_essenza_scv12.glb`、`lamborghini_venevo.glb`、`2020_lamborghini_sc20.glb`）；`LMP1` 增至 6 台（新增 `free__lamborghini_terzo_millennio.glb`、`alpine-vision.glb`、`mazda_furai__www.vecarz.com.glb`、`mazda_lm_vision__www.vecarz.com.glb`）。
+2. **3D 車輛標準化管線強化 (`js/render.js`)**：
+   - [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)：實作頂點級精確包圍盒 `computeExactWorldBox()`（修正旋轉子節點 AABB 膨脹造成懸空問題），為傾斜匯出的 Ferrari 296/488 GT3 套用精準偏航角 `overrideYawRad`、為雙軸或四輪合併網格擴充 `splitMergedWheelMeshes()`（並限制 Porsche `.006-.009` 規則避免誤切 McLaren 650S GT3 車殼），為 Nissan X-Trail 等模型擴充拼音/多語輪胎與輪轂蓋綁定，並擴充全 5 組別 `CLASS_AI_ROSTERS`。
+3. **5 組別物理、PRO 基準倍率與防洗榜分區**：
+   - [`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)：新增 23 台車 `CAR_HANDLING_PROFILES` 參數，並調整 6 檔極速上限判斷以正確支援 `STREET`（205–318 km/h）至 `F1`（372 km/h）級距。
+   - [`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js) 與 [`js/records.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/records.js)：統一 `window.estimateClassProLapTime`（`STREET 1.095 / GT3 1.000 / HYPER 0.940 / LMP1 0.867 / F1 0.810`）並保留 `_baseGt3ProLapTime`；於 `CLASS_META` 新增 `STREET` 與 `F1` 獨立排行榜分區與防洗榜校驗。
+4. **分類車庫 UI/UX 重構 (`index.html`、`js/flow.js`)**：
+   - [`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html) 與 [`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js)：車庫進場預設鎖定當前座駕所屬組別（不再 33 台混在一起），底部展示列新增 `#gar-category-bar` 組別頁籤 (`STREET` / `GT3` / `HYPER` / `LMP1` / `F1` / `ALL`)、情境細分篩選（賽道版 vs 街道超跑等）、動態車廠篩選、即時關鍵字搜尋 (`#input-gar-search`)、左右捲動鍵及 `#btn-gar-grid-toggle` 網格展廳切換；進階模型彈窗同步分組顯示；排行榜 `#rec-class-pills` 新增 `STREET` 與 `F1` 分頁按鈕；[`apex_desktop_app.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/apex_desktop_app.py) 補齊代表性新車健康檢查。
+
+### 2. 全套 10 項實機驗證結果 (2026-11-22)
+- `python scratch/check_syntax.py`：**8 / 8 OK**
+- `verify_track_geometry.py`：**9 / 9 賽道通過**（零折疊/零重疊/零碰撞）
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**44 / 44 PASSED**（`index.html` `176602 chars` 零錯誤啟動）
+- `python scratch/verify_new_assets.py`：**100% PASSED**（6 原有高模＋ 9 賽道＋ Spa 多級距基準）
+- `python scratch/test_all_upgrades.py`：**100% PASSED**（9 天候地景＋ 7 重建/新增賽道 GLB＋ GT3/HYPER/LMP1 AI＋車庫塗裝按鈕）
+- `python scratch/test_records_and_setup.py`：**100% PASSED**
+- `python scratch/verify_all_cars_and_garage.py`：**100% PASSED**（全部 29 台本地 `.glb` 真實 WebGL 載入 `ok: true`、`minY <= 0.003m` 貼地、正向朝前、27 台可拆輪車均 `wheels: 4`；車庫開窗預設 `GT3 (8)`，頁籤 `STREET=4, GT3=8, HYPER=14 (road=7, track=7, Ferrari=3), LMP1=6, F1=1, all=33`，搜尋 `F40` 與網格展開通過；Monza 基準 `113.607 > 103.751 > 97.526 > 89.952 > 84.038s`；`STREET` / `F1` 防洗榜 `spoofSanitized=2, gt3Count=0, lmp1Count=0`）
+- [`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat) `--check`：**13 / 13 HTTP 200 OK**
+
+---
+
+## 📋 2026-11-22｜全車庫 33 台車輛真實賽車性能調校（拉開 F1 / LMP1 / 超跑 / GT3 / SUV 真實級距）
+
+### 1. 修改與物理重構明細
+1. **實車空力下壓力、加速曲線與煞車物理重塑**（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)）：
+   - 更新全部 33 台車之 `CAR_HANDLING_PROFILES`，導入實車級 `powerFactor`、`launchFactor`、`aeroDownforceCoeff`、`aeroDragFactor`、`baseMuLat`、`brakeFactor`、`weightKg`、`maxGears`（5–8 速）、`gearSpeeds`、`idleRpm`/`redlineRpm`（6,200–16,000 rpm）、`shiftCutSec`、`pitchTone` 與 `bodyRollMult`，同時完整鎖定 GT3 基準車款數值不變。
+   - 修正 `stepPhysics(dt)` 下壓力計算由原先寫死的 `0.68 * v^2` 改為依車型係數 `dfCoeff * v^2 * downforceMult`，並導入非線性空力彎道抓地增益 `aeroBonusG`、高速尾翼附加循跡 `aeroTractionAccel`、**空力輔助碳煞** `aeroBrakeExtra`（GT3 以下不觸發；F1/919 Evo 隨高速下壓力提供 4G+ 重煞能力）、依真實車重縮放之輪胎負重與側傾俯仰。
+   - 新增 `getCarDrivetrainSpec()`、`getCarMaxGears()` 支援 4/5/6/7/8 速動態換檔與紅線轉速上限；更新 `computeDrivingCue` 與 `stepAIRivals` 依車種煞車/動力/空力精準匹配配速。
+2. **物理級 PRO 圈速求解器與分級排行榜倍率校準**（[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)、[`js/records.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/records.js)）：
+   - 升級 `getUpcomingCornerMaxSpeedKmh` 與 `generateProBenchmarkLap`，非 GT3 組別改以靜態＋動態空力定點疊代計算真實彎速與隨速空力減速，並修正過彎出彎循跡分母為該車於當下車速之極限側向 G 值；GT3 保留精準原始求解路徑。
+   - 更新 `CLASS_PRO_MULT` 為 `{ STREET: 1.135, GT3: 1.0, HYPER: 0.895, LMP1: 0.750, F1: 0.695 }`。
+3. **排檔、儀表、G-G 圖、聲浪與車庫規格條全連動**（[`js/input.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/input.js)、[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)、[`js/audio.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/audio.js)、[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js)）：
+   - 手排升降檔與方向盤換檔燈依車款動態匹配 5–8 檔及各自紅線轉速；G-G 圖依組別自動切換 2.2G / 3.2G / 5.5G 量程；引擎合成聲浪隨 `redlineRpm` 與 `pitchTone` 呈現低沉休旅、V12、三轉子及 F1 15,000 rpm 高頻嘶吼差異。
+   - 全面更新 [`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js) 內全 33 台 `CAR_CATALOG` 之實車數據與 `0–100` 性能評分條。
+
+### 2. 全套 10 項實機驗證結果（最後編輯後於 Chrome Headless 實測）
+- `python scratch/check_syntax.py`：**8 / 8 OK**
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**44 / 44 PASSED**（GT3 提案規格與 `index.html` 啟動零回歸）
+- `python scratch/verify_new_assets.py`：**100% PASSED**（Spa 基準：`procedural 138.139s` > `mclaren_senna 119.769s` > `porsche_919_evo 95.326s`）
+- `python scratch/test_all_upgrades.py`：**100% PASSED**
+- `python scratch/test_records_and_setup.py`：**100% PASSED**
+- `python scratch/verify_all_cars_and_garage.py`：**100% PASSED**（全 29 台 `.glb` 載入、33 台分類車庫、`CLASS_PRO_MULT` Monza 基準 `117.757 > 103.751 > 92.857 > 77.813 > 72.107s`、防洗榜隔離通過）
+- [`scratch/verify_vehicle_performance.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_vehicle_performance.py)：**100% PASSED**（實測 12 台代表車：X-Trail `0-100 7.14s / Vmax 184.8 / Spa 193.92s`；GT3 458 `0-100 3.54s / Vmax 303.5 / DF@250 646kgf / LatG@250 1.91G / Spa 138.14s`；LaFerrari `Vmax 351.7 / 0-200 5.56s / LatG@250 1.57G`；Senna GTR `DF@250 1013kgf / Spa 119.77s`；919 Evo `0-100 2.00s / 0-300 7.72s / Vmax 369.3 / DF@250 2146kgf / Spa 95.33s`；SF-26 F1 `8速 14,684rpm / 0-200 4.32s / 0-300 8.10s / Vmax 364.2 / DF@250 2532kgf / LatG@250 4.68G / BrkG 4.67G / Monza 69.73s / Spa 93.03s`）
+- [`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat) `--check`：**13 / 13 HTTP 200 OK**

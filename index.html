@@ -1490,10 +1490,117 @@
 
     .af-garage-bottom {
       display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px clamp(14px, 3vw, 32px) clamp(14px, 2.5vh, 22px);
+      background: linear-gradient(0deg, rgba(2, 6, 23, .97) 55%, rgba(2, 6, 23, .72) 85%, rgba(2, 6, 23, 0));
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .af-gar-catbar {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      border-bottom: 1px solid rgba(148, 163, 184, .16);
+      padding-bottom: 8px;
+    }
+
+    .af-gar-cls-row {
+      display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 14px clamp(14px, 3vw, 32px) clamp(16px, 3vh, 28px);
-      background: linear-gradient(0deg, rgba(2, 6, 23, .94), rgba(2, 6, 23, 0));
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .af-gar-cls-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .af-gar-cls-tab {
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, .85);
+      border: 1.5px solid rgba(148, 163, 184, .22);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all .15s;
+    }
+
+    .af-gar-cls-tab:hover {
+      color: #fff;
+      border-color: var(--tab-accent, #fb923c);
+    }
+
+    .af-gar-cls-tab.is-active {
+      color: #fff;
+      border-color: var(--tab-accent, #fb923c);
+      background: color-mix(in srgb, var(--tab-accent, #fb923c) 22%, rgba(15, 23, 42, .95));
+      box-shadow: 0 0 12px color-mix(in srgb, var(--tab-accent, #fb923c) 35%, transparent);
+    }
+
+    .af-gar-cls-tab .cnt {
+      padding: 1px 5px;
+      border-radius: 999px;
+      font-size: 10px;
+      background: rgba(2, 6, 23, .65);
+      color: #cbd5e1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .af-gar-tools-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .af-gar-subfilters {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .af-gar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .af-gar-search {
+      width: 155px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, .9);
+      border: 1px solid rgba(148, 163, 184, .3);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .af-gar-search:focus {
+      border-color: #38bdf8;
+    }
+
+    .af-gar-dock-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 0;
     }
 
     .af-car-strip {
@@ -1501,16 +1608,36 @@
       display: flex;
       gap: 10px;
       overflow-x: auto;
-      padding: 4px 2px;
+      padding: 4px 2px 6px;
+      scroll-behavior: smooth;
+    }
+
+    .af-garage-bottom.is-grid-open .af-gar-dock-row {
+      align-items: flex-end;
+    }
+
+    .af-garage-bottom.is-grid-open .af-car-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
+      max-height: 44vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 6px;
+    }
+
+    .af-garage-bottom.is-grid-open .af-car-card {
+      width: auto;
     }
 
     .af-car-card {
+      position: relative;
       flex: 0 0 auto;
-      width: 172px;
+      width: 192px;
       padding: 10px 12px;
       border-radius: 12px;
-      background: rgba(15, 23, 42, .88);
+      background: rgba(15, 23, 42, .90);
       border: 2px solid rgba(148, 163, 184, .18);
+      border-top: 3px solid var(--car-accent, #f97316);
       cursor: pointer;
       text-align: left;
       color: #fff;
@@ -1518,13 +1645,14 @@
     }
 
     .af-car-card:hover {
-      border-color: rgba(249, 115, 22, .6);
+      border-color: var(--car-accent, #f97316);
       transform: translateY(-2px);
     }
 
     .af-car-card.is-active {
-      border-color: #f97316;
-      box-shadow: 0 8px 24px rgba(249, 115, 22, .3);
+      border-color: var(--car-accent, #f97316);
+      box-shadow: 0 8px 22px rgba(249, 115, 22, .32);
+      background: rgba(30, 41, 59, .95);
     }
 
     .af-car-card.is-locked {
@@ -1534,23 +1662,52 @@
     }
 
     .af-car-card .c {
-      font-size: 10px;
-      color: #fbbf24;
-      letter-spacing: .15em;
+      font-size: 9.5px;
+      color: var(--car-accent, #fbbf24);
+      letter-spacing: .12em;
       font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .af-car-card .brand-tag {
+      color: #cbd5e1;
+      background: rgba(2, 6, 23, .65);
+      border: 1px solid rgba(148, 163, 184, .22);
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: .04em;
     }
 
     .af-car-card .n {
       font-weight: 900;
       font-style: italic;
-      font-size: 14px;
-      margin-top: 2px;
+      font-size: 13px;
+      margin-top: 4px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .af-car-card .m-specs {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 10px;
+      color: #cbd5e1;
+      font-variant-numeric: tabular-nums;
     }
 
     .af-car-card .t {
       font-size: 10px;
       color: #94a3b8;
       margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* --- Setup wizard --- */
@@ -2083,6 +2240,204 @@
         min-height: 0;
       }
     }
+
+    /* --- Car Setup & Records / Leaderboard Hub --- */
+    .af-setup-box {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .af-tune-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+      flex-wrap: wrap;
+    }
+
+    .af-pill-grp {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .af-pill-btn {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(15, 23, 42, 0.85);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .af-pill-btn:hover {
+      border-color: rgba(56, 189, 248, 0.7);
+      color: #fff;
+    }
+
+    .af-pill-btn.is-active {
+      background: rgba(56, 189, 248, 0.22);
+      color: #7dd3fc;
+      border-color: #38bdf8;
+    }
+
+    .af-pill-btn.is-amber.is-active {
+      background: rgba(245, 158, 11, 0.22);
+      color: #fde68a;
+      border-color: #f59e0b;
+    }
+
+    .af-pill-btn.is-purple.is-active {
+      background: rgba(192, 132, 252, 0.22);
+      color: #e9d5ff;
+      border-color: #c084fc;
+    }
+
+    .af-pill-btn.is-green.is-active {
+      background: rgba(52, 211, 153, 0.22);
+      color: #a7f3d0;
+      border-color: #34d399;
+    }
+
+    .af-pill-btn.is-rose.is-active {
+      background: rgba(244, 63, 94, 0.22);
+      color: #fecdd3;
+      border-color: #f43f5e;
+    }
+
+    .af-pill-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .af-records-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px clamp(14px, 3vw, 32px) 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .af-rec-bar {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .af-rec-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .af-rec-tab {
+      padding: 7px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(15, 23, 42, 0.8);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      cursor: pointer;
+    }
+
+    .af-rec-tab.is-active {
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(234, 179, 8, 0.18));
+      color: #fff;
+      border-color: #fb923c;
+    }
+
+    .af-rec-lock-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .af-bench-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+    }
+
+    .af-bench-card {
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .af-rec-table-wrap {
+      overflow-x: auto;
+      padding: 6px;
+    }
+
+    .af-rec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    .af-rec-table th {
+      padding: 9px 10px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      white-space: nowrap;
+    }
+
+    .af-rec-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      vertical-align: middle;
+    }
+
+    .af-rec-table tr:hover td {
+      background: rgba(30, 41, 59, 0.55);
+    }
+
+    .af-rec-time {
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+      font-size: 14px;
+      color: #34d399;
+    }
+
+    .af-rec-badge-sm {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 800;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
   </style>
 </head>
 
@@ -2331,7 +2686,7 @@
       <div class="af-brand">APEX<span>PRO</span></div>
       <div class="af-topbar-right">
         <span id="lbl-home-device" class="af-chip">💻 電腦鍵盤</span>
-        <span class="af-chip">🏆 <b id="lbl-home-records">0</b> 項個人紀錄</span>
+        <button id="btn-home-records-chip" type="button" class="af-chip" style="cursor:pointer;border:1px solid rgba(251,191,36,0.35);">🏆 <b id="lbl-home-records">0</b> 項個人紀錄</button>
       </div>
     </div>
     <button id="btn-home-hint" class="af-home-hint" type="button">🔍 點擊車輛進入 360° 鑑賞模式</button>
@@ -2343,6 +2698,7 @@
       </div>
       <div class="af-home-actions">
         <button id="btn-home-inspect" class="af-btn af-btn-ghost" type="button">🔍 360° 鑑賞</button>
+        <button id="btn-home-records" class="af-btn af-btn-ghost" type="button">🏆 排行榜與紀錄</button>
         <button id="btn-home-garage" class="af-btn af-btn-ghost" type="button">🔧 車庫 GARAGE</button>
         <button id="btn-home-play" class="af-btn af-btn-primary af-btn-xl" type="button">
           <span>準備出發<small>READY TO RACE</small></span><span>➔</span>
@@ -2380,9 +2736,12 @@
         <button id="btn-garage-advanced" class="af-link" type="button">⚙ 進階：自訂 3D 模型與畫質設定</button>
       </aside>
     </div>
-    <div class="af-garage-bottom">
-      <div class="af-car-strip" id="gar-car-strip"></div>
-      <button id="btn-garage-confirm" class="af-btn af-btn-primary" type="button">✔ 設為座駕</button>
+    <div class="af-garage-bottom" id="gar-bottom-dock">
+      <div class="af-gar-catbar" id="gar-category-bar"></div>
+      <div class="af-gar-dock-row">
+        <div class="af-car-strip" id="gar-car-strip"></div>
+        <button id="btn-garage-confirm" class="af-btn af-btn-primary" type="button" style="flex-shrink:0;">✔ 設為座駕</button>
+      </div>
     </div>
   </div>
 
@@ -2429,6 +2788,85 @@
         <button id="btn-res-retry" class="af-btn af-btn-ghost hidden" type="button">↻ 再戰一次</button>
         <button id="btn-res-next" class="af-btn af-btn-primary" type="button">下一頁 ➔</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 8. LAP RECORDS & ANTI-POLLUTION CLASS LEADERBOARD HUB -->
+  <div id="scr-records" class="af-screen af-setup hidden">
+    <div class="af-topbar">
+      <button id="btn-records-back" class="af-btn af-btn-ghost af-btn-sm" type="button">◀ 返回</button>
+      <div class="af-title-block">
+        <div class="af-kicker">CLASS LEADERBOARD &amp; TELEMETRY ARCHIVE</div>
+        <div class="af-h1">分級排行榜與完整圈速紀錄</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+        <input id="input-driver-name" type="text" maxlength="20" placeholder="車手代號 PLAYER"
+          style="width:128px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:11px;font-weight:700;">
+        <button id="btn-records-export" class="af-btn af-btn-ghost af-btn-sm" type="button" title="匯出全部紀錄 JSON">📤 匯出</button>
+        <button id="btn-records-import" class="af-btn af-btn-ghost af-btn-sm" type="button" title="匯入戰友圈速 JSON">📥 匯入</button>
+        <input id="input-records-import" type="file" accept=".json,application/json" class="hidden">
+      </div>
+    </div>
+
+    <div class="af-records-body">
+      <div class="af-panel af-rec-bar">
+        <div class="af-rec-row">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button type="button" class="af-rec-tab is-active" data-rec-tab="leaderboard">🏆 分級排行榜</button>
+            <button type="button" class="af-rec-tab" data-rec-tab="history">🗂️ 完整歷史紀錄</button>
+          </div>
+          <span class="af-rec-lock-badge">🔒 嚴格分級隔離 · 賽道 × 車輛等級 × 物理版 × 天候（不同等級互不洗榜）</span>
+        </div>
+
+        <div class="af-rec-row" id="rec-filters">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="rec-filter-circuit"
+              style="padding:5px 10px;border-radius:8px;background:#0f172a;border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:12px;font-weight:700;"></select>
+
+            <div class="af-pill-grp" id="rec-class-pills">
+              <button type="button" class="af-pill-btn is-green" data-rec-class="STREET">🟢 STREET</button>
+              <button type="button" class="af-pill-btn is-amber is-active" data-rec-class="GT3">🟠 GT3</button>
+              <button type="button" class="af-pill-btn is-purple" data-rec-class="HYPER">🟣 HYPER</button>
+              <button type="button" class="af-pill-btn" data-rec-class="LMP1">🔵 LMP1</button>
+              <button type="button" class="af-pill-btn is-rose" data-rec-class="F1">🔴 F1</button>
+              <button type="button" class="af-pill-btn" data-rec-class="CUSTOM">⚪ CUSTOM</button>
+              <button type="button" class="af-pill-btn hidden" data-rec-class="all" id="btn-rec-class-all">全部等級</button>
+            </div>
+
+            <div class="af-pill-grp" id="rec-edition-pills">
+              <button type="button" class="af-pill-btn is-amber is-active" data-rec-edition="realistic">🏁 真實版</button>
+              <button type="button" class="af-pill-btn" data-rec-edition="arcade">🔥 娛樂 NOS</button>
+            </div>
+
+            <div class="af-pill-grp" id="rec-weather-pills">
+              <button type="button" class="af-pill-btn is-amber is-active" data-rec-weather="dry">☀ 乾地 DRY</button>
+              <button type="button" class="af-pill-btn" data-rec-weather="wet">🌧 雨戰 WET</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <select id="rec-filter-dedupe"
+              style="padding:4px 8px;border-radius:8px;background:#0f172a;border:1px solid rgba(148,163,184,0.3);color:#e2e8f0;font-size:11px;font-weight:700;">
+              <option value="per_car">去重：每車款最佳圈</option>
+              <option value="per_driver">去重：每位車手最佳圈</option>
+              <option value="all">顯示全部有效圈</option>
+            </select>
+            <select id="rec-filter-tire"
+              style="padding:4px 8px;border-radius:8px;background:#0f172a;border:1px solid rgba(148,163,184,0.3);color:#e2e8f0;font-size:11px;font-weight:700;">
+              <option value="all">全部輪胎</option>
+              <option value="soft">S 軟胎</option>
+              <option value="medium">M 中性胎</option>
+              <option value="hard">H 硬胎</option>
+              <option value="wet">W 全雨胎</option>
+            </select>
+            <button type="button" id="btn-rec-pinned-only" class="af-pill-btn">⭐ 僅收藏</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="rec-benchmark-strip" class="af-bench-strip"></div>
+
+      <div class="af-panel af-rec-table-wrap" id="rec-table-container"></div>
     </div>
   </div>
 
@@ -3192,12 +3630,20 @@
             單圈遙測數據覆盤 (Telemetry &amp; Racing Line Analysis)
           </h2>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <select id="select-telemetry-lap"
             class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono-tech text-white">
             <option value="current">目前進行中 / 最新單圈數據</option>
             <option value="pro">對比：PRO 基準最佳圈</option>
           </select>
+          <select id="select-telemetry-compare"
+            class="bg-slate-900 border border-cyan-500/40 rounded-lg px-2.5 py-1.5 text-xs font-mono-tech text-cyan-200">
+            <option value="none">疊加對比：關閉</option>
+            <option value="pro">疊加：PRO 官方基準圈</option>
+          </select>
+          <button id="btn-telemetry-load-ghost" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold cursor-pointer">
+            👻 設為目標幽靈車挑戰
+          </button>
           <button id="btn-telemetry-restart" class="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold">
             重新刷圈
           </button>
@@ -3207,6 +3653,9 @@
           </button>
         </div>
       </div>
+
+      <!-- Session Car Setup & Track Conditions Metadata Cards -->
+      <div id="tel-meta-strip" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3 font-mono-tech"></div>
 
       <div class="grid grid-cols-2 sm:grid-cols-6 gap-2.5 mb-4 font-mono-tech">
         <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
@@ -3249,13 +3698,29 @@
 
           <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
             <div class="flex items-center justify-between text-xs font-mono-tech mb-1.5">
-              <span class="text-slate-200 font-bold">CHANNEL 2 // 轉向角度 Steer Angle (青) vs 車速 Speed (黃)</span>
+              <span class="text-slate-200 font-bold">CHANNEL 2 // 轉向角度 Steer Angle (青) vs 車速 Speed (黃 / 疊加洋紅)</span>
               <span class="text-slate-400 text-[10px]">檢視連續彎重心轉移平順度</span>
             </div>
             <div class="relative h-40 w-full" style="height: 160px;">
               <canvas id="chart-steer-speed"
                 class="w-full h-full rounded bg-slate-950 border border-slate-800"></canvas>
             </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="flex items-center justify-between text-xs font-mono-tech mb-1.5">
+              <span class="text-slate-200 font-bold">CHANNEL 3 // 累積時間差 Time Delta Δt (負=更快/綠, 正=更慢/紅)</span>
+              <span class="text-slate-400 text-[10px]">懸停圖表可同步瀏覽軌跡點與數值</span>
+            </div>
+            <div class="relative h-28 w-full" style="height: 112px;">
+              <canvas id="chart-delta"
+                class="w-full h-full rounded bg-slate-950 border border-slate-800"></canvas>
+            </div>
+          </div>
+
+          <div id="tel-hover-readout"
+            class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono-tech text-cyan-300 flex flex-wrap gap-3 items-center justify-between">
+            <span>💡 將滑鼠移至上方任一遙測圖表，即可同步追蹤該處車速、油門煞車、轉向、檔位與秒差 (Δt)</span>
           </div>
         </div>
 
@@ -3463,6 +3928,7 @@
   <script src="js/render.js?v=20261114_phase2"></script>
   <script src="js/physics.js?v=20261114_phase2"></script>
   <script src="js/input.js?v=20261114_phase2"></script>
+  <script src="js/records.js?v=20261122_v3"></script>
   <script src="js/flow.js?v=20261114_phase2"></script>
   <script src="js/main.js?v=20261114_phase2"></script>
 </body>

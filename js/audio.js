@@ -116,11 +116,16 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
           }
 
           const now = this.ctx.currentTime;
+          const cp = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+          const dtSpec = (typeof getCarDrivetrainSpec === 'function') ? getCarDrivetrainSpec(cp) : { redlineRpm: 8800, pitchTone: 1.0 };
+          const redlineRpm = dtSpec.redlineRpm || 8800;
+          const pitchTone = dtSpec.pitchTone || 1.0;
+          const rpmRatio = Math.min(1.12, Math.max(0.08, rpm / redlineRpm));
           const nosPitchBoost = isNosActive ? 28 : 0;
-          const baseFreq = 36 + (rpm / 8800) * 195 + nosPitchBoost;
+          const baseFreq = (36 + rpmRatio * 195) * pitchTone + nosPitchBoost;
           this.rpmOsc1.frequency.setTargetAtTime(baseFreq, now, 0.03);
           this.rpmOsc2.frequency.setTargetAtTime(baseFreq * 1.5, now, 0.03);
-          const engVol = 0.04 + (throttle / 100) * 0.065 + (rpm / 9000) * 0.035 + (isNosActive ? 0.03 : 0);
+          const engVol = 0.04 + (throttle / 100) * 0.065 + Math.min(1.05, rpm / redlineRpm) * 0.035 + (isNosActive ? 0.03 : 0);
           this.engineGain.gain.setTargetAtTime(engVol, now, 0.04);
 
           // Warm Low-Pass Tire Scrub strictly within 350 - 750 Hz range

@@ -966,13 +966,32 @@ function rebuild3DCircuitScene() {
       wheelGrp.add(spoke, pod);
     }
     circuitSceneryGroup.add(wheelGrp);
+  } else if (th.biome === 'cota_texas') {
+    // Circuit of the Americas iconic Observation Tower landmark far outside track bounds
+    const towerGrp = new THREE.Group();
+    towerGrp.position.set(-480, groundY, -740);
+    const colMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.45, roughness: 0.45 });
+    const spireMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.35, roughness: 0.5 });
+    const deckMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.25 });
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(5, 7, 130, 12), colMat);
+    core.position.y = 65;
+    const deck = new THREE.Mesh(new THREE.CylinderGeometry(18, 12, 10, 20), deckMat);
+    deck.position.y = 104;
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(20, 2.2, 8, 28), spireMat);
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 109;
+    const canopy = new THREE.Mesh(new THREE.ConeGeometry(16, 48, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide }));
+    canopy.position.set(14, 96, 0);
+    canopy.rotation.z = -0.35;
+    towerGrp.add(core, deck, halo, canopy);
+    circuitSceneryGroup.add(towerGrp);
   }
 
   const hillCoords = [
-    { x: -2150, z: 1850, r: 540, h: 250, seed: 0.7 },
-    { x: 2150, z: 1350, r: 480, h: 220, seed: 2.1 },
-    { x: -2200, z: -1250, r: 510, h: 230, seed: 3.8 },
-    { x: 1650, z: -1450, r: 450, h: 200, seed: 5.2 }
+    { x: -2850, z: 2450, r: 540, h: 250, seed: 0.7 },
+    { x: 2850, z: 2050, r: 480, h: 220, seed: 2.1 },
+    { x: -2850, z: -1950, r: 510, h: 230, seed: 3.8 },
+    { x: 2650, z: -1950, r: 450, h: 200, seed: 5.2 }
   ];
   hillCoords.forEach(hc => {
     const hMesh = buildAlpineMountainMesh(hc.r, hc.h, th.isNight, hc.seed, false, detailTex);
@@ -1004,14 +1023,13 @@ function rebuild3DCircuitScene() {
 
   function isBridgeNode(node) {
     const ny = node.y || 0;
-    if (ny < 6.0) return false;
     for (let j = 0; j < TRACK_SAMPLES; j += 2) {
       const nj = trackNodes[j];
       let ds = Math.abs((node.s || 0) - (nj.s || 0));
       if (ds > totalTrackLength * 0.5) ds = totalTrackLength - ds;
       if (ds < 55.0) continue;
       const dxz = Math.hypot(node.x - nj.x, node.z - nj.z);
-      if (dxz < 65.0 && (ny - (nj.y || 0)) > 8.0) return true;
+      if (dxz < 36.0 && (ny - (nj.y || 0)) > 8.0) return true;
     }
     return false;
   }
@@ -2344,6 +2362,254 @@ const CAR_MODEL_PRESETS = [
       'assets/models/cars/porsche_919_hybrid_evo.glb',
       'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/porsche_919_hybrid_evo.glb'
     ]
+  },
+  // --- STREET / CLASS A ---
+  {
+    id: 'nissan_xtrail',
+    label: 'Nissan X-Trail e-POWER SUV',
+    desc: '日系日常家庭休旅代表・1.5T e-POWER 油電雙馬達驅動 GLB 模型（趣味下場刷圈）',
+    defaultPaint: '#cbd5e1',
+    targetLength: 4.68,
+    extraRotY: Math.PI,
+    urls: [
+      'assets/models/cars/nissan_x-trail.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/nissan_x-trail.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_countach',
+    label: 'Lamborghini Countach 5000 QV',
+    desc: '80 年代海報傳奇楔形超跑・5.2L V12 四氣門化油器經典 GLB 模型',
+    defaultPaint: '#f8fafc',
+    extraRotY: Math.PI,
+    urls: [
+      'assets/models/cars/lamborghini_countach_5000qv__www.vecarz.com.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/lamborghini_countach_5000qv__www.vecarz.com.glb'
+    ]
+  },
+  {
+    id: 'ferrari_f40_lbw',
+    label: 'LB-Works Ferrari F40 Widebody',
+    desc: '日本自由步寬體改裝・2.9L V8 雙渦輪 80 年代終極躍馬街車 GLB 模型',
+    defaultPaint: '#dc2626',
+    urls: [
+      'assets/models/cars/lb-works_ferrari_f40__www.vecarz.com.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/lb-works_ferrari_f40__www.vecarz.com.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_aventador',
+    label: 'Lamborghini Aventador LP 700-4',
+    desc: '蠻牛旗艦 6.5L 自然進氣 V12・四輪驅動單體碳纖超跑 GLB 模型',
+    defaultPaint: '#eab308',
+    urls: [
+      'assets/models/cars/lamborghini_aventador.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/lamborghini_aventador.glb'
+    ]
+  },
+  // --- GT3 / CLASS S ADDITIONS ---
+  {
+    id: 'ferrari_296_gt3',
+    label: 'Ferrari 296 GT3',
+    desc: '馬拉內羅新世代 3.0L V6 雙渦輪 GT3 戰車・高精度 ORECA 底盤 GLB 模型',
+    defaultPaint: '#dc2626',
+    overrideYawRad: 0.9100,
+    urls: [
+      'assets/models/cars/ferrari_296_gt3.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/ferrari_296_gt3.glb'
+    ]
+  },
+  {
+    id: 'ferrari_488_gt3',
+    label: 'Ferrari 488 GT3 EVO',
+    desc: '利曼與 GTWC 冠軍常勝軍・3.9L V8 雙渦輪耐力賽 GT3 EVO GLB 模型',
+    defaultPaint: '#ef4444',
+    overrideYawRad: 0.9093,
+    urls: [
+      'assets/models/cars/ferrari_488_gt3.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/ferrari_488_gt3.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_huracan_gt3',
+    label: 'Lamborghini Huracan GT3 EVO2',
+    desc: '聖亞加塔廠隊 5.2L V10 自然進氣・車頂進氣導管高空力 GT3 GLB 模型',
+    defaultPaint: '#22c55e',
+    urls: [
+      'assets/models/cars/lamborghini_huracan_gt3.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/lamborghini_huracan_gt3.glb'
+    ]
+  },
+  {
+    id: 'mclaren_650s_gt3',
+    label: 'McLaren 650S GT3',
+    desc: '沃金輕量化碳纖單體座艙・3.8L V8 雙渦輪高速下壓力 GT3 GLB 模型',
+    defaultPaint: '#f97316',
+    extraRotY: Math.PI,
+    urls: [
+      'assets/models/cars/mclaren_650s_gt3.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/mclaren_650s_gt3.glb'
+    ]
+  },
+  // --- HYPER / CLASS R ADDITIONS ---
+  {
+    id: 'mclaren_p1_gtr',
+    label: 'McLaren P1 GTR Track',
+    desc: '賽道專屬無限制版油電神獸・986 HP 固定式大尾翼極致下壓力 GLB 模型',
+    defaultPaint: '#eab308',
+    urls: [
+      'assets/models/cars/2015_mclaren_p1_gtr.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/2015_mclaren_p1_gtr.glb'
+    ]
+  },
+  {
+    id: 'ferrari_fxxk_evo',
+    label: 'Ferrari FXX-K EVO',
+    desc: 'XX 計畫賽道測試終極躍馬・1,036 HP V12 HY-KERS 與中央雙定風翼 GLB 模型',
+    defaultPaint: '#dc2626',
+    extraRotY: Math.PI,
+    urls: [
+      'assets/models/cars/2018_ferrari_fxx-k_evo.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/2018_ferrari_fxx-k_evo.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_essenza',
+    label: 'Lamborghini Essenza SCV12',
+    desc: 'Squadra Corse 賽道部門直系・830 HP 最強自然進氣 V12 原型碳纖車殼 GLB 模型',
+    defaultPaint: '#10b981',
+    urls: [
+      'assets/models/cars/lamborghini_essenza_scv12.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/lamborghini_essenza_scv12.glb'
+    ]
+  },
+  {
+    id: 'ferrari_laferrari',
+    label: 'Ferrari LaFerrari',
+    desc: '聖殿級油電馬王・6.3L V12＋HY-KERS 主動式尾翼旗艦 Hypercar GLB 模型',
+    defaultPaint: '#dc2626',
+    urls: [
+      'assets/models/cars/2014_ferrari_laferrari.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/2014_ferrari_laferrari.glb'
+    ]
+  },
+  {
+    id: 'mclaren_p1',
+    label: 'McLaren P1',
+    desc: '三大神車之一・IPAS 瞬時油電輔助＋液壓可調式寬幅尾翼 Hypercar GLB 模型',
+    defaultPaint: '#f97316',
+    urls: [
+      'assets/models/cars/mclaren_p1.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/mclaren_p1.glb'
+    ]
+  },
+  {
+    id: 'ferrari_sf90_xx',
+    label: 'Ferrari SF90 XX Stradale',
+    desc: '可合法上路的 XX 系列特仕躍馬・三馬達 1,016 HP 四驅固定尾翼 GLB 模型',
+    defaultPaint: '#ef4444',
+    urls: [
+      'assets/models/cars/2023_ferrari_sf90_xx_stradale.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/2023_ferrari_sf90_xx_stradale.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_revuelto',
+    label: 'Lamborghini Revuelto V12 Hybrid',
+    desc: '蠻牛新世代大牛旗艦・6.5L V12＋三馬達 1,001 HP HPEV 插電超跑 GLB 模型',
+    defaultPaint: '#f97316',
+    urls: [
+      'assets/models/cars/free_lamborghini_revuelto.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/free_lamborghini_revuelto.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_centenario',
+    label: 'Lamborghini Centenario LP 770-4',
+    desc: '創辦人百年誕辰紀念特仕・全碳纖空力車體與後輪轉向大牛 GLB 模型',
+    defaultPaint: '#1e293b',
+    extraRotY: Math.PI,
+    urls: [
+      'assets/models/cars/free__lamborghini_centenario_lp-770.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/free__lamborghini_centenario_lp-770.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_veneno',
+    label: 'Lamborghini Veneno',
+    desc: '極致珍稀空氣力學毒藥・鯊魚鰭導流翼與 LMP1 等級尾翼設定 GLB 模型',
+    defaultPaint: '#cbd5e1',
+    extraRotY: Math.PI,
+    urls: [
+      'assets/models/cars/lamborghini_venevo.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/lamborghini_venevo.glb'
+    ]
+  },
+  {
+    id: 'lamborghini_sc20',
+    label: 'Lamborghini SC20 Squadra Corse',
+    desc: '全球唯一無前檔風玻璃開放式座艙・770 HP V12 客製賽道超跑 GLB 模型',
+    defaultPaint: '#f8fafc',
+    urls: [
+      'assets/models/cars/2020_lamborghini_sc20.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/2020_lamborghini_sc20.glb'
+    ]
+  },
+  // --- LMP1 / VISION GT / CLASS X ADDITIONS ---
+  {
+    id: 'lamborghini_terzo',
+    label: 'Lamborghini Terzo Millennio',
+    desc: '攜手 MIT 打造之千禧年純電超容概念・四輪輪轂馬達未來原型 GLB 模型',
+    defaultPaint: '#1e293b',
+    extraRotY: Math.PI,
+    hideNodeRegex: /detach_(wing_10|03_5|anim04)/i,
+    urls: [
+      'assets/models/cars/free__lamborghini_terzo_millennio.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/free__lamborghini_terzo_millennio.glb'
+    ]
+  },
+  {
+    id: 'alpine_vision',
+    label: 'Alpine Vision Gran Turismo',
+    desc: '法系開放式單座原型理念車・超低重心＋主動側風煞減速板 GLB 模型',
+    defaultPaint: '#0284c7',
+    urls: [
+      'assets/models/cars/alpine-vision.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/alpine-vision.glb'
+    ]
+  },
+  {
+    id: 'mazda_furai',
+    label: 'Mazda Furai Concept Prototype',
+    desc: '風籟三轉子賽道傳奇・450 HP R20B 轉子引擎結合 Courage C65 LMP2 底盤 GLB 模型',
+    defaultPaint: '#1e293b',
+    urls: [
+      'assets/models/cars/mazda_furai__www.vecarz.com.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/mazda_furai__www.vecarz.com.glb'
+    ]
+  },
+  {
+    id: 'mazda_lm_vision',
+    label: 'Mazda LM55 Vision Gran Turismo',
+    desc: '致敬 1991 利曼冠軍 787B・極致輕量 880kg 魂動耐力原型賽車 GLB 模型',
+    defaultPaint: '#ef4444',
+    urls: [
+      'assets/models/cars/mazda_lm_vision__www.vecarz.com.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/mazda_lm_vision__www.vecarz.com.glb'
+    ]
+  },
+  // --- F1 / CLASS F1 ---
+  {
+    id: 'f1_2026_sf26',
+    label: 'Scuderia Ferrari SF-26 F1 (2026)',
+    desc: '2026 新規主動空力＋50/50 混合動力一級方程式・768kg 終極單座戰車 GLB 模型',
+    defaultPaint: '#dc2626',
+    targetLength: 5.10,
+    extraRotY: Math.PI,
+    urls: [
+      'assets/models/cars/f1_2026_sf26.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/f1_2026_sf26.glb'
+    ]
   }
 ];
 
@@ -2788,31 +3054,63 @@ function createGT3CarMesh(bodyColor, isGhost = false, opacity = 1.0, kind = null
   return group;
 }
 
+// ---- Exact vertex-level world AABB (avoids Three.js Box3.setFromObject AABB inflation on rotated child nodes) ----
+function computeExactWorldBox(rootObj, meshFilter) {
+  const box = new THREE.Box3();
+  if (!rootObj) return box;
+  rootObj.updateMatrixWorld(true);
+  const v = new THREE.Vector3();
+  rootObj.traverse(o => {
+    if (!o.isMesh || o.visible === false || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
+    if (meshFilter && !meshFilter(o)) return;
+    const pos = o.geometry.attributes.position;
+    const cnt = pos.count;
+    const step = cnt <= 8000 ? 1 : Math.max(1, Math.floor(cnt / 4000));
+    for (let i = 0; i < cnt; i += step) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+      box.expandByPoint(v);
+    }
+    if (cnt > 0 && (cnt - 1) % step !== 0) {
+      v.fromBufferAttribute(pos, cnt - 1).applyMatrix4(o.matrixWorld);
+      box.expandByPoint(v);
+    }
+  });
+  return box;
+}
+
 // ---- GLB normalisation: strip floor planes, auto-detect forward (+X), GT3 scale, ground contact ----
-function normalizeVehicleScene(srcScene) {
+function normalizeVehicleScene(srcScene, targetPresetId) {
+  const presetCfg = CAR_MODEL_PRESETS.find(p => p.id === targetPresetId) || null;
   const root = new THREE.Group();
   root.name = 'apex_hifi_root';
   const orient = new THREE.Group();
   orient.add(srcScene);
   root.add(orient);
 
-  // Strip studio floor / shadow / worldgrid / rim_blur planes commonly bundled inside GLB car files
+  // Strip studio floor / shadow / worldgrid / rim_blur planes & per-preset exploded helper nodes
   srcScene.updateMatrixWorld(true);
-  const fullBox = new THREE.Box3().setFromObject(srcScene);
+  if (presetCfg && presetCfg.hideNodeRegex) {
+    srcScene.traverse(o => {
+      if (presetCfg.hideNodeRegex.test(o.name || '')) {
+        o.traverse(d => { d.visible = false; });
+      }
+    });
+  }
+  const fullBox = computeExactWorldBox(srcScene);
   const fullSize = fullBox.getSize(new THREE.Vector3());
   srcScene.traverse(o => {
     if (/geo_rim_blur/i.test(o.name || '')) {
-      o.visible = false;
+      o.traverse(d => { d.visible = false; });
       return;
     }
-    if (!o.isMesh) return;
+    if (!o.isMesh || o.visible === false) return;
     const nm = ((o.name || '') + ' ' + (o.parent ? o.parent.name || '' : '')).toLowerCase();
     const mName = (Array.isArray(o.material) ? o.material.map(m => m && m.name).join(' ') : (o.material && o.material.name) || '').toLowerCase();
     if (/shadow|floor|ground|backdrop|stage|studio|podium|base_plate|ao_plane|road|plane0|worldgrid|rim_blur/i.test(nm + ' ' + mName)) {
       o.visible = false;
       return;
     }
-    const b = new THREE.Box3().setFromObject(o);
+    const b = computeExactWorldBox(o);
     const sz = b.getSize(new THREE.Vector3());
     if (sz.y < fullSize.y * 0.03 && (sz.x > fullSize.x * 1.15 || sz.z > fullSize.z * 1.15)) {
       o.visible = false;
@@ -2820,43 +3118,50 @@ function normalizeVehicleScene(srcScene) {
   });
 
   root.updateMatrixWorld(true);
-  let box = new THREE.Box3();
-  srcScene.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+  let box = computeExactWorldBox(srcScene);
   if (box.isEmpty()) box = new THREE.Box3().setFromObject(srcScene);
   if (box.isEmpty()) throw new Error('模型沒有任何可見幾何 (empty bounding box)');
   const rawSize = box.getSize(new THREE.Vector3());
 
-  // Align long axis with X (+X forward in this sim).
-  const longIsZ = rawSize.z > rawSize.x;
-  let baseRotY = longIsZ ? -Math.PI / 2 : 0;
-  orient.rotation.y = baseRotY;
-  root.updateMatrixWorld(true);
+  let baseRotY = 0;
+  if (presetCfg && typeof presetCfg.overrideYawRad === 'number') {
+    baseRotY = presetCfg.overrideYawRad;
+  } else {
+    // Align long axis with X (+X forward in this sim).
+    const longIsZ = rawSize.z > rawSize.x;
+    baseRotY = longIsZ ? -Math.PI / 2 : 0;
+    orient.rotation.y = baseRotY;
+    root.updateMatrixWorld(true);
 
-  // Auto-detect whether front wheels/lights point toward +X or -X (some GLBs face -Z, others face +Z)
-  let frontSumX = 0, frontCnt = 0, rearSumX = 0, rearCnt = 0;
-  srcScene.traverse(o => {
-    if (!o.visible) return;
-    const nm = (o.name || '');
-    let matNames = '';
-    if (o.isMesh && o.material) {
-      const ms = Array.isArray(o.material) ? o.material : [o.material];
-      matNames = ms.map(m => (m && m.name) || '').join(' ');
-    }
-    const combined = nm + ' ' + matNames;
-    const isFront = /(?:^|[^a-z])(wheel[_\s-]?f[lr]|wheel[_\s-]?[lr]f|rim[_\s-]?f[lr]|rim[_\s-]?[lr]f|tire[_\s-]?f[lr]|tyre[_\s-]?f[lr]|disc[_\s-]?[lr]f|wheelf|front[_\s-]+[lr](?:[^a-z]|$)|front[_\s-]?bumper|head[_\s-]?light)/i.test(combined);
-    const isRear = /(?:^|[^a-z])(wheel[_\s-]?r[lr]|wheel[_\s-]?[lr]r|rim[_\s-]?r[lr]|rim[_\s-]?[lr]r|tire[_\s-]?r[lr]|tyre[_\s-]?r[lr]|disc[_\s-]?[lr]r|wheelb|rear[_\s-]+[lr](?:[^a-z]|$)|rear[_\s-]?bumper|tail[_\s-]?light|brake[_\s-]?lamp|red[_\s-]?glass)/i.test(combined);
-    if (isFront || isRear) {
-      const wb = new THREE.Box3().setFromObject(o);
-      if (!wb.isEmpty()) {
-        const wc = wb.getCenter(new THREE.Vector3());
-        if (isFront) { frontSumX += wc.x; frontCnt++; }
-        if (isRear) { rearSumX += wc.x; rearCnt++; }
+    // Auto-detect whether front wheels/lights point toward +X or -X (some GLBs face -Z, others face +Z)
+    let frontSumX = 0, frontCnt = 0, rearSumX = 0, rearCnt = 0;
+    srcScene.traverse(o => {
+      if (!o.visible) return;
+      const nm = (o.name || '');
+      let matNames = '';
+      if (o.isMesh && o.material) {
+        const ms = Array.isArray(o.material) ? o.material : [o.material];
+        matNames = ms.map(m => (m && m.name) || '').join(' ');
       }
+      const combined = nm + ' ' + matNames;
+      const isFront = /(?:^|[^a-z])(wheel[_\s-]?f[lr]|wheel[_\s-]?[lr]f|rim[_\s-]?f[lr]|rim[_\s-]?[lr]f|tire[_\s-]?f[lr]|tyre[_\s-]?f[lr]|disc[_\s-]?[lr]f|wheelf|front[_\s-]+[lr](?:[^a-z]|$)|front[_\s-]?bumper|head[_\s-]?light)/i.test(combined);
+      const isRear = /(?:^|[^a-z])(wheel[_\s-]?r[lr]|wheel[_\s-]?[lr]r|rim[_\s-]?r[lr]|rim[_\s-]?[lr]r|tire[_\s-]?r[lr]|tyre[_\s-]?r[lr]|disc[_\s-]?[lr]r|wheelb|rear[_\s-]+[lr](?:[^a-z]|$)|rear[_\s-]?bumper|tail[_\s-]?light|brake[_\s-]?lamp|red[_\s-]?glass)/i.test(combined);
+      if (isFront || isRear) {
+        const wb = o.isMesh ? computeExactWorldBox(o) : new THREE.Box3().setFromObject(o);
+        if (!wb.isEmpty()) {
+          const wc = wb.getCenter(new THREE.Vector3());
+          if (isFront) { frontSumX += wc.x; frontCnt++; }
+          if (isRear) { rearSumX += wc.x; rearCnt++; }
+        }
+      }
+    });
+    if ((frontCnt > 0 && rearCnt > 0 && (frontSumX / frontCnt) < (rearSumX / rearCnt)) ||
+      (frontCnt === 0 && rearCnt > 0 && (rearSumX / rearCnt) > 0.25)) {
+      baseRotY += Math.PI;
     }
-  });
-  if ((frontCnt > 0 && rearCnt > 0 && (frontSumX / frontCnt) < (rearSumX / rearCnt)) ||
-    (frontCnt === 0 && rearCnt > 0 && (rearSumX / rearCnt) > 0.25)) {
-    baseRotY += Math.PI;
+    if (presetCfg && presetCfg.extraRotY) {
+      baseRotY += presetCfg.extraRotY;
+    }
   }
 
   orient.rotation.y = baseRotY +
@@ -2864,26 +3169,24 @@ function normalizeVehicleScene(srcScene) {
     carAssetState.yawSteps * (Math.PI / 2);
   root.updateMatrixWorld(true);
   const isGlowHelper = o => /glows/i.test(o.name || '');
-  box = new THREE.Box3();
-  orient.traverse(o => { if (o.isMesh && o.visible && !isGlowHelper(o)) box.expandByObject(o); });
-  if (box.isEmpty()) orient.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+  box = computeExactWorldBox(orient, o => !isGlowHelper(o));
+  if (box.isEmpty()) box = computeExactWorldBox(orient);
   let size = box.getSize(new THREE.Vector3());
 
-  const s = CAR_TARGET_DIMS.length / Math.max(0.001, size.x);
+  const targetLen = (presetCfg && presetCfg.targetLength) || CAR_TARGET_DIMS.length;
+  const s = targetLen / Math.max(0.001, size.x);
   orient.scale.setScalar(s);
   root.updateMatrixWorld(true);
-  box = new THREE.Box3();
-  orient.traverse(o => { if (o.isMesh && o.visible && !isGlowHelper(o)) box.expandByObject(o); });
-  if (box.isEmpty()) orient.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+  box = computeExactWorldBox(orient, o => !isGlowHelper(o));
+  if (box.isEmpty()) box = computeExactWorldBox(orient);
   const center = box.getCenter(new THREE.Vector3());
   orient.position.set(-center.x, -box.min.y, -center.z);
   root.updateMatrixWorld(true);
-  box = new THREE.Box3();
-  root.traverse(o => { if (o.isMesh && o.visible && !isGlowHelper(o)) box.expandByObject(o); });
-  if (box.isEmpty()) root.traverse(o => { if (o.isMesh && o.visible) box.expandByObject(o); });
+  box = computeExactWorldBox(root, o => !isGlowHelper(o));
+  if (box.isEmpty()) box = computeExactWorldBox(root);
   root.traverse(o => {
     if (o.isMesh && o.visible && isGlowHelper(o)) {
-      const gb = new THREE.Box3().setFromObject(o);
+      const gb = computeExactWorldBox(o);
       if (gb.min.x < box.min.x - 0.25 || gb.max.x > box.max.x + 0.25) o.visible = false;
     }
   });
@@ -2969,21 +3272,32 @@ function attachGT3AeroKit(root, presetId) {
   root.updateMatrixWorld(true);
 }
 
-// ---- Split merged 4-corner wheel/disc/caliper meshes (e.g., Porsche 919 Hybrid Evo Object_2..5) ----
-function splitMergedWheelMeshes(root) {
+// ---- Split merged 4-corner or 2-wheel axle-pair meshes (Porsche 919 Evo + general merged GLB tires/rims/discs) ----
+function splitMergedWheelMeshes(root, targetPresetId) {
   root.updateMatrixWorld(true);
   const rootInv = new THREE.Matrix4().copy(root.matrixWorld).invert();
   const toSplit = [];
   root.traverse(o => {
     if (!o.isMesh || !o.visible || !o.geometry || !o.geometry.attributes.position) return;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
-    const matNames = mats.map(m => (m && m.name ? m.name.trim() : '')).join(' ');
-    if (/\.00[6789]\b/.test(matNames)) {
-      const b = new THREE.Box3().setFromObject(o);
-      const sz = b.getSize(new THREE.Vector3());
+    const matNamesArr = mats.map(m => (m && m.name ? m.name.trim() : ''));
+    const matNames = matNamesArr.join(' ');
+    const isPorscheMerged = (targetPresetId === 'porsche_919_evo') && /(?:^|\s)\.00[6789](?:\s|$)/.test(matNames);
+    const isGeneralWheelMat = mats.some(m => /^(tyre|tire|tyre_tread|tyre_sides|sf25_wheel_hub|wheel|pneu|tire32|crbn_jante|rim|disc_?[lr]?[fr]?|discs|brake_?dis[ck]|geotire[a-z0-9]*)(\.\d+)?$/i.test((m && m.name ? m.name.trim() : '')));
+    const isTargetedWheelMat =
+      (targetPresetId === 'lamborghini_veneno' && mats.some(m => /^material_5$/i.test((m && m.name ? m.name.trim() : '')))) ||
+      (targetPresetId === 'lamborghini_countach' && mats.some(m => /^meshpart2mtl$/i.test((m && m.name ? m.name.trim() : ''))));
+
+    if (!isPorscheMerged && !isGeneralWheelMat && !isTargetedWheelMat) return;
+    const b = computeExactWorldBox(o);
+    if (b.isEmpty()) return;
+    const sz = b.getSize(new THREE.Vector3());
+    if (isPorscheMerged) {
       if (sz.x > 1.8 && sz.z > 1.1) {
-        toSplit.push({ mesh: o, isCaliper: /\.006\b/.test(matNames) });
+        toSplit.push({ mesh: o, isCaliper: /(?:^|\s)\.006(?:\s|$)/.test(matNames) });
       }
+    } else if (sz.z > 1.1 && sz.y < 1.05 && b.min.y < 0.35) {
+      toSplit.push({ mesh: o, isCaliper: false });
     }
   });
   toSplit.forEach(({ mesh, isCaliper }) => {
@@ -3057,15 +3371,15 @@ function rigHiFiWheels(root) {
     return ms.some(m => m && re.test((m.name || '').trim()));
   });
   const isSingleCornerSize = o => {
-    const b = new THREE.Box3().setFromObject(o);
+    const b = computeExactWorldBox(o);
     if (b.isEmpty()) return false;
     const sz = b.getSize(new THREE.Vector3());
     return sz.x <= 1.35 && sz.z <= 1.35 && sz.y > 0.16 && sz.y < 1.25;
   };
 
   let cands = []
-    .concat(byName(/wheel|whl|tire|tyre|rim/i))
-    .concat(byMatName(/^(tyre|tyre_blk|tire|wheel)$/i))
+    .concat(byName(/wheel|whl|tire|tyre|rim|lunzi|luntai|lungu|wheel_split_/i))
+    .concat(byMatName(/^(tyre|tyre_blk|tire|wheel|pneu|jante|tire32|crbn_jante|tyre_tread|tyre_sides|sf25_wheel_hub|geotire[a-z0-9]*)(\.\d+)?$/i))
     .concat(byName(/^cylinder\.00[0-3]$/i))
     .concat(byName(/^cube\.0(01|02|09|10)$/i));
   // Deduplicate & drop multi-wheel container groups (e.g. Wheel1A_3D_00) BEFORE top-most pruning
@@ -3079,14 +3393,14 @@ function rigHiFiWheels(root) {
   });
 
   const infos = cands.map(o => {
-    const b = new THREE.Box3().setFromObject(o);
+    const b = computeExactWorldBox(o);
     return { o, b, c: b.getCenter(new THREE.Vector3()), size: b.getSize(new THREE.Vector3()) };
   }).filter(i => !i.b.isEmpty() && i.size.y > 0.16 && i.size.y < 1.25 && i.c.y < CAR_TARGET_DIMS.height * 0.78);
 
   // Also locate top-most brake disc nodes (spin with wheel) and brake caliper/knuckle nodes (steer with wheel hub)
   const filterTopMost = list => {
     const single = list.filter(o => {
-      const b = new THREE.Box3().setFromObject(o);
+      const b = o.isMesh ? computeExactWorldBox(o) : new THREE.Box3().setFromObject(o);
       if (b.isEmpty()) return false;
       const sz = b.getSize(new THREE.Vector3());
       return sz.x <= 1.35 && sz.z <= 1.35;
@@ -3097,7 +3411,7 @@ function rigHiFiWheels(root) {
       return true;
     });
   };
-  const discNodes = filterTopMost(all.filter(o => /\b(disc|disk)_[lrf]{2}|sm_disk_[lr]|^disk\.\d+/i.test(o.name || '')));
+  const discNodes = filterTopMost(all.filter(o => /\b(disc|disk)_[lrf]{2}|sm_disk_[lr]|^disk\.\d+|sliver\d*/i.test(o.name || '')));
   const caliperNodes = filterTopMost(all.filter(o => /caliper|calliper|disk_caliper|sm_brake_[flr]{2}|\bsusp_[lrf]{2}/i.test(o.name || '')));
 
   const quads = { FL: [], FR: [], RL: [], RR: [] };
@@ -3119,15 +3433,15 @@ function rigHiFiWheels(root) {
     steer.updateMatrixWorld(true);
     list.forEach(i => spin.attach(i.o));   // preserves world transform
 
-    // Attach matching brake discs to spin, and brake calipers to steer
+    // Attach matching brake discs/hubcaps to spin, and brake calipers to steer
     discNodes.forEach(dn => {
-      const db = new THREE.Box3().setFromObject(dn);
+      const db = dn.isMesh ? computeExactWorldBox(dn) : new THREE.Box3().setFromObject(dn);
       if (!db.isEmpty() && db.getCenter(new THREE.Vector3()).distanceTo(c) < 0.48) {
         spin.attach(dn);
       }
     });
     caliperNodes.forEach(cn => {
-      const cb = new THREE.Box3().setFromObject(cn);
+      const cb = cn.isMesh ? computeExactWorldBox(cn) : new THREE.Box3().setFromObject(cn);
       if (!cb.isEmpty() && cb.getCenter(new THREE.Vector3()).distanceTo(c) < 0.48) {
         steer.attach(cn);
       }
@@ -3379,9 +3693,9 @@ function buildHiFiAssetsFromScene(rawSceneObj, targetPresetId) {
       (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m && m.userData) m.userData.apexRole = null; });
     }
   });
-  const norm = normalizeVehicleScene(src);
+  const norm = normalizeVehicleScene(src, targetPresetId);
   attachGT3AeroKit(norm.root, targetPresetId);
-  splitMergedWheelMeshes(norm.root);
+  splitMergedWheelMeshes(norm.root, targetPresetId);
   const matInfo = classifyHiFiMaterials(norm.root);
   const wheelInfo = rigHiFiWheels(norm.root);
 
@@ -3417,9 +3731,11 @@ function buildHiFiTemplate(targetPresetId) {
 }
 
 const CLASS_AI_ROSTERS = {
-  GT3: ['ferrari458', 'porsche911', 'amggt3', 'procedural'],
-  HYPER: ['aston_vulcan', 'mclaren_senna', 'zenvo_tsrs', 'pagani_huayra_r'],
-  LMP1: ['porsche_919_evo', 'amg_one', 'pagani_huayra_r', 'mclaren_senna']
+  STREET: ['lamborghini_aventador', 'ferrari_f40_lbw', 'lamborghini_countach', 'nissan_xtrail'],
+  GT3: ['ferrari458', 'porsche911', 'amggt3', 'procedural', 'mclaren_650s_gt3', 'lamborghini_huracan_gt3', 'ferrari_296_gt3', 'ferrari_488_gt3'],
+  HYPER: ['aston_vulcan', 'mclaren_senna', 'zenvo_tsrs', 'pagani_huayra_r', 'ferrari_laferrari', 'mclaren_p1', 'mclaren_p1_gtr', 'ferrari_fxxk_evo', 'lamborghini_revuelto', 'lamborghini_sc20'],
+  LMP1: ['porsche_919_evo', 'amg_one', 'mazda_furai', 'alpine_vision', 'lamborghini_terzo', 'mazda_lm_vision'],
+  F1: ['f1_2026_sf26', 'porsche_919_evo', 'mazda_lm_vision', 'amg_one']
 };
 
 function syncAIMultiCarModels(playerPresetId) {
@@ -3851,16 +4167,41 @@ const garageUI = {
     if (cur) cur.textContent = carAssetState.label;
     const list = document.getElementById('garage-preset-list');
     if (list) {
-      list.innerHTML = CAR_MODEL_PRESETS.map(p => {
-        const active = p.id === carAssetState.presetId;
-        return `<div data-preset="${p.id}" class="cursor-pointer rounded-xl p-3 border-2 ${active ? 'border-cyan-400' : 'border-slate-800'} bg-slate-950 transition">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-white">${p.label}</span>
-              <span class="font-mono-tech text-[10px] ${active ? 'text-cyan-300' : 'text-slate-500'}">${active ? '使用中' : '選擇'}</span>
-            </div>
-            <div class="text-[11px] text-slate-500 mt-0.5">${p.desc}</div>
-          </div>`;
-      }).join('') + (carAssetState.presetId === 'custom-file' || carAssetState.presetId === 'custom-url'
+      const classGroups = [
+        { id: 'STREET', label: 'STREET · CLASS A 街車與經典', color: '#34d399' },
+        { id: 'GT3', label: 'GT3 · CLASS S 統規賽車', color: '#fb923c' },
+        { id: 'HYPER', label: 'HYPER · CLASS R 頂級超跑', color: '#c084fc' },
+        { id: 'LMP1', label: 'LMP1 · CLASS X 原型 / VISION GT', color: '#38bdf8' },
+        { id: 'F1', label: 'F1 · CLASS F1 一級方程式', color: '#f43f5e' }
+      ];
+      const getCls = (pid) => {
+        if (typeof window.CAR_CATALOG !== 'undefined' && Array.isArray(window.CAR_CATALOG)) {
+          const c = window.CAR_CATALOG.find(x => x.id === pid);
+          if (c && c.carClass) return c.carClass;
+        }
+        if (typeof CAR_HANDLING_PROFILES !== 'undefined' && CAR_HANDLING_PROFILES[pid]) {
+          return CAR_HANDLING_PROFILES[pid].carClass || 'GT3';
+        }
+        return 'GT3';
+      };
+      const sectionsHtml = classGroups.map(grp => {
+        const items = CAR_MODEL_PRESETS.filter(p => getCls(p.id) === grp.id);
+        if (!items.length) return '';
+        return `<div class="pt-1">
+          <div class="text-[10px] font-mono-tech font-extrabold tracking-widest mb-1.5" style="color:${grp.color};">${grp.label} (${items.length})</div>
+          <div class="space-y-1.5">${items.map(p => {
+            const active = p.id === carAssetState.presetId;
+            return `<div data-preset="${p.id}" class="cursor-pointer rounded-xl p-2.5 border-2 ${active ? 'border-cyan-400' : 'border-slate-800'} bg-slate-950 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-xs">${p.label}</span>
+                <span class="font-mono-tech text-[10px] ${active ? 'text-cyan-300' : 'text-slate-500'}">${active ? '使用中' : '選擇'}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5">${p.desc}</div>
+            </div>`;
+          }).join('')}</div>
+        </div>`;
+      }).join('');
+      list.innerHTML = sectionsHtml + (carAssetState.presetId === 'custom-file' || carAssetState.presetId === 'custom-url'
         ? `<div class="rounded-xl p-3 border-2 border-cyan-400 bg-slate-950"><span class="font-bold text-white">自訂：${carAssetState.label}</span></div>` : '');
     }
     const liv = document.getElementById('btn-garage-livery');
@@ -4644,4 +4985,7 @@ window.resizeBloomTarget = resizeBloomTarget;
 window.renderSceneWithOptionalBloom = renderSceneWithOptionalBloom;
 window.getProceduralLiveryTexture = getProceduralLiveryTexture;
 window.rainSystem = rainSystem;
+window.buildHiFiAssetsFromScene = buildHiFiAssetsFromScene;
+window.disposeObjectDeep = disposeObjectDeep;
+window.computeExactWorldBox = computeExactWorldBox;
 if (window.__apexTrace) window.__apexTrace('render.js', 'OK');

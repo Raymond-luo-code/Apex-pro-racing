@@ -48,8 +48,9 @@ function waitUntil(fn, timeoutMs = 20000) {
       const c = win.CIRCUITS[idx];
       // Sample 200 heights around track
       let minY = Infinity, maxY = -Infinity;
+      const trackL = (typeof win.getTotalTrackLength === 'function') ? win.getTotalTrackLength() : 5000;
       for (let k = 0; k < 200; k++) {
-        const n = win.sampleTrackAtS((k / 200) * 5000);
+        const n = win.sampleTrackAtS((k / 200) * trackL);
         if (n.y < minY) minY = n.y;
         if (n.y > maxY) maxY = n.y;
       }

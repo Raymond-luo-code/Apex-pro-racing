@@ -8,131 +8,500 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         {
           id: 'procedural',
           carClass: 'GT3',
+          brand: 'BMW',
+          subGroup: 'gt3',
           classLabel: 'GT3 · CLASS S',
           name: 'BMW M4 GT3 EVO // APEX WORKS',
           shortTag: '高精度 3D 模型 · 3.0L 雙渦輪直六',
           origin: '🇩🇪 慕尼黑廠隊研發 · 3.0L P58 雙渦輪直列六缸 · 前中置後驅 (FMR)',
-          desc: '巴伐利亞廠隊頂級 GT3 賽道武器！搭載 3.0L 雙渦輪增壓直列六缸引擎與六速序列式變速箱，寬體碳纖維空力套件與大尺寸天鵝頸尾翼帶來均衡的高速下壓力與精準入彎指向。',
-          specs: { topSpeed: '307 km/h', accel: '3.4 s', power: '590 HP', weight: '1,250 kg' },
-          bars: { speed: 91, accel: 92, handling: 95, braking: 95 },
+          desc: '巴伐利亞廠隊頂級 GT3 賽道武器！搭載 3.0L 雙渦輪增壓直列六缸引擎與六速序列式變速箱，寬體碳纖維空力套件與大尺寸天鵝頸尾翼帶來均衡的高速下壓力 (~650 kgf@250) 與精準入彎指向。',
+          specs: { topSpeed: '305 km/h', accel: '3.5 s', power: '590 HP', weight: '1,245 kg' },
+          bars: { speed: 72, accel: 78, handling: 74, braking: 70 },
           defaultPaint: '#ef4444',
           unlocked: true
         },
         {
           id: 'ferrari458',
           carClass: 'GT3',
+          brand: 'Ferrari',
+          subGroup: 'gt3',
           classLabel: 'GT3 · CLASS S',
           name: 'FERRARI 458 ITALIA GT3',
           shortTag: '高精度 3D 模型 · 4.5L V8 超跑',
           origin: '🇮🇹 義大利馬拉內羅 · 4.5L V8 自然進氣 · 中置後驅 (MR)',
-          desc: '源自義大利傳奇躍馬血統的 GT3 統規賽車。中置 9,000 rpm 高轉速 V8 引擎兼顧迷人聲浪與出彎爆發力，搭配專屬碳纖維 GT3 天鵝頸大尾翼、前定風翼與後擴散器。',
+          desc: '源自義大利傳奇躍馬血統的 GT3 統規賽車。中置 8,800 rpm 高轉速 V8 引擎兼顧迷人聲浪與出彎爆發力，搭配專屬碳纖維 GT3 天鵝頸大尾翼、前定風翼與後擴散器。',
           specs: { topSpeed: '308 km/h', accel: '3.4 s', power: '570 HP', weight: '1,215 kg' },
-          bars: { speed: 92, accel: 93, handling: 94, braking: 92 },
+          bars: { speed: 73, accel: 80, handling: 73, braking: 70 },
           defaultPaint: '#dc2626',
           unlocked: true
         },
         {
           id: 'porsche911',
           carClass: 'GT3',
+          brand: 'Porsche',
+          subGroup: 'gt3',
           classLabel: 'GT3 · CLASS S',
           name: 'PORSCHE 911 GT3 R (992)',
           shortTag: '高精度 3D 模型 · 斯圖加特 RR 六缸',
           origin: '🇩🇪 斯圖加特 · 4.2L 水平對臥六缸 · 後置後驅 (RR)',
           desc: '經典 RR 後置引擎賽道機器（2024 992 GT3 R 廠隊式樣）！短軸距搭配後軸配重帶來無可比擬的入彎指向性與出彎縱向抓地力，重煞循跡入彎（Trail Braking）極限極高。',
           specs: { topSpeed: '306 km/h', accel: '3.3 s', power: '565 HP', weight: '1,250 kg' },
-          bars: { speed: 90, accel: 95, handling: 98, braking: 96 },
+          bars: { speed: 72, accel: 81, handling: 76, braking: 72 },
           defaultPaint: '#10b981',
           unlocked: true
         },
         {
           id: 'amggt3',
           carClass: 'GT3',
+          brand: 'Mercedes-AMG',
+          subGroup: 'gt3',
           classLabel: 'GT3 · CLASS S',
           name: 'MERCEDES-AMG GT3 EVO',
           shortTag: '高精度 3D 模型 · 前中置 6.2L V8',
           origin: '🇩🇪 阿法爾特巴赫 · 6.2L V8 自然進氣 · 前中置後驅 (FMR)',
-          desc: '大排量 6.2L 自然進氣 V8 重裝猛獸！超長車頭與寬體底盤賦予極為穩定的高速巡航表現與全場最高直線尾速，最適合蒙札與富士長直線超車。',
+          desc: '大排量 6.2L 自然進氣 V8 重裝猛獸！超長車頭與寬體底盤賦予極為穩定的高速巡航表現與 GT3 組別最高直線尾速，最適合蒙札與富士長直線超車。',
           specs: { topSpeed: '312 km/h', accel: '3.4 s', power: '600 HP', weight: '1,285 kg' },
-          bars: { speed: 97, accel: 92, handling: 91, braking: 94 },
+          bars: { speed: 75, accel: 80, handling: 72, braking: 71 },
           defaultPaint: '#eab308',
           unlocked: true
         },
         {
+          id: 'ferrari_296_gt3',
+          carClass: 'GT3',
+          brand: 'Ferrari',
+          subGroup: 'gt3',
+          classLabel: 'GT3 · CLASS S',
+          name: 'FERRARI 296 GT3',
+          shortTag: '本地高模 GLB · 3.0L V6 雙渦輪新世代',
+          origin: '🇮🇹 義大利馬拉內羅 · 3.0L V6 雙渦輪 · 中置後驅 (MR)',
+          desc: '躍馬新世代 GT3 統規旗艦！取消公路版油電單元後由 ORECA 全新打造輕量化底盤與高下壓力空力套件，中低轉充沛扭力與銳利彎中姿態兼具。',
+          specs: { topSpeed: '308 km/h', accel: '3.4 s', power: '600 HP', weight: '1,250 kg' },
+          bars: { speed: 73, accel: 80, handling: 75, braking: 71 },
+          defaultPaint: '#dc2626',
+          unlocked: true
+        },
+        {
+          id: 'ferrari_488_gt3',
+          carClass: 'GT3',
+          brand: 'Ferrari',
+          subGroup: 'gt3',
+          classLabel: 'GT3 · CLASS S',
+          name: 'FERRARI 488 GT3 EVO',
+          shortTag: '本地高模 GLB · 3.9L V8 雙渦輪耐力王',
+          origin: '🇮🇹 義大利馬拉內羅 · 3.9L V8 雙渦輪 · 中置後驅 (MR)',
+          desc: '締造利曼與斯帕 24 小時大賽百餘勝戰績的耐力賽神話！EVO 套件針對前保險桿與側裙導流優化，在高速變向與輪胎管理間取得絕佳平衡。',
+          specs: { topSpeed: '307 km/h', accel: '3.4 s', power: '600 HP', weight: '1,260 kg' },
+          bars: { speed: 73, accel: 79, handling: 74, braking: 71 },
+          defaultPaint: '#ef4444',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_huracan_gt3',
+          carClass: 'GT3',
+          brand: 'Lamborghini',
+          subGroup: 'gt3',
+          classLabel: 'GT3 · CLASS S',
+          name: 'LAMBORGHINI HURACAN GT3 EVO2',
+          shortTag: '本地高模 GLB · 5.2L V10 NA 蠻牛戦車',
+          origin: '🇮🇹 聖亞加塔 · 5.2L V10 自然進氣 · 中置後驅 (MR)',
+          desc: '承襲 Super Trofeo EVO2 空力設計與車頂六角形進氣導管，高轉速 5.2L V10 引擎輸出線性可控，搭配大型後擴散器在技術彎角展現驚人循跡穩定度。',
+          specs: { topSpeed: '309 km/h', accel: '3.3 s', power: '585 HP', weight: '1,230 kg' },
+          bars: { speed: 74, accel: 80, handling: 75, braking: 71 },
+          defaultPaint: '#22c55e',
+          unlocked: true
+        },
+        {
+          id: 'mclaren_650s_gt3',
+          carClass: 'GT3',
+          brand: 'McLaren',
+          subGroup: 'gt3',
+          classLabel: 'GT3 · CLASS S',
+          name: 'MCLAREN 650S GT3',
+          shortTag: '本地高模 GLB · 3.8L V8 碳纖單體座艙',
+          origin: '🇬🇧 英國沃金 · 3.8L V8 雙渦輪 · 中置後驅 (MR)',
+          desc: '以 MonoCell 碳纖維單體浴盆車架為核心的英倫 GT3 戰駒，極致輕量化車頭帶來敏捷入彎反應，於銀石與鈴鹿等高速連彎賽道如魚得水。',
+          specs: { topSpeed: '306 km/h', accel: '3.4 s', power: '540 HP', weight: '1,240 kg' },
+          bars: { speed: 72, accel: 79, handling: 76, braking: 72 },
+          defaultPaint: '#f97316',
+          unlocked: true
+        },
+        // --- HYPER / CLASS R ---
+        {
           id: 'aston_vulcan',
           carClass: 'HYPER',
+          brand: 'Aston Martin',
+          subGroup: 'track',
           classLabel: 'HYPER · CLASS R',
           name: 'ASTON MARTIN VULCAN AMR PRO',
-          shortTag: '本地高模 GLB · 7.0L V12 自然進氣',
+          shortTag: '本地高模 GLB · 7.0L V12 賽道限定',
           origin: '🇬🇧 英國蓋登 · 7.0L V12 NA · 前中置後驅 (FMR)',
-          desc: '僅限賽道奔馳的英倫 820 匹 V12 狂獸！AMR Pro 雙層巨型尾翼與碳纖維單體殼車身帶來遠超 GT3 組別的下壓力與直線尾速。',
-          specs: { topSpeed: '322 km/h', accel: '2.9 s', power: '820 HP', weight: '1,350 kg' },
-          bars: { speed: 95, accel: 96, handling: 95, braking: 96 },
+          desc: '僅限賽道奔馳的英倫 820 匹 V12 狂獸！AMR Pro 雙層巨型尾翼於高速產生突破 1,100 kgf 的真實空力壓地力，中後段推力與高速彎道大幅輾壓 GT3。',
+          specs: { topSpeed: '320 km/h', accel: '3.1 s', power: '820 HP', weight: '1,350 kg' },
+          bars: { speed: 78, accel: 84, handling: 82, braking: 80 },
           defaultPaint: '#10b981',
           unlocked: true
         },
         {
           id: 'mclaren_senna',
           carClass: 'HYPER',
+          brand: 'McLaren',
+          subGroup: 'track',
           classLabel: 'HYPER · CLASS R',
           name: 'MCLAREN SENNA GTR-SPEC',
-          shortTag: '本地高模 GLB · 4.0L V8 雙渦輪極致空力',
+          shortTag: '本地高模 GLB · 4.0L V8 極致空力',
           origin: '🇬🇧 沃金 MTC · 4.0L V8 雙渦輪 · 中置後驅 (MR)',
-          desc: '以傳奇車神命名的終極賽道兵器！Monocage III 碳纖維車體僅重 1,198kg，主動式前後空力在高速彎道產生驚人的 800kg 級下壓力。',
-          specs: { topSpeed: '325 km/h', accel: '2.8 s', power: '814 HP', weight: '1,198 kg' },
-          bars: { speed: 95, accel: 97, handling: 98, braking: 99 },
+          desc: '以傳奇車神命名的終極賽道兵器！Monocage III 碳纖維車體僅重 1,198kg，主動式前後空力在高速彎道產生超過 1,000 kgf 下壓力與 2.7G 級過彎實力。',
+          specs: { topSpeed: '330 km/h', accel: '2.9 s', power: '814 HP', weight: '1,198 kg' },
+          bars: { speed: 83, accel: 87, handling: 84, braking: 82 },
           defaultPaint: '#f97316',
           unlocked: true
         },
         {
           id: 'zenvo_tsrs',
           carClass: 'HYPER',
+          brand: 'Zenvo',
+          subGroup: 'track',
           classLabel: 'HYPER · CLASS R',
           name: 'ZENVO TSR-S ACTIVE WING',
-          shortTag: '本地高模 GLB · 5.8L V8 主動傾角尾翼',
+          shortTag: '本地高模 GLB · 5.8L 主動傾角尾翼',
           origin: '🇩🇰 丹麥普雷斯特 · 5.8L V8 雙機械增壓 · 中置後驅 (MR)',
-          desc: '搭載舉世聞名 Centripetal Wing 雙軸向傾角尾翼的北歐超跑！入彎時尾翼主動向內側傾斜產生龐大側向壓地力，擁有 1,177 HP 殘暴加速。',
-          specs: { topSpeed: '328 km/h', accel: '2.8 s', power: '1,177 HP', weight: '1,495 kg' },
-          bars: { speed: 98, accel: 98, handling: 94, braking: 95 },
+          desc: '搭載舉世聞名 Centripetal Wing 雙軸向傾角尾翼的北歐超跑！1,177 HP 狂暴中段再加速橫掃直線，過彎尾翼主動向內傾側抑制內輪浮舉。',
+          specs: { topSpeed: '336 km/h', accel: '2.9 s', power: '1,177 HP', weight: '1,495 kg' },
+          bars: { speed: 85, accel: 88, handling: 77, braking: 76 },
           defaultPaint: '#0284c7',
           unlocked: true
         },
         {
           id: 'pagani_huayra_r',
           carClass: 'HYPER',
+          brand: 'Pagani',
+          subGroup: 'track',
           classLabel: 'HYPER · CLASS R',
           name: 'PAGANI HUAYRA R EVO ROADSTER',
-          shortTag: '本地高模 GLB · HWA 6.0L V12 高轉速長尾',
+          shortTag: '本地高模 GLB · HWA 6.0L V12 長尾',
           origin: '🇮🇹 摩德納 · 6.0L V12-R EVO · 中置後驅 (MR)',
-          desc: '將藝術與 Le Mans 原型車空力融為一體的義大利結晶！極輕 1,060kg 乾燥車重與 9,200 rpm 尖銳 V12 爆發力讓彎速全面輾壓傳統 GT 賽車。',
-          specs: { topSpeed: '332 km/h', accel: '2.7 s', power: '900 HP', weight: '1,060 kg' },
-          bars: { speed: 98, accel: 98, handling: 99, braking: 98 },
+          desc: '將藝術與 Le Mans 原型車空力融為一體的義大利結晶！僅 1,060kg 乾燥車重與 9,200 rpm 尖銳 V12 輸出讓 0-200 與高速長彎全面凌駕傳統 GT 賽車。',
+          specs: { topSpeed: '348 km/h', accel: '2.8 s', power: '900 HP', weight: '1,060 kg' },
+          bars: { speed: 91, accel: 91, handling: 86, braking: 84 },
           defaultPaint: '#cbd5e1',
           unlocked: true
         },
         {
+          id: 'mclaren_p1_gtr',
+          carClass: 'HYPER',
+          brand: 'McLaren',
+          subGroup: 'track',
+          classLabel: 'HYPER · CLASS R',
+          name: 'MCLAREN P1 GTR TRACK',
+          shortTag: '本地高模 GLB · 986 HP 油電賽道限定',
+          origin: '🇬🇧 英國沃金 · 3.8L V8 + 電機 IPAS · 中置後驅 (MR)',
+          desc: '徹底解除街道法規束縛的賽道限定 P1！加寬前輪距、固定式巨型雙柱碳纖尾翼與光頭熱熔胎，提供狂暴的 986 HP 油電出彎衝刺與 2.5G 彎速。',
+          specs: { topSpeed: '342 km/h', accel: '2.8 s', power: '986 HP', weight: '1,350 kg' },
+          bars: { speed: 88, accel: 89, handling: 82, braking: 80 },
+          defaultPaint: '#eab308',
+          unlocked: true
+        },
+        {
+          id: 'ferrari_fxxk_evo',
+          carClass: 'HYPER',
+          brand: 'Ferrari',
+          subGroup: 'track',
+          classLabel: 'HYPER · CLASS R',
+          name: 'FERRARI FXX-K EVO',
+          shortTag: '本地高模 GLB · 1,036 HP XX 賽道研發',
+          origin: '🇮🇹 馬拉內羅 XX 實驗計畫 · 6.3L V12 HY-KERS · 中置後驅',
+          desc: 'Ferrari 頂級 XX 實驗計畫終極演化！中央鯊魚鰭配雙層固定尾翼較標準版大增下壓力 (~1,150 kgf@250)，1,036 HP V12 油電於蒙札與斯帕同時碾壓極速與彎速。',
+          specs: { topSpeed: '345 km/h', accel: '2.7 s', power: '1,036 HP', weight: '1,255 kg' },
+          bars: { speed: 89, accel: 91, handling: 85, braking: 83 },
+          defaultPaint: '#dc2626',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_essenza',
+          carClass: 'HYPER',
+          brand: 'Lamborghini',
+          subGroup: 'track',
+          classLabel: 'HYPER · CLASS R',
+          name: 'LAMBORGHINI ESSENZA SCV12',
+          shortTag: '本地高模 GLB · 最強自然進氣 V12',
+          origin: '🇮🇹 Squadra Corse · 6.5L V12 NA · 中置後驅 (MR)',
+          desc: '全球僅 40 輛的純種賽道毒藥！碳纖單體殼車架符合 FIA 原型車規範，250 km/h 即產出接近 1,200 kgf 的真實空力壓地力，高速穩定性直追原型賽車。',
+          specs: { topSpeed: '324 km/h', accel: '3.0 s', power: '830 HP', weight: '1,280 kg' },
+          bars: { speed: 80, accel: 85, handling: 84, braking: 82 },
+          defaultPaint: '#10b981',
+          unlocked: true
+        },
+        {
+          id: 'ferrari_laferrari',
+          carClass: 'HYPER',
+          brand: 'Ferrari',
+          subGroup: 'road',
+          classLabel: 'HYPER · CLASS R',
+          name: 'FERRARI LAFERRARI',
+          shortTag: '本地高模 GLB · 950 HP 油電馬王旗艦',
+          origin: '🇮🇹 義大利馬拉內羅 · 6.3L V12 + HY-KERS · 中置後驅',
+          desc: '「三大神車」之一的躍馬公路旗艦！0-200 km/h 僅 ~6 秒出頭、直線極速高達 353 km/h 遠超 GT3；但受限公路胎與較溫和的主動空力，低速與中速彎極限反而略遜純 GT3 廠車。',
+          specs: { topSpeed: '353 km/h', accel: '2.8 s', power: '950 HP', weight: '1,365 kg' },
+          bars: { speed: 93, accel: 90, handling: 64, braking: 64 },
+          defaultPaint: '#dc2626',
+          unlocked: true
+        },
+        {
+          id: 'mclaren_p1',
+          carClass: 'HYPER',
+          brand: 'McLaren',
+          subGroup: 'road',
+          classLabel: 'HYPER · CLASS R',
+          name: 'MCLAREN P1',
+          shortTag: '本地高模 GLB · 903 HP IPAS 油電神車',
+          origin: '🇬🇧 英國沃金 · 3.8L V8 雙渦輪油電 · 中置後驅',
+          desc: 'Race Mode 可產出高達 570+ kgf 主動尾翼下壓力的三大神車！直線極速 350 km/h 與狂暴油電中段加速令 GT3 望塵莫及，但公路胎特性仍需要細膩煞車點控制。',
+          specs: { topSpeed: '350 km/h', accel: '2.9 s', power: '903 HP', weight: '1,395 kg' },
+          bars: { speed: 92, accel: 89, handling: 68, braking: 67 },
+          defaultPaint: '#f97316',
+          unlocked: true
+        },
+        {
+          id: 'ferrari_sf90_xx',
+          carClass: 'HYPER',
+          brand: 'Ferrari',
+          subGroup: 'road',
+          classLabel: 'HYPER · CLASS R',
+          name: 'FERRARI SF90 XX STRADALE',
+          shortTag: '本地高模 GLB · 1,016 HP 街車化 XX',
+          origin: '🇮🇹 義大利馬拉內羅 · 4.0L V8 PHEV 三馬達 · 四驅',
+          desc: '可上路且搭載固定大尾翼的四驅怪獸！1,016 匹三電機起跑 0-100 僅 2.3s 傲視公路組別，但 1,560 kg 車重讓重煞進彎需要比輕量化賽車更早踩煞車。',
+          specs: { topSpeed: '338 km/h', accel: '2.3 s', power: '1,016 HP', weight: '1,560 kg' },
+          bars: { speed: 86, accel: 94, handling: 69, braking: 68 },
+          defaultPaint: '#ef4444',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_revuelto',
+          carClass: 'HYPER',
+          brand: 'Lamborghini',
+          subGroup: 'road',
+          classLabel: 'HYPER · CLASS R',
+          name: 'LAMBORGHINI REVUELTO V12 HYBRID',
+          shortTag: '本地高模 GLB · 1,001 HP 旗艦 HPEV 大牛',
+          origin: '🇮🇹 聖亞加塔 · 6.5L V12 + 前軸雙電機 · 四驅',
+          desc: '9,500 rpm 高轉速 V12 配八速雙離合與四驅出彎彈射！351 km/h 直線猛爆無比，但 1,772 kg 滿載重量使其彎道極限與煞車距離明顯重於純種廠車。',
+          specs: { topSpeed: '351 km/h', accel: '2.5 s', power: '1,001 HP', weight: '1,772 kg' },
+          bars: { speed: 92, accel: 92, handling: 63, braking: 62 },
+          defaultPaint: '#f97316',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_centenario',
+          carClass: 'HYPER',
+          brand: 'Lamborghini',
+          subGroup: 'road',
+          classLabel: 'HYPER · CLASS R',
+          name: 'LAMBORGHINI CENTENARIO LP 770-4',
+          shortTag: '本地高模 GLB · 百年紀念碳纖旗艦',
+          origin: '🇮🇹 聖亞加塔 · 6.5L V12 自然進氣 · 全輪轉向四驅',
+          desc: '百年紀念鍛造碳纖維公路旗艦！全輪驅動起步 2.8s 衝出，長直線可拉升至 350 km/h，適合在寬廣高速賽道展現大排量 NA 聲浪。',
+          specs: { topSpeed: '350 km/h', accel: '2.8 s', power: '759 HP', weight: '1,520 kg' },
+          bars: { speed: 92, accel: 87, handling: 62, braking: 61 },
+          defaultPaint: '#1e293b',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_veneno',
+          carClass: 'HYPER',
+          brand: 'Lamborghini',
+          subGroup: 'road',
+          classLabel: 'HYPER · CLASS R',
+          name: 'LAMBORGHINI VENENO',
+          shortTag: '本地高模 GLB · 極罕原型車空力外型',
+          origin: '🇮🇹 聖亞加塔 · 6.5L V12 NA · 全輪驅動',
+          desc: '極致低風阻高速飛彈！從車頭擾流刀刃到可調大型尾翼皆為衝破 354 km/h 公路極速而生，直線強勢、彎道屬於硬派街道超跑節奏。',
+          specs: { topSpeed: '354 km/h', accel: '2.8 s', power: '740 HP', weight: '1,450 kg' },
+          bars: { speed: 93, accel: 88, handling: 64, braking: 63 },
+          defaultPaint: '#cbd5e1',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_sc20',
+          carClass: 'HYPER',
+          brand: 'Lamborghini',
+          subGroup: 'road',
+          classLabel: 'HYPER · CLASS R',
+          name: 'LAMBORGHINI SC20 SQUADRA CORSE',
+          shortTag: '本地高模 GLB · 全球唯一無前檔風玻璃 Barchetta',
+          origin: '🇮🇹 Squadra Corse · 6.5L V12 NA · 開放式座艙',
+          desc: 'Squadra Corse 賽車部門手工客製之 One-Off 無車頂 Barchetta！較強的下壓力尾翼換取高於 Aventador 的貼地表現與 338 km/h 暢快加速。',
+          specs: { topSpeed: '338 km/h', accel: '2.8 s', power: '759 HP', weight: '1,510 kg' },
+          bars: { speed: 86, accel: 87, handling: 65, braking: 63 },
+          defaultPaint: '#f8fafc',
+          unlocked: true
+        },
+        // --- LMP1 / VISION GT / CLASS X ---
+        {
           id: 'amg_one',
           carClass: 'LMP1',
+          brand: 'Mercedes-AMG',
+          subGroup: 'prototype',
           classLabel: 'LMP1 · CLASS X',
           name: 'MERCEDES-AMG ONE F1 E-HYBRID',
-          shortTag: '本地高模 GLB · F1 1.6T V6 油電四驅',
+          shortTag: '本地高模 GLB · F1 1.6T V6 11,000rpm 油電四驅',
           origin: '🇩🇪 阿法爾特巴赫 / 布里克斯沃斯 · F1 PU106 混合動力 · 四驅',
-          desc: '直接移植 F1 世界冠軍動力單元的街道原型！11,000 rpm F1 引擎加 4 具電能馬達消除一切渦輪遲滯，紐伯林北環量產紀錄王者。',
-          specs: { topSpeed: '352 km/h', accel: '2.5 s', power: '1,063 HP', weight: '1,695 kg' },
-          bars: { speed: 99, accel: 100, handling: 99, braking: 99 },
+          desc: '直接移植 F1 世界冠軍動力單元的紐北量產王者！11,000 rpm F1 V6 引擎配四電機，352 km/h 極速與主動空力可擊敗所有公路超跑，但 1,695kg 車重仍明顯重於純種 LMP1 原型車。',
+          specs: { topSpeed: '352 km/h', accel: '2.7 s', power: '1,063 HP', weight: '1,695 kg' },
+          bars: { speed: 92, accel: 90, handling: 77, braking: 75 },
           defaultPaint: '#94a3b8',
           unlocked: true
         },
         {
           id: 'porsche_919_evo',
           carClass: 'LMP1',
+          brand: 'Porsche',
+          subGroup: 'prototype',
           classLabel: 'LMP1 · CLASS X',
           name: 'PORSCHE 919 HYBRID EVO LMP1',
           shortTag: '本地高模 GLB · 斯帕 / 紐北終極無限制原型車',
           origin: '🇩🇪 魏薩赫賽車部門 · 2.0L V4 渦輪 + 800V 動能回收 · 全輪驅動',
-          desc: '解放所有 FIA WEC 賽事規則限制的終極賽道魔王！僅 849kg 車重配合 1,160 HP 綜合輸出與比 F1 更高的空力下壓力，在斯帕與鈴鹿寫下神級單圈！',
-          specs: { topSpeed: '369 km/h', accel: '2.2 s', power: '1,160 HP', weight: '849 kg' },
-          bars: { speed: 100, accel: 100, handling: 100, braking: 100 },
+          desc: '解放所有 FIA WEC 規則限制的史上最快閉輪神獸！僅 849kg 配 1,160 HP 四驅爆發 (0-100 2.1s / 0-200 4.2s) 與超過 2,100 kgf 超狂地面效應，斯帕單圈與 F1 分庭抗禮！',
+          specs: { topSpeed: '369 km/h', accel: '2.1 s', power: '1,160 HP', weight: '849 kg' },
+          bars: { speed: 100, accel: 100, handling: 98, braking: 98 },
           defaultPaint: '#f8fafc',
+          unlocked: true
+        },
+        {
+          id: 'mazda_furai',
+          carClass: 'LMP1',
+          brand: 'Mazda',
+          subGroup: 'prototype',
+          classLabel: 'LMP1 · CLASS X',
+          name: 'MAZDA FURAI CONCEPT PROTOTYPE',
+          shortTag: '本地高模 GLB · 675kg 三轉子利曼原型底盤',
+          origin: '🇯🇵 廣島 Mazda / Courage C65 LMP2 · 三轉子 20B · 後驅',
+          desc: '結合 LMP2 原型賽車底盤與僅 675kg 羽毛級車重的傳奇概念原型！450 匹三轉子 9,800 rpm 引擎在彎道擁有驚人推重比與 ~3.2G 過彎實力。',
+          specs: { topSpeed: '318 km/h', accel: '2.9 s', power: '450 HP', weight: '675 kg' },
+          bars: { speed: 77, accel: 86, handling: 90, braking: 88 },
+          defaultPaint: '#1e293b',
+          unlocked: true
+        },
+        {
+          id: 'alpine_vision',
+          carClass: 'LMP1',
+          brand: 'Alpine',
+          subGroup: 'vision',
+          classLabel: 'LMP1 · CLASS X',
+          name: 'ALPINE VISION GRAN TURISMO',
+          shortTag: '本地高模 GLB · 900kg 法系開放單座原型',
+          origin: '🇫🇷 法國迪耶普 · 4.5L V8 · 開放單座極低重心',
+          desc: '向 A220 利曼耐力賽車致敬之單座 Vision GT 原型機器！900kg 超輕車體配上大型風煞側翼，高速彎極限高達 3.0G 並擁有銳利進彎敏捷度。',
+          specs: { topSpeed: '322 km/h', accel: '3.0 s', power: '450 HP', weight: '900 kg' },
+          bars: { speed: 79, accel: 84, handling: 88, braking: 86 },
+          defaultPaint: '#0284c7',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_terzo',
+          carClass: 'LMP1',
+          brand: 'Lamborghini',
+          subGroup: 'vision',
+          classLabel: 'LMP1 · CLASS X',
+          name: 'LAMBORGHINI TERZO MILLENNIO',
+          shortTag: '本地高模 GLB · MIT 聯名超電容四輪輪轂電機',
+          origin: '🇮🇹 聖亞加塔 / 🇺🇸 MIT · 超級電容 + 四輪輪轂電機 · 全輪驅動',
+          desc: '突破當代電機結構的概念未來超跑！地面效應風道貫穿碳纖車體與四輪瞬時全扭力矢量化分配，0-100 僅 2.2s 帶來軌道列車般的貼地加速感。',
+          specs: { topSpeed: '350 km/h', accel: '2.2 s', power: '1,200 HP', weight: '1,200 kg' },
+          bars: { speed: 92, accel: 98, handling: 92, braking: 90 },
+          defaultPaint: '#1e293b',
+          unlocked: true
+        },
+        {
+          id: 'mazda_lm_vision',
+          carClass: 'LMP1',
+          brand: 'Mazda',
+          subGroup: 'vision',
+          classLabel: 'LMP1 · CLASS X',
+          name: 'MAZDA LM55 VISION GRAN TURISMO',
+          shortTag: '本地高模 GLB · 致敬 787B 利曼耐力原型戰車',
+          origin: '🇯🇵 廣島 Mazda Design · 利曼 LMP1-H 等級碳纖原型',
+          desc: '向 1991 年利曼冠軍 787B 致敬的現代化 LMP1 原型車！880kg 碳纖單體車架搭配高效率文丘里地面效應通道，0-200 僅 4.7s 堪稱全能高速刷圈神器。',
+          specs: { topSpeed: '358 km/h', accel: '2.4 s', power: '850 HP', weight: '880 kg' },
+          bars: { speed: 95, accel: 97, handling: 95, braking: 94 },
+          defaultPaint: '#ef4444',
+          unlocked: true
+        },
+        // --- STREET / CLASS A ---
+        {
+          id: 'lamborghini_aventador',
+          carClass: 'STREET',
+          brand: 'Lamborghini',
+          subGroup: 'road',
+          classLabel: 'STREET · CLASS A',
+          name: 'LAMBORGHINI AVENTADOR LP 700-4',
+          shortTag: '本地高模 GLB · 6.5L V12 四驅超跑',
+          origin: '🇮🇹 聖亞加塔 · 6.5L L539 V12 · Haldex 四輪驅動',
+          desc: '蠻牛經典世代旗艦公路超跑！700 匹自然進氣 V12 配四驅起步 2.9s 與 348 km/h 極速依然兇猛，但公路胎、1,575kg 車重與低空力使彎道與煞車大幅落後於純種 GT3 賽車。',
+          specs: { topSpeed: '348 km/h', accel: '2.9 s', power: '700 HP', weight: '1,575 kg' },
+          bars: { speed: 90, accel: 86, handling: 52, braking: 52 },
+          defaultPaint: '#eab308',
+          unlocked: true
+        },
+        {
+          id: 'ferrari_f40_lbw',
+          carClass: 'STREET',
+          brand: 'Ferrari',
+          subGroup: 'classic',
+          classLabel: 'STREET · CLASS A',
+          name: 'LB-WORKS FERRARI F40 WIDEBODY',
+          shortTag: '本地高模 GLB · 自由步寬體 2.9L V8 經典',
+          origin: '🇮🇹 馬拉內羅 / 🇯🇵 Liberty Walk · 2.9L V8 雙渦輪 · 後驅',
+          desc: '80 年代最後一輛由 Enzo Ferrari 親自審核的傳奇超跑注入日本寬體暴龜靈魂！純機械 5 速手排、1,220kg 與無電子輔助雙渦輪爆發感極富挑戰樂趣。',
+          specs: { topSpeed: '324 km/h', accel: '4.1 s', power: '478 HP', weight: '1,220 kg' },
+          bars: { speed: 80, accel: 70, handling: 48, braking: 46 },
+          defaultPaint: '#dc2626',
+          unlocked: true
+        },
+        {
+          id: 'lamborghini_countach',
+          carClass: 'STREET',
+          brand: 'Lamborghini',
+          subGroup: 'classic',
+          classLabel: 'STREET · CLASS A',
+          name: 'LAMBORGHINI COUNTACH 5000 QV',
+          shortTag: '本地高模 GLB · 80 年代海報之王 5.2L V12',
+          origin: '🇮🇹 義大利聖亞加塔 · 5.2L Quattrovalvole V12 · 中置後驅',
+          desc: '定義超級跑車楔形比例的 80 年代海報之王！老派 5 速手排、無 ABS 與無空力下壓力設計讓極限操控與重煞距離充滿真實的經典挑戰感。',
+          specs: { topSpeed: '293 km/h', accel: '4.9 s', power: '455 HP', weight: '1,490 kg' },
+          bars: { speed: 67, accel: 58, handling: 36, braking: 34 },
+          defaultPaint: '#f8fafc',
+          unlocked: true
+        },
+        {
+          id: 'nissan_xtrail',
+          carClass: 'STREET',
+          brand: 'Nissan',
+          subGroup: 'suv',
+          classLabel: 'STREET · CLASS A',
+          name: 'NISSAN X-TRAIL e-POWER SUV',
+          shortTag: '本地高模 GLB · 家用休旅下場趣味挑戰',
+          origin: '🇯🇵 日本橫濱 · 1.5L VC-Turbo e-POWER 雙馬達電驅 SUV',
+          desc: '真正比照原廠數據的家用休旅！0-100 需約 7.3 秒、185 km/h 極速封頂、零空力下壓力加上 1.68 噸高重心大幅側傾 (~0.85G 彎道)，開它跑蒙札更能襯托 GT3 與 F1 賽車的恐怖性能差距！',
+          specs: { topSpeed: '185 km/h', accel: '7.3 s', power: '213 HP', weight: '1,680 kg' },
+          bars: { speed: 20, accel: 24, handling: 22, braking: 24 },
+          defaultPaint: '#cbd5e1',
+          unlocked: true
+        },
+        // --- F1 / CLASS F1 ---
+        {
+          id: 'f1_2026_sf26',
+          carClass: 'F1',
+          brand: 'Ferrari',
+          subGroup: 'f1',
+          classLabel: 'F1 · CLASS F1',
+          name: 'SCUDERIA FERRARI SF-26 F1 (2026)',
+          shortTag: '本地高模 GLB · 15,000rpm 8速 一級方程式',
+          origin: '🇮🇹 義大利馬拉內羅 F1 · 1.6L V6 + 350kW MGU-K 混合動力',
+          desc: '地球上最快的場地彎道機器！768kg 配 1,000+ HP (0-200 僅 4.6s)、八速 15,000 rpm 嘶吼，配合超過 2,300 kgf 下壓力實現高達 5G 的恐怖高速過彎與碳煞減速，斯帕單圈比 GT3 快上三十多秒！',
+          specs: { topSpeed: '364 km/h', accel: '2.3 s', power: '1,000+ HP', weight: '768 kg' },
+          bars: { speed: 98, accel: 99, handling: 100, braking: 100 },
+          defaultPaint: '#dc2626',
           unlocked: true
         }
       ];
@@ -152,6 +521,20 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         { hex: '#18181b', name: '鍛造消光黑' },
         { hex: '#06b6d4', name: '電光賽道青' }
       ];
+
+      const GARAGE_CLASS_META = [
+        { id: 'STREET', label: '街車/經典 STREET', short: 'STREET', icon: '🟢', color: '#34d399', subOptions: [{ id: 'all', label: '全部街車' }, { id: 'classic', label: '🏛 經典傳奇' }, { id: 'road', label: '🛣 街道旗艦' }, { id: 'suv', label: '🚙 日常 SUV' }] },
+        { id: 'GT3', label: 'GT3 統規賽車', short: 'GT3', icon: '🟠', color: '#fb923c', subOptions: [] },
+        { id: 'HYPER', label: '頂級超跑 HYPER', short: 'HYPER', icon: '🟣', color: '#c084fc', subOptions: [{ id: 'all', label: '全部超跑' }, { id: 'track', label: '🏁 賽道版 Hypercar' }, { id: 'road', label: '🛣 街道旗艦 Hypercar' }] },
+        { id: 'LMP1', label: '原型/Vision GT', short: 'LMP1', icon: '🔵', color: '#38bdf8', subOptions: [{ id: 'all', label: '全部原型車' }, { id: 'prototype', label: '🏎 耐力原型 Prototype' }, { id: 'vision', label: '✨ Vision GT / 未來概念' }] },
+        { id: 'F1', label: 'F1 方程式', short: 'F1', icon: '🔴', color: '#f43f5e', subOptions: [] },
+        { id: 'all', label: '全部車庫', short: 'ALL', icon: '🌍', color: '#94a3b8', subOptions: [] }
+      ];
+
+      function getClassAccentColor(carClass) {
+        const hit = GARAGE_CLASS_META.find(g => g.id === carClass);
+        return hit ? hit.color : '#fb923c';
+      }
 
       function getActiveCarMeta() {
         const found = CAR_CATALOG.find(c => c.id === carAssetState.presetId);
@@ -185,11 +568,28 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
       }
 
       // --- 3. Flow State & Screen Transitions ---
-      const ALL_FLOW_SCREENS = ['scr-splash', 'scr-loading', 'scr-home', 'scr-garage', 'scr-setup', 'scr-pause', 'scr-results'];
+      const ALL_FLOW_SCREENS = ['scr-splash', 'scr-loading', 'scr-home', 'scr-garage', 'scr-setup', 'scr-pause', 'scr-results', 'scr-records'];
       const flowState = {
-        screen: 'splash',       // 'splash' | 'home' | 'garage' | 'setup' | 'racing' | 'pause' | 'results'
+        screen: 'splash',       // 'splash' | 'home' | 'garage' | 'setup' | 'racing' | 'pause' | 'results' | 'records'
         garageReturnTo: 'home', // 'home' | 'setup'
+        recordsReturnTo: 'home',// 'home' | 'results'
         setupStep: 1,           // 1: edition, 2: mode, 3: circuit, 4: garage
+        trackCategory: 'all',   // 'all' | 'f1_real' | 'original'
+        garageClassTab: 'GT3',  // 'STREET' | 'GT3' | 'HYPER' | 'LMP1' | 'F1' | 'all'
+        garageSubFilter: 'all', // e.g. 'all' | 'track' | 'road' | 'prototype' | 'vision' | 'classic' | 'suv'
+        garageBrandFilter: 'all',
+        garageSearch: '',
+        garageGridOpen: false,
+        recFilter: {
+          tab: 'leaderboard',
+          circuitId: 'monza',
+          carClass: 'GT3',
+          edition: 'realistic',
+          weather: 'dry',
+          dedupeMode: 'per_car',
+          tireFilter: 'all',
+          pinnedOnly: false
+        },
         resultPage: 0,          // 0, 1, 2
         lastResult: null,
         loadingActive: false
@@ -216,7 +616,8 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           garage: 'scr-garage',
           setup: 'scr-setup',
           pause: 'scr-pause',
-          results: 'scr-results'
+          results: 'scr-results',
+          records: 'scr-records'
         };
         const activeId = map[target] || null;
         ALL_FLOW_SCREENS.forEach(id => {
@@ -359,10 +760,15 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
 
         if (clsEl) {
           clsEl.textContent = meta.classLabel;
-          clsEl.style.color = meta.carClass === 'LMP1' ? '#38bdf8' : (meta.carClass === 'HYPER' ? '#c084fc' : (meta.carClass === 'JDM' ? '#2dd4bf' : '#fb923c'));
+          clsEl.style.color = getClassAccentColor(meta.carClass);
         }
         if (nameEl) nameEl.textContent = meta.name;
-        if (recEl) recEl.textContent = String(Object.keys(personalRecords).length);
+        if (recEl) {
+          const dbCount = (window.ApexRecords && typeof window.ApexRecords.getTotalValidCount === 'function')
+            ? window.ApexRecords.getTotalValidCount()
+            : 0;
+          recEl.textContent = String(Math.max(dbCount, Object.keys(personalRecords).length));
+        }
 
         if (statsEl) {
           const items = [
@@ -416,8 +822,27 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         if (typeof window.syncAIMultiCarModels === 'function') {
           window.syncAIMultiCarModels(presetId);
         }
+        if (typeof simState !== 'undefined' && simState) {
+          simState.gear = 1;
+          const cpSel = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+          const dtSel = (typeof getCarDrivetrainSpec === 'function') ? getCarDrivetrainSpec(cpSel) : { idleRpm: 1200 };
+          simState.rpm = dtSel.idleRpm || 1200;
+        }
         if (typeof window.rebuildProBenchmarkForCurrentCar === 'function') {
           window.rebuildProBenchmarkForCurrentCar();
+        }
+        if (cat && cat.carClass) {
+          if (flowState.garageClassTab !== 'all' && flowState.garageClassTab !== cat.carClass) {
+            flowState.garageClassTab = cat.carClass;
+            flowState.garageSubFilter = 'all';
+            flowState.garageBrandFilter = 'all';
+          }
+          if (flowState.garageSubFilter !== 'all' && cat.subGroup !== flowState.garageSubFilter) {
+            flowState.garageSubFilter = 'all';
+          }
+          if (flowState.garageBrandFilter !== 'all' && cat.brand !== flowState.garageBrandFilter) {
+            flowState.garageBrandFilter = 'all';
+          }
         }
         renderGarageScreen();
         renderHomeScreen();
@@ -457,7 +882,7 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
 
         if (clsEl) {
           clsEl.textContent = meta.classLabel;
-          clsEl.style.color = meta.carClass === 'LMP1' ? '#38bdf8' : (meta.carClass === 'HYPER' ? '#c084fc' : (meta.carClass === 'JDM' ? '#2dd4bf' : '#fb923c'));
+          clsEl.style.color = getClassAccentColor(meta.carClass);
         }
         if (nameEl) nameEl.textContent = meta.name;
         if (origEl) origEl.textContent = meta.origin;
@@ -560,7 +985,87 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                 }).join('')}
               </div>
             </div>` : ''}
+            ${typeof simState !== 'undefined' && simState.carSetup ? (() => {
+              const cs = simState.carSetup;
+              const aeroLabels = { 1: '1 極低', 2: '2 低', 3: '3 均衡', 4: '4 高', 5: '5 極高' };
+              const matchPreset = (typeof CAR_SETUP_PRESETS !== 'undefined')
+                ? Object.values(CAR_SETUP_PRESETS).find(p => p.aeroWing === cs.aeroWing && p.brakeBias === cs.brakeBias && p.gearRatio === cs.gearRatio && p.suspension === cs.suspension)
+                : null;
+              return `
+              <div class="af-setup-box">
+                <div class="af-tune-row">
+                  <span style="font-weight:700;">🛠 賽車設定調校</span>
+                  <div class="af-pill-grp">
+                    ${Object.values(CAR_SETUP_PRESETS).map(p =>
+                      `<button type="button" data-setup-preset="${p.id}" class="af-pill-btn is-amber ${matchPreset && matchPreset.id === p.id ? 'is-active' : ''}">${p.label}</button>`
+                    ).join('')}
+                  </div>
+                </div>
+                <div class="af-tune-row">
+                  <span>✈ 空力下壓</span>
+                  <div class="af-pill-grp">
+                    ${[1, 2, 3, 4, 5].map(w =>
+                      `<button type="button" data-setup-aero="${w}" class="af-pill-btn ${cs.aeroWing === w ? 'is-active' : ''}">${aeroLabels[w]}</button>`
+                    ).join('')}
+                  </div>
+                </div>
+                <div class="af-tune-row">
+                  <span>🛑 煞車平衡 (前軸)</span>
+                  <div class="af-pill-grp">
+                    ${[54, 56, 58, 60, 62].map(b =>
+                      `<button type="button" data-setup-bias="${b}" class="af-pill-btn ${cs.brakeBias === b ? 'is-active' : ''}">${b}%</button>`
+                    ).join('')}
+                  </div>
+                </div>
+                <div class="af-tune-row">
+                  <span>⚙ 終傳齒比</span>
+                  <div class="af-pill-grp">
+                    ${[['short', '密齒 (加速)'], ['standard', '標準'], ['long', '疏齒 (極速)']].map(([id, lbl]) =>
+                      `<button type="button" data-setup-gear="${id}" class="af-pill-btn ${cs.gearRatio === id ? 'is-active' : ''}">${lbl}</button>`
+                    ).join('')}
+                  </div>
+                </div>
+                <div class="af-tune-row">
+                  <span>🔩 懸吊防傾</span>
+                  <div class="af-pill-grp">
+                    ${[['soft', '偏軟 (吃路緣)'], ['balanced', '均衡'], ['stiff', '偏硬 (指向)']].map(([id, lbl]) =>
+                      `<button type="button" data-setup-susp="${id}" class="af-pill-btn ${cs.suspension === id ? 'is-active' : ''}">${lbl}</button>`
+                    ).join('')}
+                  </div>
+                </div>
+              </div>`;
+            })() : ''}
           `;
+          paintCustEl.querySelectorAll('[data-setup-preset]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (typeof applyCarSetupPreset === 'function') applyCarSetupPreset(btn.getAttribute('data-setup-preset'));
+              renderGarageScreen();
+            });
+          });
+          paintCustEl.querySelectorAll('[data-setup-aero]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (typeof setCarSetup === 'function') setCarSetup({ aeroWing: Number(btn.getAttribute('data-setup-aero')) });
+              renderGarageScreen();
+            });
+          });
+          paintCustEl.querySelectorAll('[data-setup-bias]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (typeof setCarSetup === 'function') setCarSetup({ brakeBias: Number(btn.getAttribute('data-setup-bias')) });
+              renderGarageScreen();
+            });
+          });
+          paintCustEl.querySelectorAll('[data-setup-gear]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (typeof setCarSetup === 'function') setCarSetup({ gearRatio: btn.getAttribute('data-setup-gear') });
+              renderGarageScreen();
+            });
+          });
+          paintCustEl.querySelectorAll('[data-setup-susp]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (typeof setCarSetup === 'function') setCarSetup({ suspension: btn.getAttribute('data-setup-susp') });
+              renderGarageScreen();
+            });
+          });
           paintCustEl.querySelectorAll('[data-pick-paint]').forEach(btn => {
             btn.addEventListener('click', () => {
               const hex = btn.getAttribute('data-pick-paint');
@@ -615,27 +1120,169 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           const hp = getCurrentCarHandling();
           const tp = (typeof getCurrentTireProfile === 'function') ? getCurrentTireProfile() : { label: 'Medium', peakMuG: 1.52 };
           const effMuG = hp.baseMuLat * (tp.peakMuG / 1.52);
-          chassisNoteEl.textContent = `✔ 底盤＋輪胎實戰參數：軸距 ${hp.wheelbase.toFixed(2)}m · ${tp.label} (${effMuG.toFixed(2)}G 側向抓地) · 車重 ${hp.weightKg}kg`;
+          chassisNoteEl.textContent = `✔ ${meta.carClass || 'GT3'} 底盤＋輪胎參數：軸距 ${hp.wheelbase.toFixed(2)}m · ${tp.label} (${effMuG.toFixed(2)}G 側向抓地) · 車重 ${hp.weightKg}kg`;
         }
 
+        const catBarEl = document.getElementById('gar-category-bar');
+        const bottomDockEl = document.getElementById('gar-bottom-dock');
+        if (bottomDockEl) {
+          bottomDockEl.classList.toggle('is-grid-open', !!flowState.garageGridOpen);
+        }
+
+        const activeTab = flowState.garageClassTab || 'GT3';
+        const classPool = activeTab === 'all' ? CAR_CATALOG : CAR_CATALOG.filter(c => c.carClass === activeTab);
+        const tabMeta = GARAGE_CLASS_META.find(g => g.id === activeTab) || GARAGE_CLASS_META[1];
+        const subOpts = tabMeta.subOptions || [];
+        if (flowState.garageSubFilter !== 'all' && !subOpts.some(s => s.id === flowState.garageSubFilter)) {
+          flowState.garageSubFilter = 'all';
+        }
+        const subPool = (flowState.garageSubFilter === 'all')
+          ? classPool
+          : classPool.filter(c => c.subGroup === flowState.garageSubFilter);
+
+        const brandCounts = {};
+        subPool.forEach(c => {
+          const b = c.brand || 'Other';
+          brandCounts[b] = (brandCounts[b] || 0) + 1;
+        });
+        const availableBrands = Object.keys(brandCounts).sort();
+        if (flowState.garageBrandFilter !== 'all' && !brandCounts[flowState.garageBrandFilter]) {
+          flowState.garageBrandFilter = 'all';
+        }
+
+        const q = (flowState.garageSearch || '').trim().toLowerCase();
+        const filteredCars = subPool.filter(c => {
+          if (flowState.garageBrandFilter !== 'all' && c.brand !== flowState.garageBrandFilter) return false;
+          if (!q) return true;
+          return (
+            (c.name || '').toLowerCase().includes(q) ||
+            (c.brand || '').toLowerCase().includes(q) ||
+            (c.shortTag || '').toLowerCase().includes(q) ||
+            (c.id || '').toLowerCase().includes(q)
+          );
+        });
+
+        if (catBarEl) {
+          if (!document.getElementById('gar-cat-tabs-wrap')) {
+            catBarEl.innerHTML = `
+              <div class="af-gar-cls-row">
+                <div class="af-gar-cls-tabs" id="gar-cat-tabs-wrap"></div>
+                <div class="af-gar-actions">
+                  <input id="input-gar-search" class="af-gar-search" type="search" placeholder="🔎 搜尋車廠 / 車型..." autocomplete="off">
+                  <span id="lbl-gar-match-count" style="font-size:11px;color:#94a3b8;font-variant-numeric:tabular-nums;padding:0 4px;"></span>
+                  <button type="button" id="btn-gar-scroll-l" class="af-pill-btn" title="向左捲動">◀</button>
+                  <button type="button" id="btn-gar-scroll-r" class="af-pill-btn" title="向右捲動">▶</button>
+                  <button type="button" id="btn-gar-grid-toggle" class="af-pill-btn is-amber">⊞ 展開全部網格</button>
+                </div>
+              </div>
+              <div class="af-gar-tools-row" id="gar-subfilter-wrap"></div>
+            `;
+            const inpSearch = document.getElementById('input-gar-search');
+            if (inpSearch) {
+              inpSearch.addEventListener('input', (ev) => {
+                flowState.garageSearch = ev.target.value || '';
+                renderGarageCarGridOnly();
+              });
+              inpSearch.addEventListener('keydown', (ev) => ev.stopPropagation());
+            }
+            const btnGrid = document.getElementById('btn-gar-grid-toggle');
+            if (btnGrid) {
+              btnGrid.addEventListener('click', () => {
+                flowState.garageGridOpen = !flowState.garageGridOpen;
+                renderGarageScreen();
+              });
+            }
+            const btnL = document.getElementById('btn-gar-scroll-l');
+            const btnR = document.getElementById('btn-gar-scroll-r');
+            if (btnL) btnL.addEventListener('click', () => { if (stripEl) stripEl.scrollBy({ left: -380, behavior: 'smooth' }); });
+            if (btnR) btnR.addEventListener('click', () => { if (stripEl) stripEl.scrollBy({ left: 380, behavior: 'smooth' }); });
+          }
+
+          const tabsWrap = document.getElementById('gar-cat-tabs-wrap');
+          if (tabsWrap) {
+            tabsWrap.innerHTML = GARAGE_CLASS_META.map(g => {
+              const cnt = g.id === 'all' ? CAR_CATALOG.length : CAR_CATALOG.filter(c => c.carClass === g.id).length;
+              const isAct = activeTab === g.id;
+              return `<button type="button" data-gar-class="${g.id}" class="af-gar-cls-tab ${isAct ? 'is-active' : ''}" style="--tab-accent:${g.color};">
+                <span>${g.icon}</span><span>${g.label}</span><span class="cnt">${cnt}</span>
+              </button>`;
+            }).join('');
+          }
+
+          const subWrap = document.getElementById('gar-subfilter-wrap');
+          if (subWrap) {
+            const subHtml = subOpts.length
+              ? `<div class="af-gar-subfilters">
+                  <span style="font-size:10px;color:#94a3b8;font-weight:700;">細分：</span>
+                  ${subOpts.map(s => `<button type="button" data-gar-sub="${s.id}" class="af-pill-btn is-purple ${flowState.garageSubFilter === s.id ? 'is-active' : ''}">${s.label}</button>`).join('')}
+                </div>`
+              : '<div></div>';
+            const brandHtml = availableBrands.length > 1
+              ? `<div class="af-gar-subfilters">
+                  <span style="font-size:10px;color:#94a3b8;font-weight:700;">車廠：</span>
+                  <button type="button" data-gar-brand="all" class="af-pill-btn ${flowState.garageBrandFilter === 'all' ? 'is-active' : ''}">全部品牌</button>
+                  ${availableBrands.map(b => `<button type="button" data-gar-brand="${b}" class="af-pill-btn ${flowState.garageBrandFilter === b ? 'is-active' : ''}">${b} (${brandCounts[b]})</button>`).join('')}
+                </div>`
+              : '';
+            subWrap.innerHTML = `${subHtml}${brandHtml}`;
+          }
+
+          const inpSearch = document.getElementById('input-gar-search');
+          if (inpSearch && document.activeElement !== inpSearch) {
+            inpSearch.value = flowState.garageSearch || '';
+          }
+          const btnGrid = document.getElementById('btn-gar-grid-toggle');
+          if (btnGrid) {
+            btnGrid.classList.toggle('is-active', !!flowState.garageGridOpen);
+            btnGrid.textContent = flowState.garageGridOpen ? '⊟ 收合單行' : '⊞ 展開網格';
+          }
+        }
+
+        renderGarageCarGridOnly(filteredCars, classPool.length);
+      }
+
+      function renderGarageCarGridOnly(precomputedList, totalInClass) {
+        const stripEl = document.getElementById('gar-car-strip');
+        const activeTab = flowState.garageClassTab || 'GT3';
+        let filteredCars = precomputedList;
+        let poolTotal = totalInClass;
+        if (!filteredCars) {
+          const classPool = activeTab === 'all' ? CAR_CATALOG : CAR_CATALOG.filter(c => c.carClass === activeTab);
+          poolTotal = classPool.length;
+          const subPool = (flowState.garageSubFilter === 'all') ? classPool : classPool.filter(c => c.subGroup === flowState.garageSubFilter);
+          const q = (flowState.garageSearch || '').trim().toLowerCase();
+          filteredCars = subPool.filter(c => {
+            if (flowState.garageBrandFilter !== 'all' && c.brand !== flowState.garageBrandFilter) return false;
+            if (!q) return true;
+            return (c.name || '').toLowerCase().includes(q) || (c.brand || '').toLowerCase().includes(q) || (c.shortTag || '').toLowerCase().includes(q) || (c.id || '').toLowerCase().includes(q);
+          });
+        }
+        const matchLbl = document.getElementById('lbl-gar-match-count');
+        if (matchLbl) {
+          matchLbl.textContent = `顯示 ${filteredCars.length} / ${poolTotal} 台`;
+        }
         if (stripEl) {
-          const cards = CAR_CATALOG.map(c => {
+          const cards = filteredCars.map(c => {
             const active = (c.id === carAssetState.presetId);
+            const accCol = getClassAccentColor(c.carClass);
             const cls = ['af-car-card', active ? 'is-active' : '', !c.unlocked ? 'is-locked' : ''].filter(Boolean).join(' ');
-            return `<button type="button" class="${cls}" data-car-id="${c.id}">
-              <div class="c">${c.classLabel}</div>
-              <div class="n">${c.name}</div>
+            return `<button type="button" class="${cls}" data-car-id="${c.id}" style="--car-accent:${accCol};">
+              <div class="c"><span>${c.carClass}</span><span class="brand-tag">${c.brand || 'CUSTOM'}</span></div>
+              <div class="n" title="${c.name}">${c.name}</div>
+              <div class="m-specs"><span>⚡ ${c.specs.topSpeed}</span><span>🐎 ${c.specs.power}</span></div>
               <div class="t">${active && c.unlocked ? '✔ 目前座駕 · ' : ''}${c.shortTag}</div>
             </button>`;
           });
-          if (carAssetState.presetId === 'custom-file' || carAssetState.presetId === 'custom-url') {
-            cards.push(`<button type="button" class="af-car-card is-active" data-car-id="${carAssetState.presetId}">
-              <div class="c">GT3 · CUSTOM</div>
+          if ((carAssetState.presetId === 'custom-file' || carAssetState.presetId === 'custom-url') && (activeTab === 'all' || activeTab === 'GT3')) {
+            cards.push(`<button type="button" class="af-car-card is-active" data-car-id="${carAssetState.presetId}" style="--car-accent:#94a3b8;">
+              <div class="c"><span>CUSTOM</span><span class="brand-tag">GLB</span></div>
               <div class="n">${carAssetState.label}</div>
               <div class="t">✔ 自訂 3D 模型使用中</div>
             </button>`);
           }
-          stripEl.innerHTML = cards.join('');
+          stripEl.innerHTML = cards.length
+            ? cards.join('')
+            : `<div style="padding:18px 20px;color:#94a3b8;font-size:12px;">找不到符合條件的車輛，請嘗試清除搜尋字詞或切換分類。</div>`;
         }
       }
 
@@ -646,6 +1293,12 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
 
       function openGarageScreen(fromWhere) {
         flowState.garageReturnTo = fromWhere || 'home';
+        const activeMeta = getActiveCarMeta();
+        flowState.garageClassTab = activeMeta.carClass || 'GT3';
+        flowState.garageSubFilter = 'all';
+        flowState.garageBrandFilter = 'all';
+        flowState.garageSearch = '';
+        flowState.garageGridOpen = false;
         renderGarageScreen();
         showFlowScreen('garage');
       }
@@ -773,84 +1426,71 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
               <circle cx="${sx}" cy="${sy}" r="4.2" fill="#ffffff" stroke="${accent}" stroke-width="2"/>
             </svg>`;
           };
-          const tracks = [
-            {
-              idx: 0,
-              accent: '#10b981',
-              ico: '🌲',
-              tag: '★☆☆ 入門高速 · 晴空正午',
-              ttl: '蒙札森林高速環道 MONZA',
-              sub: 'MONZA HIGH-SPEED RING',
-              dsc: '全長 5.57 km，24m 超寬路面與超長全油門直道。最適合體驗 300+ km/h 高速離心慣性與尾流攻防，新手也能穩定完賽刷圈。',
-              meta: ['📏 路面寬 24m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[0].proLapTime), '☀ 晴空高抓地']
-            },
-            {
-              idx: 1,
-              accent: '#6366f1',
-              ico: '🗻',
-              tag: '★★★ 中階技術 · 黃金夕陽',
-              ttl: '富士山國際大獎賽道 FUJI',
-              sub: 'MOUNT FUJI TECHNICAL GP',
-              dsc: '全長 5.18 km，結合 1.1km 大直線、2 座重煞髮夾彎（極限 74 km/h）與連續高速 S 彎重心轉移區，夕陽斜射下極富競技張力。',
-              meta: ['📏 路面寬 20m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[1].proLapTime), '🌅 夕陽眩光']
-            },
-            {
-              idx: 2,
-              accent: '#f43f5e',
-              ico: '🌙',
-              tag: '★★★★★ 魔鬼山道 · 午夜霓虹',
-              ttl: '箱根午夜山道大獎賽 HAKONE',
-              sub: 'HAKONE MIDNIGHT TOUGE GP',
-              dsc: '全長 5.42 km，高低落差劇烈（±16m），遍布急促五連髮夾彎與盲彎。夜間開啟遠光頭燈束與霓虹拱門，極度考驗精準重煞控制！',
-              meta: ['📏 路面寬 16.5m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[2].proLapTime), '🌃 午夜頭燈']
-            },
-            {
-              idx: 3,
-              accent: '#f59e0b',
-              ico: '⛰️',
-              tag: '★★★★ 殿堂山林 · Eau Rouge 陡坡',
-              ttl: '斯帕-弗朗科爾尚 SPA GP',
-              sub: 'CIRCUIT DE SPA-FRANCORCHAMPS',
-              dsc: '傳奇阿登森林賽道！從 La Source 下坡壓縮衝進紅水河谷再攀爬 35m Eau Rouge / Raidillon 盲頂全油門彎，直入 Blanchimont 與公車站芝加哥。',
-              meta: ['📏 路面寬 18.5m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[3].proLapTime), '🌲 高低差 47m']
-            },
-            {
-              idx: 4,
-              accent: '#06b6d4',
-              ico: '🌉',
-              tag: '★★★★ 傳奇八字 · 立體交叉天橋',
-              ttl: '鈴鹿國際賽道 SUZUKA',
-              sub: 'SUZUKA INTERNATIONAL RACING COURSE',
-              dsc: '全球唯一經典八字型立體交叉大獎賽道！連續 S 彎、湯匙雙頂點與高架橋上飛越德格納下穿隧道後直劈 130R 超高速左彎！',
-              meta: ['📏 路面寬 18m', '⏱ PRO 基準 ' + formatLapTime(CIRCUITS[4].proLapTime), '🌉 八字高架立體橋']
-            }
-          ];
-          const carClassTag = getActiveCarMeta().carClass || 'GT3';
+          const carClassTag = (typeof getActiveCarMeta().carClass === 'string' && getActiveCarMeta().carClass) || 'GT3';
           const isWet = (simState.weather === 'wet');
+          const curSurf = simState.surfaceState || 'fast';
+          const curCat = flowState.trackCategory || 'all';
+          const cond = (typeof getSessionConditionsSnapshot === 'function') ? getSessionConditionsSnapshot() : null;
+          const visibleCircuits = CIRCUITS.map((c, idx) => ({ c, idx })).filter(item =>
+            curCat === 'all' || (item.c.category || 'f1_real') === curCat
+          );
+          const f1Count = CIRCUITS.filter(c => c.category === 'f1_real').length;
+          const origCount = CIRCUITS.length - f1Count;
           bodyEl.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 14px;flex-wrap:wrap;">
-              <span style="font-size:12px;font-weight:800;color:#cbd5e1;letter-spacing:.04em;">🌦 天候條件 WEATHER：</span>
-              <button type="button" data-pick-weather="dry" style="padding:6px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;border:1.5px solid ${!isWet ? '#fbbf24' : 'rgba(148,163,184,0.28)'};background:${!isWet ? 'rgba(251,191,36,0.18)' : 'rgba(15,23,42,0.85)'};color:${!isWet ? '#fde68a' : '#94a3b8'};">
-                ☀ 晴朗乾地 DRY (100% 抓地)
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 10px;flex-wrap:wrap;">
+              <span style="font-size:12px;font-weight:800;color:#cbd5e1;">🌦 天候：</span>
+              <button type="button" data-pick-weather="dry" style="padding:5px 12px;border-radius:10px;font-size:11px;font-weight:800;cursor:pointer;border:1.5px solid ${!isWet ? '#fbbf24' : 'rgba(148,163,184,0.28)'};background:${!isWet ? 'rgba(251,191,36,0.18)' : 'rgba(15,23,42,0.85)'};color:${!isWet ? '#fde68a' : '#94a3b8'};">
+                ☀ 乾地 DRY
               </button>
-              <button type="button" data-pick-weather="wet" style="padding:6px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;border:1.5px solid ${isWet ? '#38bdf8' : 'rgba(148,163,184,0.28)'};background:${isWet ? 'rgba(56,189,248,0.2)' : 'rgba(15,23,42,0.85)'};color:${isWet ? '#7dd3fc' : '#94a3b8'};">
-                🌧 雨天濕地 WET (-28% 抓地 · 建議 W 雨胎)
+              <button type="button" data-pick-weather="wet" style="padding:5px 12px;border-radius:10px;font-size:11px;font-weight:800;cursor:pointer;border:1.5px solid ${isWet ? '#38bdf8' : 'rgba(148,163,184,0.28)'};background:${isWet ? 'rgba(56,189,248,0.2)' : 'rgba(15,23,42,0.85)'};color:${isWet ? '#7dd3fc' : '#94a3b8'};">
+                🌧 雨戰 WET (-28% 抓地)
               </button>
+              <span style="font-size:12px;font-weight:800;color:#cbd5e1;margin-left:6px;">🛣 路面狀態：</span>
+              ${[['green', '綠地 98%'], ['fast', '標準 100%'], ['optimum', '最佳橡膠 102%']].map(([sid, slbl]) =>
+                `<button type="button" data-pick-surface="${sid}" ${isWet ? 'disabled' : ''} class="af-pill-btn is-amber ${!isWet && curSurf === sid ? 'is-active' : ''}">${slbl}</button>`
+              ).join('')}
+              ${cond ? `<span class="af-chip" style="font-size:10px;">🌡 氣溫 ${cond.ambientTempC}°C / 路面 ${cond.trackTempC}°C</span>` : ''}
             </div>
-            <div class="af-choice-grid" style="max-width:1180px;">
-              ${tracks.map(t => {
-                const pbKey = `${t.idx}_${simState.edition}_${carClassTag}`;
-                const legacyPbKey = `${t.idx}_${simState.edition}`;
-                const pbVal = personalRecords[pbKey] || (carClassTag === 'GT3' ? personalRecords[legacyPbKey] : null);
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 14px;flex-wrap:wrap;">
+              <button type="button" data-pick-cat="all" class="af-pill-btn is-amber ${curCat === 'all' ? 'is-active' : ''}">🌍 全部賽道 (${CIRCUITS.length})</button>
+              <button type="button" data-pick-cat="f1_real" class="af-pill-btn is-amber ${curCat === 'f1_real' ? 'is-active' : ''}">🏎 F1 1:1 真實遙測 (${f1Count})</button>
+              <button type="button" data-pick-cat="original" class="af-pill-btn is-amber ${curCat === 'original' ? 'is-active' : ''}">🗻 經典特色山道 (${origCount})</button>
+            </div>
+            <div class="af-choice-grid" style="max-width:1240px;">
+              ${visibleCircuits.map(({ c, idx }) => {
+                const accent = c.cardAccent || '#38bdf8';
+                let pbVal = null;
+                if (window.ApexRecords && typeof window.ApexRecords.getClassLeaderboard === 'function') {
+                  const board = window.ApexRecords.getClassLeaderboard({
+                    circuitId: c.id,
+                    carClass: carClassTag,
+                    edition: simState.edition,
+                    weather: simState.weather,
+                    dedupeMode: 'all'
+                  });
+                  if (board && board.entries && board.entries.length > 0) {
+                    pbVal = board.entries[0].record.timing.lapTime;
+                  }
+                }
+                if (!pbVal && !isWet) {
+                  const pbKey = `${idx}_${simState.edition}_${carClassTag}`;
+                  const legacyPbKey = `${idx}_${simState.edition}`;
+                  pbVal = personalRecords[pbKey] || (carClassTag === 'GT3' ? personalRecords[legacyPbKey] : null);
+                }
+                const estPro = (typeof window.estimateClassProLapTime === 'function')
+                  ? window.estimateClassProLapTime(idx, carClassTag, simState.weather)
+                  : c.proLapTime;
                 return `
-                  <div class="af-choice ${currentCircuitIndex === t.idx ? 'is-active' : ''}" style="--accent:${t.accent};" data-pick-track="${t.idx}">
-                    ${buildTrackSvg(CIRCUITS[t.idx], t.accent)}
-                    <div class="ico">${t.ico}</div>
-                    <div class="tag">${t.tag}</div>
-                    <div class="ttl">${t.ttl}</div>
-                    <div class="dsc">${t.dsc}</div>
+                  <div class="af-choice ${currentCircuitIndex === idx ? 'is-active' : ''}" style="--accent:${accent};" data-pick-track="${idx}">
+                    ${buildTrackSvg(c, accent)}
+                    <div class="ico">${c.cardIcon || '🏁'}</div>
+                    <div class="tag">${c.country || ''} · ${c.cardTag || c.badgeText}</div>
+                    <div class="ttl">${c.cardTitle || c.name}</div>
+                    <div class="dsc">${c.cardDesc || ''}</div>
                     <div class="meta">
-                      ${t.meta.map(m => `<span>${m}</span>`).join('')}
+                      <span>📏 ${c.lengthKm || '--'}km · 寬${c.width}m</span>
+                      <span>⛰ 高差 ${c.elevationM || '--'}m</span>
+                      <span>⏱ PRO(${carClassTag}) ${formatLapTime(estPro)}</span>
                       ${pbVal ? `<span style="color:#fbbf24;">🏆 最佳(${carClassTag}) ${formatLapTime(pbVal)}</span>` : ''}
                     </div>
                     <div class="go">選擇此賽道・前往選車 ➔</div>
@@ -939,6 +1579,9 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           openPauseMenu();
         } else if (flowState.screen === 'pause') {
           resumeFromPause();
+        } else if (flowState.screen === 'records') {
+          if (flowState.recordsReturnTo === 'results') showFlowScreen('results');
+          else enterHomeScreen(false);
         } else if (flowState.screen === 'garage') {
           if (flowState.garageReturnTo === 'setup') openSetupStep(3);
           else enterHomeScreen(false);
@@ -965,40 +1608,23 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
         const bestSessionLap = (simState.mode === 'time_attack') ? (rawBestLap + jumpPenaltySec) : rawBestLap;
         const totalSessionTime = lapTimes.reduce((a, b) => a + b, 0) + jumpPenaltySec;
 
-        const carClassKey = (getActiveCarMeta().carClass || 'GT3');
+        const activeMeta = getActiveCarMeta();
+        const carClassKey = (window.ApexRecords && typeof window.ApexRecords.resolveCarClass === 'function')
+          ? window.ApexRecords.resolveCarClass(carAssetState.presetId, activeMeta.carClass)
+          : (activeMeta.carClass || 'GT3');
         const pbKey = `${currentCircuitIndex}_${simState.edition}_${carClassKey}`;
         const prevPB = personalRecords[pbKey] || (carClassKey === 'GT3' ? personalRecords[`${currentCircuitIndex}_${simState.edition}`] : null) || null;
-        const isNewPB = savePersonalRecord(pbKey, bestSessionLap);
-        if (carClassKey === 'GT3') savePersonalRecord(`${currentCircuitIndex}_${simState.edition}`, bestSessionLap);
+        const isNewPB = (simState.weather === 'dry') ? savePersonalRecord(pbKey, bestSessionLap) : false;
+        if (carClassKey === 'GT3' && simState.weather === 'dry') {
+          savePersonalRecord(`${currentCircuitIndex}_${simState.edition}`, bestSessionLap);
+        }
 
         let maxV = simState.sessionTopSpeed || 0;
-        simState.currentLapSamples.forEach(s => { if (s.speed > maxV) maxV = s.speed; });
+        const telSamples = (simState.lastCompletedLapSamples && simState.lastCompletedLapSamples.length >= 2)
+          ? simState.lastCompletedLapSamples
+          : simState.currentLapSamples;
+        telSamples.forEach(s => { if (s.speed > maxV) maxV = s.speed; });
         const avgV = (totalTrackLength / Math.max(1, bestSessionLap)) * 3.6;
-
-        // Compute AI standings snapshot (accounting for Jump Start +5.0s time penalty if any)
-        const playerProgress = simState.totalRaceLaps * totalTrackLength - (jumpPenaltySec * 65);
-        const standings = [{
-          name: 'YOU (' + getActiveCarMeta().name + ')',
-          progress: playerProgress,
-          isPlayer: true,
-          timeStr: formatLapTime(totalSessionTime)
-        }];
-        if (simState.mode === 'ai_race') {
-          aiCars.forEach(ai => {
-            const p = (ai.lap - 1) * totalTrackLength + ai.s;
-            const gapM = playerProgress - p;
-            const estGapSec = gapM / Math.max(45, ai.speedMs || 55);
-            standings.push({
-              name: ai.name,
-              progress: p,
-              isPlayer: false,
-              gapSec: estGapSec,
-              timeStr: estGapSec >= 0 ? `+${estGapSec.toFixed(2)}s` : `${estGapSec.toFixed(2)}s`
-            });
-          });
-          standings.sort((a, b) => b.progress - a.progress);
-        }
-        const playerRank = standings.findIndex(s => s.isPlayer) + 1;
 
         const s1 = simState.sector1Time || (bestSessionLap * 0.33);
         const s2 = simState.sector2Time || (bestSessionLap * 0.35);
@@ -1025,18 +1651,93 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           grade = 'C'; gradeColor = '#94a3b8'; gradeTitle = 'ROOKIE 建議多參考煞車提示線練習';
         }
 
+        const condSnap = (typeof getSessionConditionsSnapshot === 'function')
+          ? getSessionConditionsSnapshot()
+          : { weather: simState.weather || 'dry', surfaceState: simState.surfaceState || 'fast', ambientTempC: 23, trackTempC: 35, timeOfDay: 'day', effectiveGrip: simState.effectiveGrip || 1.0 };
+        const setupSnap = Object.assign({
+          tireCompound: simState.tireCompound || 'medium',
+          transmission: simState.autoTransmission ? 'AT' : 'MT'
+        }, simState.carSetup || { aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' });
+
+        let savedRecResult = null;
+        if (window.ApexRecords && typeof window.ApexRecords.recordCompletedLap === 'function') {
+          savedRecResult = window.ApexRecords.recordCompletedLap({
+            circuitId: currentCircuit.id,
+            circuitName: currentCircuit.name,
+            trackLengthM: totalTrackLength,
+            edition: simState.edition,
+            mode: simState.mode,
+            car: {
+              presetId: carAssetState.presetId,
+              carName: activeMeta.name,
+              carClass: carClassKey,
+              livery: carAssetState.livery || 'original',
+              paintHex: carAssetState.paintHex || '#ef4444'
+            },
+            setup: setupSnap,
+            conditions: condSnap,
+            timing: {
+              lapTime: bestSessionLap,
+              s1, s2, s3,
+              jumpPenaltySec,
+              isValidLap: simState.isLapValid !== false,
+              topSpeedKmh: maxV,
+              avgSpeedKmh: avgV,
+              bench0to100: simState.bench0to100,
+              bench0to200: simState.bench0to200,
+              lockups: simState.lockupCount,
+              understeers: simState.understeerCount,
+              oversteers: simState.oversteerCount,
+              driverGrade: grade
+            },
+            telemetry: telSamples
+          });
+        }
+
+        // Compute AI standings snapshot (accounting for Jump Start +5.0s time penalty if any)
+        const playerProgress = simState.totalRaceLaps * totalTrackLength - (jumpPenaltySec * 65);
+        const standings = [{
+          name: 'YOU (' + activeMeta.name + ')',
+          progress: playerProgress,
+          isPlayer: true,
+          timeStr: formatLapTime(totalSessionTime)
+        }];
+        if (simState.mode === 'ai_race') {
+          aiCars.forEach(ai => {
+            const p = (ai.lap - 1) * totalTrackLength + ai.s;
+            const gapM = playerProgress - p;
+            const estGapSec = gapM / Math.max(45, ai.speedMs || 55);
+            standings.push({
+              name: ai.name,
+              progress: p,
+              isPlayer: false,
+              gapSec: estGapSec,
+              timeStr: estGapSec >= 0 ? `+${estGapSec.toFixed(2)}s` : `${estGapSec.toFixed(2)}s`
+            });
+          });
+          standings.sort((a, b) => b.progress - a.progress);
+        }
+        const playerRank = standings.findIndex(s => s.isPlayer) + 1;
+
         flowState.lastResult = {
           mode: simState.mode,
           edition: simState.edition,
+          weather: condSnap.weather,
+          circuitId: currentCircuit.id,
           circuitName: currentCircuit.name,
           difficultyStars: currentCircuit.difficultyStars,
-          carName: getActiveCarMeta().name,
+          carName: activeMeta.name,
+          carClass: carClassKey,
+          savedRecord: savedRecResult ? savedRecResult.record : null,
+          rankInClass: savedRecResult ? savedRecResult.rankInClass : null,
+          totalInClass: savedRecResult ? savedRecResult.totalInClass : 0,
+          isNewClassPB: !!(savedRecResult && savedRecResult.isNewClassPB),
           bestLap: bestSessionLap,
           totalTime: totalSessionTime,
           lapTimes,
           proLap,
           deltaPro,
-          isNewPB,
+          isNewPB: isNewPB || !!(savedRecResult && savedRecResult.isNewClassPB),
           prevPB,
           playerRank,
           standings,
@@ -1146,7 +1847,25 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
                     <div class="g">${formatLapTime(r.prevPB)} (${fmtDelta(r.bestLap - r.prevPB)})</div>
                   </div>` : ''}
                 </div>
+                <div style="margin-top:14px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;align-items:center;">
+                  ${r.rankInClass ? `<span class="af-chip" style="border-color:rgba(56,189,248,0.45);color:#7dd3fc;">🔒 ${r.carClass} · ${r.edition === 'arcade' ? '娛樂NOS' : '真實版'} · ${r.weather === 'wet' ? '濕地' : '乾地'} 第 <b>#${r.rankInClass}</b> / ${r.totalInClass} 名</span>` : ''}
+                  <button type="button" id="btn-res-open-board" class="af-btn af-btn-ghost af-btn-sm">
+                    🏆 查看本組別分級排行榜與遙測存檔
+                  </button>
+                </div>
               </div>`;
+          }
+          const boardBtn = document.getElementById('btn-res-open-board');
+          if (boardBtn) {
+            boardBtn.addEventListener('click', () => {
+              openRecordsScreen({
+                returnTo: 'results',
+                circuitId: r.circuitId,
+                carClass: r.carClass,
+                edition: r.edition,
+                weather: r.weather || 'dry'
+              });
+            });
           }
         } else if (pageIdx === 1) {
           if (kickerEl) kickerEl.textContent = `RESULT 2 / 3 · SECTOR & SPEED TELEMETRY`;
@@ -1457,10 +2176,399 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
       if (btnHomeHint) btnHomeHint.addEventListener('click', () => enterInspectMode());
       const btnHomeInspect = document.getElementById('btn-home-inspect');
       if (btnHomeInspect) btnHomeInspect.addEventListener('click', () => enterInspectMode());
+      const btnHomeRecords = document.getElementById('btn-home-records');
+      if (btnHomeRecords) btnHomeRecords.addEventListener('click', () => openRecordsScreen({ returnTo: 'home' }));
+      const btnHomeRecordsChip = document.getElementById('btn-home-records-chip');
+      if (btnHomeRecordsChip) btnHomeRecordsChip.addEventListener('click', () => openRecordsScreen({ returnTo: 'home' }));
       const btnHomeGarage = document.getElementById('btn-home-garage');
       if (btnHomeGarage) btnHomeGarage.addEventListener('click', () => openGarageScreen('home'));
       const btnHomePlay = document.getElementById('btn-home-play');
       if (btnHomePlay) btnHomePlay.addEventListener('click', () => openSetupStep(1));
+
+      // --- 11. Reviewable Lap Records & Anti-Pollution Class Leaderboard Hub ---
+      function formatSetupTags(setup) {
+        if (!setup) return '--';
+        const tMap = { soft: 'S軟胎', medium: 'M中性胎', hard: 'H硬胎', wet: 'W雨胎' };
+        const gMap = { short: '密齒', standard: '標準齒', long: '疏齒' };
+        const sMap = { soft: '軟懸吊', balanced: '均衡懸吊', stiff: '硬懸吊' };
+        return `${tMap[setup.tireCompound] || setup.tireCompound} · 尾翼${setup.aeroWing || 3} · 煞車前${setup.brakeBias || 58}% · ${gMap[setup.gearRatio] || '標準齒'} · ${sMap[setup.suspension] || '均衡懸吊'} · ${setup.transmission || 'AT'}`;
+      }
+
+      function formatCondTags(cond) {
+        if (!cond) return '--';
+        const wIco = cond.weather === 'wet' ? '🌧 濕地' : '☀ 乾地';
+        const surfMap = { green: '綠地98%', fast: '標準100%', optimum: '最佳102%', wet: '積水72%' };
+        return `${wIco} · ${surfMap[cond.surfaceState] || ''} · 氣${cond.ambientTempC ?? '--'}°/地${cond.trackTempC ?? '--'}°C`;
+      }
+
+      function loadRecordAsGhost(rec, autoLaunch = false) {
+        if (!rec) return false;
+        const cIdx = CIRCUITS.findIndex(c => c.id === rec.circuitId);
+        if (cIdx < 0) return false;
+        const tel = Array.isArray(rec.telemetry) ? rec.telemetry : [];
+        if (tel.length < 4) {
+          alert('此紀錄為舊版遷移成績，無 3D 軌跡遙測可供作為幽靈車。');
+          return false;
+        }
+        simState.customGhostMeta = {
+          id: rec.id,
+          circuitId: rec.circuitId,
+          carName: rec.car.carName,
+          driverName: rec.driverName,
+          lapTime: rec.timing.lapTime
+        };
+        simState.bestLapTime = rec.timing.lapTime;
+        simState.pbTelemetrySamples = tel.slice();
+        simState.ghostTarget = 'both';
+        const selGhost = document.getElementById('select-ghost-target');
+        if (selGhost) selGhost.value = 'both';
+        if (currentCircuitIndex !== cIdx) {
+          selectCircuit(cIdx);
+        } else {
+          const hudBest = document.getElementById('hud-best-time');
+          if (hudBest) hudBest.textContent = formatLapTime(rec.timing.lapTime);
+        }
+        if (autoLaunch) {
+          setGameMode('time_attack');
+          startConfiguredRace(true);
+        }
+        return true;
+      }
+
+      function openRecordsScreen(opts = {}) {
+        const curMeta = getActiveCarMeta();
+        flowState.recordsReturnTo = opts.returnTo || 'home';
+        if (opts.circuitId) flowState.recFilter.circuitId = opts.circuitId;
+        else if (typeof currentCircuit !== 'undefined' && currentCircuit) flowState.recFilter.circuitId = currentCircuit.id;
+        if (opts.carClass) flowState.recFilter.carClass = opts.carClass;
+        else if (curMeta && curMeta.carClass) flowState.recFilter.carClass = curMeta.carClass;
+        if (opts.edition) flowState.recFilter.edition = opts.edition;
+        else if (simState.edition) flowState.recFilter.edition = simState.edition;
+        if (opts.weather) flowState.recFilter.weather = opts.weather;
+        else if (simState.weather) flowState.recFilter.weather = simState.weather;
+        if (opts.tab) flowState.recFilter.tab = opts.tab;
+
+        if (window.ApexRecords && typeof window.ApexRecords.init === 'function') {
+          window.ApexRecords.init().then(() => {
+            if (flowState.screen === 'records') renderRecordsScreen();
+          });
+        }
+        renderRecordsScreen();
+        showFlowScreen('records');
+      }
+
+      function renderRecordsScreen() {
+        const f = flowState.recFilter;
+        const isBoard = (f.tab !== 'history');
+
+        document.querySelectorAll('[data-rec-tab]').forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.recTab === f.tab);
+        });
+
+        const driverInput = document.getElementById('input-driver-name');
+        if (driverInput && window.ApexRecords) {
+          driverInput.value = window.ApexRecords.getDriverName();
+        }
+
+        const cirSelect = document.getElementById('rec-filter-circuit');
+        if (cirSelect) {
+          const optsHtml = (isBoard ? [] : ['<option value="all">全部賽道</option>'])
+            .concat(CIRCUITS.map(c => `<option value="${c.id}">${c.country || ''} ${c.cardTitle || c.name}</option>`));
+          cirSelect.innerHTML = optsHtml.join('');
+          if (isBoard && f.circuitId === 'all') f.circuitId = CIRCUITS[0].id;
+          cirSelect.value = f.circuitId;
+        }
+
+        const btnClassAll = document.getElementById('btn-rec-class-all');
+        if (btnClassAll) btnClassAll.classList.toggle('hidden', isBoard);
+        if (isBoard && f.carClass === 'all') f.carClass = 'GT3';
+
+        document.querySelectorAll('[data-rec-class]').forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.recClass === f.carClass);
+        });
+        document.querySelectorAll('[data-rec-edition]').forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.recEdition === f.edition);
+        });
+        document.querySelectorAll('[data-rec-weather]').forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.recWeather === f.weather);
+        });
+
+        const dedupeEl = document.getElementById('rec-filter-dedupe');
+        if (dedupeEl) {
+          dedupeEl.disabled = !isBoard;
+          dedupeEl.value = f.dedupeMode;
+        }
+        const tireEl = document.getElementById('rec-filter-tire');
+        if (tireEl) tireEl.value = f.tireFilter;
+        const pinBtn = document.getElementById('btn-rec-pinned-only');
+        if (pinBtn) pinBtn.classList.toggle('is-active', !!f.pinnedOnly);
+
+        const benchStrip = document.getElementById('rec-benchmark-strip');
+        const tableWrap = document.getElementById('rec-table-container');
+        if (!window.ApexRecords || !tableWrap) return;
+
+        if (isBoard) {
+          const res = window.ApexRecords.getClassLeaderboard({
+            circuitId: f.circuitId,
+            carClass: f.carClass,
+            edition: f.edition,
+            weather: f.weather,
+            dedupeMode: f.dedupeMode,
+            tireFilter: f.tireFilter,
+            pinnedOnly: f.pinnedOnly
+          });
+          const bm = res.benchmarks;
+          if (benchStrip) {
+            benchStrip.classList.remove('hidden');
+            benchStrip.innerHTML = `
+              <div class="af-bench-card" style="border-color:rgba(251,191,36,0.45);"><span>🏆 <strong>PRO 官方基準 (100%)</strong></span><strong style="color:#fbbf24;">${formatLapTime(bm.proTime)}</strong></div>
+              <div class="af-bench-card"><span>🥇 金牌門檻 (102%)</span><strong style="color:#fde68a;">${formatLapTime(bm.goldTime)}</strong></div>
+              <div class="af-bench-card"><span>🥈 銀牌門檻 (105%)</span><strong style="color:#e2e8f0;">${formatLapTime(bm.silverTime)}</strong></div>
+              <div class="af-bench-card"><span>🥉 銅牌門檻 (110%)</span><strong style="color:#fdba74;">${formatLapTime(bm.bronzeTime)}</strong></div>`;
+          }
+
+          if (!res.entries.length) {
+            tableWrap.innerHTML = `<div style="padding:36px;text-align:center;color:#94a3b8;font-size:13px;">此獨立分榜（${f.circuitId.toUpperCase()} · ${f.carClass} · ${f.edition === 'arcade' ? '娛樂NOS' : '真實版'} · ${f.weather === 'wet' ? '濕地' : '乾地'}）目前尚無合法完賽紀錄。去跑一圈建立標竿吧！</div>`;
+            return;
+          }
+
+          tableWrap.innerHTML = `
+            <table class="af-rec-table">
+              <thead>
+                <tr>
+                  <th>名次</th><th>車手</th><th>賽車 / 組別</th><th>單圈時間</th><th>秒差 / vs PRO</th><th>分段 S1 · S2 · S3</th><th>極速</th><th>賽車調校設定</th><th>當日賽道環境</th><th>日期</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${res.entries.map(e => {
+                  const r = e.record;
+                  const clsMeta = window.ApexRecords.CLASS_META[r.carClass] || window.ApexRecords.CLASS_META.GT3;
+                  const rankStr = e.rank === 1 ? '🥇 #1' : (e.rank === 2 ? '🥈 #2' : (e.rank === 3 ? '🥉 #3' : `#${e.rank}`));
+                  const dLead = e.rank === 1 ? '<span style="color:#fbbf24;">LEADER</span>' : `+${e.deltaLeader.toFixed(3)}s`;
+                  const dPro = `${e.deltaPro >= 0 ? '+' : ''}${e.deltaPro.toFixed(3)}s`;
+                  const hasTel = r.telemetry && r.telemetry.length >= 4;
+                  const secStr = (r.timing.s1 && r.timing.s2 && r.timing.s3)
+                    ? `${r.timing.s1.toFixed(2)} / ${r.timing.s2.toFixed(2)} / ${r.timing.s3.toFixed(2)}`
+                    : (r.isLegacyMigrated ? '舊版遷移' : '--');
+                  const dtStr = (r.recordedAt || '').slice(0, 16).replace('T', ' ');
+                  return `
+                    <tr>
+                      <td><strong>${rankStr}</strong></td>
+                      <td><strong>${r.driverName}</strong></td>
+                      <td>
+                        <div style="font-weight:800;color:#fff;">${r.car.carName}</div>
+                        <span class="af-rec-badge-sm" style="color:${clsMeta.color};background:${clsMeta.bg};border-color:${clsMeta.color}55;">${r.carClass}</span>
+                      </td>
+                      <td>
+                        <div class="af-rec-time">${formatLapTime(r.timing.lapTime)}</div>
+                        ${r.timing.jumpPenaltySec > 0 ? `<div style="font-size:10px;color:#fb7185;">含起跑罰時 +${r.timing.jumpPenaltySec}s</div>` : ''}
+                      </td>
+                      <td style="font-variant-numeric:tabular-nums;"><div>${dLead}</div><div style="font-size:10px;color:${e.deltaPro <= 0 ? '#34d399' : '#94a3b8'};">vs PRO: ${dPro}</div></td>
+                      <td style="font-variant-numeric:tabular-nums;font-size:11px;color:#cbd5e1;">${secStr}</td>
+                      <td><strong>${r.timing.topSpeedKmh || '--'}</strong> <small>km/h</small></td>
+                      <td style="font-size:11px;color:#cbd5e1;max-width:210px;">${formatSetupTags(r.setup)}</td>
+                      <td style="font-size:11px;color:#7dd3fc;max-width:190px;">${formatCondTags(r.conditions)}</td>
+                      <td style="font-size:10px;color:#94a3b8;white-space:nowrap;">${dtStr}</td>
+                      <td style="white-space:nowrap;">
+                        <button type="button" class="af-pill-btn" data-rec-review="${r.id}" ${hasTel ? '' : 'disabled'} title="MoTeC 覆盤與雙圈對比">📊 覆盤</button>
+                        <button type="button" class="af-pill-btn" data-rec-ghost="${r.id}" ${hasTel ? '' : 'disabled'} title="載入此圈作為目標幽靈車">👻 幽靈</button>
+                        <button type="button" class="af-pill-btn ${r.pinned ? 'is-amber is-active' : ''}" data-rec-pin="${r.id}" title="收藏此圈">⭐</button>
+                        <button type="button" class="af-pill-btn" data-rec-del="${r.id}" title="刪除紀錄">🗑</button>
+                      </td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>`;
+        } else {
+          if (benchStrip) benchStrip.classList.add('hidden');
+          const rows = window.ApexRecords.getAllHistory({
+            circuitId: f.circuitId,
+            carClass: f.carClass,
+            edition: 'all',
+            weather: 'all',
+            tireFilter: f.tireFilter,
+            pinnedOnly: f.pinnedOnly
+          });
+          if (!rows.length) {
+            tableWrap.innerHTML = `<div style="padding:36px;text-align:center;color:#94a3b8;font-size:13px;">尚無符合篩選條件的歷史紀錄。</div>`;
+            return;
+          }
+          tableWrap.innerHTML = `
+            <table class="af-rec-table">
+              <thead>
+                <tr>
+                  <th>日期時間</th><th>賽道</th><th>組別 / 車款</th><th>版別 / 評級</th><th>單圈時間</th><th>極速</th><th>賽車調校設定</th><th>當日賽道環境</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => {
+                  const clsMeta = window.ApexRecords.CLASS_META[r.carClass] || window.ApexRecords.CLASS_META.GT3;
+                  const hasTel = r.telemetry && r.telemetry.length >= 4;
+                  const dtStr = (r.recordedAt || '').slice(0, 16).replace('T', ' ');
+                  return `
+                    <tr>
+                      <td style="font-size:10px;color:#94a3b8;white-space:nowrap;">${dtStr}<div>${r.driverName}</div></td>
+                      <td><strong>${r.circuitName}</strong></td>
+                      <td>
+                        <div style="font-weight:800;color:#fff;">${r.car.carName}</div>
+                        <span class="af-rec-badge-sm" style="color:${clsMeta.color};background:${clsMeta.bg};border-color:${clsMeta.color}55;">${r.carClass}</span>
+                      </td>
+                      <td>
+                        <div>${r.edition === 'arcade' ? '🔥 娛樂' : '🏁 真實'}</div>
+                        <div style="font-size:10px;color:#fbbf24;">評級 ${r.timing.driverGrade}</div>
+                      </td>
+                      <td><div class="af-rec-time">${formatLapTime(r.timing.lapTime)}</div>${r.timing.isValidLap ? '' : '<span style="color:#fb7185;font-size:10px;">未完檢無效</span>'}</td>
+                      <td><strong>${r.timing.topSpeedKmh || '--'}</strong> <small>km/h</small></td>
+                      <td style="font-size:11px;color:#cbd5e1;max-width:210px;">${formatSetupTags(r.setup)}</td>
+                      <td style="font-size:11px;color:#7dd3fc;max-width:190px;">${formatCondTags(r.conditions)}</td>
+                      <td style="white-space:nowrap;">
+                        <button type="button" class="af-pill-btn" data-rec-review="${r.id}" ${hasTel ? '' : 'disabled'}>📊 覆盤</button>
+                        <button type="button" class="af-pill-btn" data-rec-ghost="${r.id}" ${hasTel ? '' : 'disabled'}>👻 幽靈</button>
+                        <button type="button" class="af-pill-btn ${r.pinned ? 'is-amber is-active' : ''}" data-rec-pin="${r.id}">⭐</button>
+                        <button type="button" class="af-pill-btn" data-rec-del="${r.id}">🗑</button>
+                      </td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>`;
+        }
+      }
+
+      // Wire Records Hub controls
+      const btnRecBack = document.getElementById('btn-records-back');
+      if (btnRecBack) {
+        btnRecBack.addEventListener('click', () => {
+          if (flowState.recordsReturnTo === 'results') showFlowScreen('results');
+          else enterHomeScreen(false);
+        });
+      }
+      const inpDriver = document.getElementById('input-driver-name');
+      if (inpDriver) {
+        inpDriver.addEventListener('change', () => {
+          if (window.ApexRecords) window.ApexRecords.setDriverName(inpDriver.value);
+        });
+      }
+      document.querySelectorAll('[data-rec-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          flowState.recFilter.tab = btn.dataset.recTab;
+          renderRecordsScreen();
+        });
+      });
+      const selRecCir = document.getElementById('rec-filter-circuit');
+      if (selRecCir) {
+        selRecCir.addEventListener('change', () => {
+          flowState.recFilter.circuitId = selRecCir.value;
+          renderRecordsScreen();
+        });
+      }
+      document.querySelectorAll('[data-rec-class]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          flowState.recFilter.carClass = btn.dataset.recClass;
+          renderRecordsScreen();
+        });
+      });
+      document.querySelectorAll('[data-rec-edition]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          flowState.recFilter.edition = btn.dataset.recEdition;
+          renderRecordsScreen();
+        });
+      });
+      document.querySelectorAll('[data-rec-weather]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          flowState.recFilter.weather = btn.dataset.recWeather;
+          renderRecordsScreen();
+        });
+      });
+      const selDedupe = document.getElementById('rec-filter-dedupe');
+      if (selDedupe) {
+        selDedupe.addEventListener('change', () => {
+          flowState.recFilter.dedupeMode = selDedupe.value;
+          renderRecordsScreen();
+        });
+      }
+      const selRecTire = document.getElementById('rec-filter-tire');
+      if (selRecTire) {
+        selRecTire.addEventListener('change', () => {
+          flowState.recFilter.tireFilter = selRecTire.value;
+          renderRecordsScreen();
+        });
+      }
+      const btnPinOnly = document.getElementById('btn-rec-pinned-only');
+      if (btnPinOnly) {
+        btnPinOnly.addEventListener('click', () => {
+          flowState.recFilter.pinnedOnly = !flowState.recFilter.pinnedOnly;
+          renderRecordsScreen();
+        });
+      }
+      const btnExport = document.getElementById('btn-records-export');
+      if (btnExport) {
+        btnExport.addEventListener('click', () => {
+          if (!window.ApexRecords) return;
+          const jsonStr = window.ApexRecords.exportRecordsJSON();
+          const blob = new Blob([jsonStr], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `apex_pro_records_${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        });
+      }
+      const btnImport = document.getElementById('btn-records-import');
+      const inpImport = document.getElementById('input-records-import');
+      if (btnImport && inpImport) {
+        btnImport.addEventListener('click', () => inpImport.click());
+        inpImport.addEventListener('change', (ev) => {
+          const file = ev.target.files && ev.target.files[0];
+          if (!file || !window.ApexRecords) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const res = window.ApexRecords.importRecordsJSON(String(reader.result || ''));
+            if (res.ok) {
+              alert(`成功匯入 ${res.imported} 筆紀錄（略過重複 ${res.skipped} 筆）！`);
+              renderRecordsScreen();
+              renderHomeScreen();
+            } else {
+              alert('匯入失敗：' + res.error);
+            }
+            inpImport.value = '';
+          };
+          reader.readAsText(file);
+        });
+      }
+      const recTableContainer = document.getElementById('rec-table-container');
+      if (recTableContainer) {
+        recTableContainer.addEventListener('click', (e) => {
+          const revBtn = e.target.closest('[data-rec-review]');
+          if (revBtn && window.ApexRecords) {
+            const rec = window.ApexRecords.getRecordById(revBtn.dataset.recReview);
+            if (rec && typeof window.openTelemetryModal === 'function') {
+              window.openTelemetryModal('record', rec.timing.lapTime, rec);
+            }
+            return;
+          }
+          const ghBtn = e.target.closest('[data-rec-ghost]');
+          if (ghBtn && window.ApexRecords) {
+            const rec = window.ApexRecords.getRecordById(ghBtn.dataset.recGhost);
+            if (rec) loadRecordAsGhost(rec, true);
+            return;
+          }
+          const pinBtn = e.target.closest('[data-rec-pin]');
+          if (pinBtn && window.ApexRecords) {
+            window.ApexRecords.togglePin(pinBtn.dataset.recPin);
+            renderRecordsScreen();
+            return;
+          }
+          const delBtn = e.target.closest('[data-rec-del]');
+          if (delBtn && window.ApexRecords) {
+            window.ApexRecords.deleteRecord(delBtn.dataset.recDel);
+            renderRecordsScreen();
+            renderHomeScreen();
+          }
+        });
+      }
 
       // Inspect overlay exit button
       const btnExitInspect = document.getElementById('btn-exit-inspect');
@@ -1486,6 +2594,31 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           }
         });
       }
+      const garCatBar = document.getElementById('gar-category-bar');
+      if (garCatBar) {
+        garCatBar.addEventListener('click', (e) => {
+          const clsBtn = e.target.closest('[data-gar-class]');
+          if (clsBtn) {
+            flowState.garageClassTab = clsBtn.getAttribute('data-gar-class') || 'GT3';
+            flowState.garageSubFilter = 'all';
+            flowState.garageBrandFilter = 'all';
+            renderGarageScreen();
+            return;
+          }
+          const subBtn = e.target.closest('[data-gar-sub]');
+          if (subBtn) {
+            flowState.garageSubFilter = subBtn.getAttribute('data-gar-sub') || 'all';
+            flowState.garageBrandFilter = 'all';
+            renderGarageScreen();
+            return;
+          }
+          const brandBtn = e.target.closest('[data-gar-brand]');
+          if (brandBtn) {
+            flowState.garageBrandFilter = brandBtn.getAttribute('data-gar-brand') || 'all';
+            renderGarageScreen();
+          }
+        });
+      }
       const garStrip = document.getElementById('gar-car-strip');
       if (garStrip) {
         garStrip.addEventListener('click', (e) => {
@@ -1493,6 +2626,13 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           if (!card) return;
           selectCarById(card.dataset.carId);
         });
+        garStrip.addEventListener('wheel', (e) => {
+          if (!flowState.garageGridOpen && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            garStrip.scrollLeft += e.deltaY;
+            e.preventDefault();
+          }
+          e.stopPropagation();
+        }, { passive: false });
       }
       const btnGarAdv = document.getElementById('btn-garage-advanced');
       if (btnGarAdv) {
@@ -1541,6 +2681,20 @@ if (window.__apexTrace) window.__apexTrace('flow.js', 'START');
           if (modeCard) {
             setGameMode(modeCard.dataset.pickMode);
             openSetupStep(3);
+            return;
+          }
+          const catBtn = e.target.closest('[data-pick-cat]');
+          if (catBtn) {
+            e.stopPropagation();
+            flowState.trackCategory = catBtn.dataset.pickCat || 'all';
+            renderSetupStep(3);
+            return;
+          }
+          const surfBtn = e.target.closest('[data-pick-surface]');
+          if (surfBtn) {
+            e.stopPropagation();
+            if (typeof setTrackSurfaceState === 'function') setTrackSurfaceState(surfBtn.dataset.pickSurface);
+            renderSetupStep(3);
             return;
           }
           const wBtn = e.target.closest('[data-pick-weather]');
@@ -1638,4 +2792,7 @@ window.resumeFromPause = resumeFromPause;
 window.toggleMenuModal = toggleMenuModal;
 window.dismissSplashScreen = dismissSplashScreen;
 window.renderResultPage = renderResultPage;
+window.openRecordsScreen = openRecordsScreen;
+window.renderRecordsScreen = renderRecordsScreen;
+window.loadRecordAsGhost = loadRecordAsGhost;
 if (window.__apexTrace) window.__apexTrace('flow.js', 'OK');

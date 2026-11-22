@@ -69,16 +69,19 @@ if (window.__apexTrace) window.__apexTrace('input.js', 'START');
 
       function shiftGear(delta) {
         soundEngine.init();
+        const cp = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+        const maxGear = (typeof getCarMaxGears === 'function') ? getCarMaxGears(cp) : 6;
+        const shiftCutSec = (typeof getCarDrivetrainSpec === 'function') ? getCarDrivetrainSpec(cp).shiftCutSec : 0.08;
         let nextGear = simState.gear + delta;
         if (nextGear < 1) {
           nextGear = (simState.speedKmh < 6) ? -1 : 1;
-        } else if (nextGear > 6) {
-          nextGear = 6;
+        } else if (nextGear > maxGear) {
+          nextGear = maxGear;
         }
         if (nextGear !== simState.gear) {
           const isUpshift = (nextGear > simState.gear && simState.gear >= 1);
           if (delta < 0) soundEngine.blipShift();
-          if (isUpshift) simState.ignitionCutTimer = 0.08;
+          if (isUpshift) simState.ignitionCutTimer = shiftCutSec;
           if (soundEngine && typeof soundEngine.triggerShiftClunk === 'function') {
             soundEngine.triggerShiftClunk(isUpshift);
           }

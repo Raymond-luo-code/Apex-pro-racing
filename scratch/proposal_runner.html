@@ -557,10 +557,12 @@ window.formatLapTime = function(t){ return String(t); };
   selectCircuit(0); resetSession(false);
   simState.paused = false; simState.inShowcaseMode = false; simState.countdownActive = false; simState.mode = 'ai_race';
   simState.aiDifficulty = 1.0; simState.lap = 99; simState.s = 3000;
-  let kinkS = 400;
+  let kinkS = 3500;
   for (let s = 200; s < totalTrackLength - 300; s += 20) {
     const k = Math.abs(sampleTrackAtS(s).curvature || 0);
-    if (k > 0.0008 && k < 0.0018 && getProProfileAtDistance(s).brake === 0 && getProProfileAtDistance(s + 30).brake === 0) {
+    const k95 = Math.abs(sampleTrackAtS(s + 95).curvature || 0);
+    const pr = getProProfileAtDistance(s);
+    if (k > 0.0004 && k < 0.0018 && k95 < 0.0022 && pr.speedKmh > 256 && pr.brake === 0 && getProProfileAtDistance(s + 30).brake === 0 && getProProfileAtDistance(s + 120).brake === 0) {
       kinkS = s; break;
     }
   }
@@ -570,11 +572,11 @@ window.formatLapTime = function(t){ return String(t); };
   for (let i = 0; i < 15; i++) stepAIRivals(0.04);
   const flatOutOk = (aiCars[0].brakeInput === 0 && aiCars[0].throttleInput > 90);
 
-  // Competitive human-matched PRO_LAP_TIME across all 3 circuits
+  // Competitive human-matched PRO_LAP_TIME across core circuits (Monza now real 1:1 5.79km with 3 chicanes)
   selectCircuit(0); const tMonza = PRO_LAP_TIME;
   selectCircuit(1); const tFuji = PRO_LAP_TIME;
   selectCircuit(2); const tHakone = PRO_LAP_TIME;
-  const lapTimesOk = (tMonza >= 74.0 && tMonza <= 82.0) && (tFuji >= 80.0 && tFuji <= 88.0) && (tHakone >= 87.0 && tHakone <= 96.0);
+  const lapTimesOk = (tMonza >= 94.0 && tMonza <= 118.0) && (tFuji >= 80.0 && tFuji <= 88.0) && (tHakone >= 87.0 && tHakone <= 96.0);
 
   ok(outInOutOk && flatOutOk && lapTimesOk,
     "Out-In-Out line (entry=" + minEntryOut.toFixed(1) + "/apex=" + dApex25.toFixed(1) + "/exit=" + minExitOut.toFixed(1) + "), flatOut=" + flatOutOk + ", PRO times=(" + tMonza.toFixed(1) + "s/" + tFuji.toFixed(1) + "s/" + tHakone.toFixed(1) + "s)");

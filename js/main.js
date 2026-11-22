@@ -84,8 +84,14 @@ simState.bestLapTime = PRO_LAP_TIME;
         document.getElementById('hud-speed').textContent = roundedSpeed;
         document.getElementById('hud-rpm').textContent = simState.rpm.toLocaleString();
 
-        const activeLights = Math.floor(((simState.rpm - 4200) / 4400) * shiftLightSpans.length);
-        const blinkShift = simState.rpm >= 8350;
+        const cpHud = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+        const dtHud = (typeof getCarDrivetrainSpec === 'function') ? getCarDrivetrainSpec(cpHud) : { redlineRpm: 8800 };
+        const redlineRpm = dtHud.redlineRpm || 8800;
+        const shiftStartRpm = redlineRpm * 0.477;
+        const shiftSpanRpm = Math.max(1000, redlineRpm * 0.50);
+        const shiftFlashRpm = redlineRpm * 0.9488;
+        const activeLights = Math.floor(((simState.rpm - shiftStartRpm) / shiftSpanRpm) * shiftLightSpans.length);
+        const blinkShift = simState.rpm >= shiftFlashRpm;
         shiftLightSpans.forEach((sp, idx) => {
           if (idx < activeLights) {
             const color = idx < 4 ? 'bg-emerald-500' : (idx < 7 ? 'bg-amber-500' : 'bg-red-600');
@@ -94,7 +100,7 @@ simState.bestLapTime = PRO_LAP_TIME;
             sp.className = 'w-2.5 h-1.5 rounded-sm bg-slate-800';
           }
         });
-        const isRedlinePulse = (simState.rpm >= 8350 && !simState.paused);
+        const isRedlinePulse = (simState.rpm >= shiftFlashRpm && !simState.paused);
         const motecPodEl = document.getElementById('pc-motec-pod');
         if (motecPodEl) motecPodEl.classList.toggle('hud-redline-pulse', isRedlinePulse);
         const topPillEl = document.getElementById('hud-top-pill');
@@ -184,13 +190,15 @@ simState.bestLapTime = PRO_LAP_TIME;
         }
 
         if (!simState.isMobileGamepadActive) {
+          const cpLoad = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+          const warnLoadKg = Math.round(((cpLoad && cpLoad.weightKg ? cpLoad.weightKg : 1245) + 120) * 0.34);
           ['fl', 'fr', 'rl', 'rr'].forEach(k => {
             const load = simState.tireLoads[k];
             document.getElementById(`tire-load-${k}`).textContent = `${load}`;
             const vis = document.getElementById(`tire-vis-${k}`);
             if (simState.isBrakeLockup && (k === 'fl' || k === 'fr')) {
               vis.className = 'w-2.5 h-3.5 rounded-sm bg-red-600 transition-colors';
-            } else if (load > 460) {
+            } else if (load > warnLoadKg) {
               vis.className = 'w-2.5 h-3.5 rounded-sm bg-amber-500 transition-colors';
             } else {
               vis.className = 'w-2.5 h-3.5 rounded-sm bg-emerald-500 transition-colors';
@@ -247,6 +255,10 @@ simState.bestLapTime = PRO_LAP_TIME;
         const cy = h / 2;
         ggCtx.clearRect(0, 0, w, h);
 
+        const cpGG = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+        const clsGG = cpGG && cpGG.carClass ? cpGG.carClass : 'GT3';
+        const pxPerG = (clsGG === 'F1' || clsGG === 'LMP1') ? 4.4 : (clsGG === 'HYPER' ? 7.5 : 11.0);
+
         ggCtx.strokeStyle = '#334155';
         ggCtx.lineWidth = 1;
         [11, 22].forEach(r => {
@@ -255,8 +267,8 @@ simState.bestLapTime = PRO_LAP_TIME;
           ggCtx.stroke();
         });
 
-        const gx = Math.max(-24, Math.min(24, simState.latG * 11));
-        const gy = Math.max(-24, Math.min(24, -simState.longG * 11));
+        const gx = Math.max(-24, Math.min(24, simState.latG * pxPerG));
+        const gy = Math.max(-24, Math.min(24, -simState.longG * pxPerG));
         ggCtx.fillStyle = simState.tireSlipRatio > 0.92 ? '#ef4444' : '#22d3ee';
         ggCtx.beginPath();
         ggCtx.arc(cx + gx, cy + gy, 3.5, 0, Math.PI * 2);
@@ -453,49 +465,294 @@ simState.bestLapTime = PRO_LAP_TIME;
       }
 
       // --------------------------------------------------------------------------
-      // 10. POST-LAP TELEMETRY CHARTS & RACE ENGINEER REVIEW MODAL
+      // 10. POST-LAP TELEMETRY CHARTS, OVERLAY DELTA-T & INTERACTIVE SCRUBBING
       // --------------------------------------------------------------------------
-      function openTelemetryModal(source = 'current', completedTime = null) {
+      const activeTelemetryState = {
+        source: 'current',
+        completedTime: null,
+        recordObj: null,
+        compareTarget: 'none',
+        samples: [],
+        compareSamples: [],
+        trackLen: 5500,
+        mapBounds: null,
+        baseImgP: null,
+        baseImgS: null,
+        baseImgD: null,
+        baseImgT: null,
+        scrubBound: false
+      };
+
+      function interpTelemetryAtS(arr, targetS) {
+        if (!arr || arr.length === 0) return null;
+        if (arr.length === 1 || targetS <= arr[0].s) return arr[0];
+        const last = arr[arr.length - 1];
+        if (targetS >= last.s) return last;
+        let lo = 0, hi = arr.length - 1;
+        while (lo + 1 < hi) {
+          const mid = (lo + hi) >> 1;
+          if (arr[mid].s <= targetS) lo = mid;
+          else hi = mid;
+        }
+        const a = arr[lo], b = arr[hi];
+        const span = Math.max(1e-4, b.s - a.s);
+        const f = Math.max(0, Math.min(1, (targetS - a.s) / span));
+        return {
+          s: targetS,
+          t: (a.t || 0) + ((b.t || 0) - (a.t || 0)) * f,
+          x: (a.x || 0) + ((b.x || 0) - (a.x || 0)) * f,
+          z: (a.z || 0) + ((b.z || 0) - (a.z || 0)) * f,
+          speed: (a.speed || 0) + ((b.speed || 0) - (a.speed || 0)) * f,
+          throttle: (a.throttle || 0) + ((b.throttle || 0) - (a.throttle || 0)) * f,
+          brake: (a.brake || 0) + ((b.brake || 0) - (a.brake || 0)) * f,
+          steer: (a.steer || 0) + ((b.steer || 0) - (a.steer || 0)) * f,
+          latG: (a.latG || 0) + ((b.latG || 0) - (a.latG || 0)) * f,
+          gear: Math.round((a.gear || 1) + ((b.gear || 1) - (a.gear || 1)) * f)
+        };
+      }
+
+      function computeCircuitPointsXY(cirObj) {
+        if (!cirObj || !cirObj.points || cirObj.points.length < 3) return [];
+        const pts = cirObj.points;
+        const N = pts.length;
+        const out = [];
+        const cr = (p0, p1, p2, p3, t) => 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+        for (let i = 0; i < 260; i++) {
+          const u = (i / 260) * N;
+          const idx = Math.floor(u);
+          const frac = u - idx;
+          const p0 = pts[(idx - 1 + N) % N], p1 = pts[idx % N], p2 = pts[(idx + 1) % N], p3 = pts[(idx + 2) % N];
+          out.push({ x: cr(p0.x, p1.x, p2.x, p3.x, frac), z: cr(p0.z, p1.z, p2.z, p3.z, frac) });
+        }
+        return out;
+      }
+
+      function mapCustomXYToCanvas(x, z, w, h, bounds) {
+        if (!bounds) return mapWorldToCanvas(x, z, w, h);
+        const pad = 12;
+        const sc = Math.min((w - pad * 2) / bounds.spanX, (h - pad * 2) / bounds.spanZ);
+        const ox = (w - bounds.spanX * sc) * 0.5 - bounds.minX * sc;
+        const oy = (h - bounds.spanZ * sc) * 0.5 - bounds.minZ * sc;
+        return { px: x * sc + ox, py: z * sc + oy };
+      }
+
+      function bindTelemetryScrubbing() {
+        if (activeTelemetryState.scrubBound) return;
+        activeTelemetryState.scrubBound = true;
+        const canvasIds = ['chart-pedals', 'chart-steer-speed', 'chart-delta'];
+        const drawOverlayAtRatio = (ratioX) => {
+          const st = activeTelemetryState;
+          const sPos = Math.max(0, Math.min(st.trackLen, ratioX * st.trackLen));
+          const pt = interpTelemetryAtS(st.samples, sPos);
+          if (!pt) return;
+          const cmp = (st.compareSamples && st.compareSamples.length >= 4) ? interpTelemetryAtS(st.compareSamples, sPos) : null;
+
+          const canvases = [
+            [document.getElementById('chart-pedals'), st.baseImgP],
+            [document.getElementById('chart-steer-speed'), st.baseImgS],
+            [document.getElementById('chart-delta'), st.baseImgD]
+          ];
+          canvases.forEach(([cv, base]) => {
+            if (!cv || !base) return;
+            const ctx = cv.getContext('2d');
+            ctx.putImageData(base, 0, 0);
+            const x = ratioX * cv.width;
+            ctx.strokeStyle = 'rgba(248, 250, 252, 0.75)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x, 0); ctx.lineTo(x, cv.height);
+            ctx.stroke();
+          });
+
+          const cTraj = document.getElementById('chart-trajectory');
+          if (cTraj && st.baseImgT) {
+            const ctxT = cTraj.getContext('2d');
+            ctxT.putImageData(st.baseImgT, 0, 0);
+            const { px, py } = mapCustomXYToCanvas(pt.x, pt.z, cTraj.width, cTraj.height, st.mapBounds);
+            ctxT.fillStyle = '#38bdf8';
+            ctxT.strokeStyle = '#ffffff';
+            ctxT.lineWidth = 2;
+            ctxT.beginPath();
+            ctxT.arc(px, py, 5, 0, Math.PI * 2);
+            ctxT.fill();
+            ctxT.stroke();
+          }
+
+          const readoutEl = document.getElementById('tel-hover-readout');
+          if (readoutEl) {
+            const dtVal = (cmp && Number.isFinite(pt.t) && Number.isFinite(cmp.t)) ? (pt.t - cmp.t) : null;
+            const dtHtml = dtVal !== null
+              ? `<span style="color:${dtVal <= 0 ? '#34d399' : '#fb7185'};font-weight:800;">Δt ${dtVal >= 0 ? '+' : ''}${dtVal.toFixed(3)}s</span>`
+              : '';
+            const cmpSpdHtml = cmp ? `<span style="color:#e879f9;">對比車速 ${Math.round(cmp.speed)} km/h</span>` : '';
+            readoutEl.innerHTML = `
+              <span>📍 距離 <b>${Math.round(pt.s)}m</b></span>
+              <span style="color:#fbbf24;">🏎 車速 <b>${Math.round(pt.speed)} km/h</b> (${pt.gear || 1}檔)</span>
+              <span style="color:#10b981;">油門 <b>${Math.round(pt.throttle)}%</b></span>
+              <span style="color:#ef4444;">煞車 <b>${Math.round(pt.brake)}%</b></span>
+              <span style="color:#22d3ee;">轉向 <b>${Math.round(pt.steer)}°</b></span>
+              <span>側向G <b>${(pt.latG || 0).toFixed(2)}G</b></span>
+              ${cmpSpdHtml} ${dtHtml}`;
+          }
+        };
+        const restoreBase = () => {
+          const st = activeTelemetryState;
+          [
+            [document.getElementById('chart-pedals'), st.baseImgP],
+            [document.getElementById('chart-steer-speed'), st.baseImgS],
+            [document.getElementById('chart-delta'), st.baseImgD],
+            [document.getElementById('chart-trajectory'), st.baseImgT]
+          ].forEach(([cv, base]) => {
+            if (cv && base) cv.getContext('2d').putImageData(base, 0, 0);
+          });
+        };
+        canvasIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('pointermove', (e) => {
+            const rect = el.getBoundingClientRect();
+            const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / Math.max(1, rect.width)));
+            drawOverlayAtRatio(ratio);
+          });
+          el.addEventListener('pointerleave', restoreBase);
+        });
+      }
+
+      function openTelemetryModal(source = 'current', completedTime = null, recordObj = null, compareTarget = null) {
         simState.paused = true;
         document.getElementById('modal-telemetry').classList.remove('hidden');
 
-        let candidateSamples = simState.currentLapSamples;
-        if (completedTime && simState.lastCompletedLapSamples && simState.lastCompletedLapSamples.length >= 8) {
-          candidateSamples = simState.lastCompletedLapSamples;
-        } else if (!candidateSamples || candidateSamples.length < 8) {
-          if (simState.lastCompletedLapSamples && simState.lastCompletedLapSamples.length >= 8) {
-            candidateSamples = simState.lastCompletedLapSamples;
-          } else if (simState.pbTelemetrySamples && simState.pbTelemetrySamples.length >= 8) {
-            candidateSamples = simState.pbTelemetrySamples;
-          }
-        }
+        const isRecordMode = (source === 'record' && recordObj);
+        let rawSamples;
+        let targetCircuit = currentCircuit;
+        let trackLen = totalTrackLength;
+        let lapTimeVal = completedTime;
+        let sec1 = simState.sector1Time;
+        let sec2 = simState.sector2Time;
+        let sec3 = simState.sector3Time;
+        let lockups = simState.lockupCount;
+        let understeers = simState.understeerCount;
 
-        const usePro = (source === 'pro') || !candidateSamples || (candidateSamples.length < 8);
-        const rawSamples = usePro ? proTelemetrySamples : candidateSamples;
+        if (isRecordMode) {
+          rawSamples = Array.isArray(recordObj.telemetry) ? recordObj.telemetry : [];
+          targetCircuit = (typeof CIRCUITS !== 'undefined' && CIRCUITS.find(c => c.id === recordObj.circuitId)) || currentCircuit;
+          trackLen = recordObj.trackLengthM || (rawSamples.length ? rawSamples[rawSamples.length - 1].s : totalTrackLength) || totalTrackLength;
+          lapTimeVal = recordObj.timing.lapTime;
+          sec1 = recordObj.timing.s1;
+          sec2 = recordObj.timing.s2;
+          sec3 = recordObj.timing.s3;
+          lockups = recordObj.timing.lockups || 0;
+          understeers = recordObj.timing.understeers || 0;
+        } else {
+          let candidateSamples = simState.currentLapSamples;
+          if (completedTime && simState.lastCompletedLapSamples && simState.lastCompletedLapSamples.length >= 8) {
+            candidateSamples = simState.lastCompletedLapSamples;
+          } else if (!candidateSamples || candidateSamples.length < 8) {
+            if (simState.lastCompletedLapSamples && simState.lastCompletedLapSamples.length >= 8) {
+              candidateSamples = simState.lastCompletedLapSamples;
+            } else if (simState.pbTelemetrySamples && simState.pbTelemetrySamples.length >= 8) {
+              candidateSamples = simState.pbTelemetrySamples;
+            }
+          }
+          const usePro = (source === 'pro') || !candidateSamples || (candidateSamples.length < 8);
+          rawSamples = usePro ? proTelemetrySamples : candidateSamples;
+          lapTimeVal = completedTime || (usePro ? PRO_LAP_TIME : simState.lapElapsed);
+        }
 
         // Guarantee strictly non-decreasing track distance (s) so a wrap-around sample can never draw a backward slash across the chart
         const samples = [];
         let lastMonotonicS = -1;
         for (let i = 0; i < rawSamples.length; i++) {
           const pt = rawSamples[i];
-          if (pt && typeof pt.s === 'number' && pt.s >= lastMonotonicS && pt.s <= totalTrackLength + 0.01) {
+          if (pt && typeof pt.s === 'number' && pt.s >= lastMonotonicS && pt.s <= trackLen + 25.0) {
             samples.push(pt);
             lastMonotonicS = pt.s;
           }
         }
+        const effectiveTrackLen = Math.max(trackLen, (samples.length ? samples[samples.length - 1].s : 1), 100);
 
-        const lapTimeVal = completedTime || (usePro ? PRO_LAP_TIME : simState.lapElapsed);
+        // Populate metadata strip (Car Setup + Track Conditions snapshot)
+        const metaStrip = document.getElementById('tel-meta-strip');
+        if (metaStrip) {
+          const tMap = { soft: 'S 軟胎', medium: 'M 中性胎', hard: 'H 硬胎', wet: 'W 全雨胎' };
+          const gMap = { short: '密齒比', standard: '標準齒比', long: '疏齒比' };
+          const sMap = { soft: '偏軟懸吊', balanced: '均衡懸吊', stiff: '偏硬懸吊' };
+          const surfMap = { green: '綠地新鋪 (98%)', fast: '標準賽事 (100%)', optimum: '最佳橡膠 (102%)', wet: '濕地積水 (72%)' };
+          const metaCar = isRecordMode ? recordObj.car : {
+            carName: (typeof getActiveCarMeta === 'function' ? getActiveCarMeta().name : (carAssetState.label || 'GT3')),
+            carClass: (typeof getActiveCarMeta === 'function' ? getActiveCarMeta().carClass : 'GT3')
+          };
+          const metaSetup = isRecordMode ? recordObj.setup : Object.assign({
+            tireCompound: simState.tireCompound || 'medium',
+            transmission: simState.autoTransmission ? 'AT' : 'MT'
+          }, simState.carSetup || { aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' });
+          const metaCond = isRecordMode ? recordObj.conditions : ((typeof getSessionConditionsSnapshot === 'function')
+            ? getSessionConditionsSnapshot()
+            : { weather: simState.weather || 'dry', surfaceState: 'fast', ambientTempC: 23, trackTempC: 35, timeOfDay: 'day' });
+          const recDate = isRecordMode ? (recordObj.recordedAt || '').slice(0, 16).replace('T', ' ') : new Date().toISOString().slice(0, 16).replace('T', ' ');
+          const metaEdition = isRecordMode ? recordObj.edition : simState.edition;
+
+          metaStrip.innerHTML = `
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] leading-relaxed">
+              <div class="text-[10px] text-amber-400 font-bold mb-1">🏎️ 賽車與調校設定 (CAR &amp; SETUP)</div>
+              <div class="text-white font-bold">${metaCar.carName} <span class="text-cyan-300">[${metaCar.carClass}]</span></div>
+              <div class="text-slate-300">${tMap[metaSetup.tireCompound] || metaSetup.tireCompound} · 空力尾翼 <b>Lv.${metaSetup.aeroWing}</b> · 煞車前軸 <b>${metaSetup.brakeBias}%</b> · ${gMap[metaSetup.gearRatio] || '標準齒'} · ${sMap[metaSetup.suspension] || '均衡'} · ${metaSetup.transmission}</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] leading-relaxed">
+              <div class="text-[10px] text-sky-400 font-bold mb-1">🌦️ 當日賽道與天候環境 (CONDITIONS · ${recDate})</div>
+              <div class="text-white font-bold">${targetCircuit.name} <span class="text-emerald-300">(${metaEdition === 'arcade' ? '娛樂 NOS' : '真實模擬'})</span></div>
+              <div class="text-slate-300">${metaCond.weather === 'wet' ? '🌧 雨天濕地' : '☀ 晴朗乾地'} · 路面 <b>${surfMap[metaCond.surfaceState] || metaCond.surfaceState}</b> · 氣溫 <b>${metaCond.ambientTempC}°C</b> / 賽道 <b>${metaCond.trackTempC}°C</b></div>
+            </div>`;
+        }
+
+        // Populate Compare Selector
+        const selCmp = document.getElementById('select-telemetry-compare');
+        const resolvedCmp = compareTarget !== null ? compareTarget : (selCmp ? selCmp.value : 'none');
+        if (selCmp) {
+          const histOpts = [];
+          if (window.ApexRecords && typeof window.ApexRecords.getAllHistory === 'function') {
+            window.ApexRecords.getAllHistory({ circuitId: targetCircuit.id, validOnly: true }).forEach(r => {
+              if (recordObj && r.id === recordObj.id) return;
+              if (!r.telemetry || r.telemetry.length < 4) return;
+              histOpts.push(`<option value="${r.id}">對比：${formatLapTime(r.timing.lapTime)} · ${r.car.carName} [${r.carClass}/${r.conditions.weather === 'wet' ? '濕' : '乾'}]</option>`);
+            });
+          }
+          selCmp.innerHTML = `<option value="none">疊加對比：關閉</option><option value="pro">疊加：PRO 官方基準圈</option>${histOpts.join('')}`;
+          selCmp.value = (resolvedCmp && selCmp.querySelector(`option[value="${resolvedCmp}"]`)) ? resolvedCmp : 'none';
+        }
+        const activeCmpVal = selCmp ? selCmp.value : 'none';
+
+        let compareSamples = [];
+        if (activeCmpVal === 'pro' && targetCircuit.id === currentCircuit.id) {
+          compareSamples = proTelemetrySamples;
+        } else if (activeCmpVal && activeCmpVal !== 'none' && activeCmpVal !== 'pro' && window.ApexRecords) {
+          const cmpRec = window.ApexRecords.getRecordById(activeCmpVal);
+          if (cmpRec && Array.isArray(cmpRec.telemetry)) compareSamples = cmpRec.telemetry;
+        }
+
+        activeTelemetryState.source = source;
+        activeTelemetryState.completedTime = lapTimeVal;
+        activeTelemetryState.recordObj = recordObj;
+        activeTelemetryState.compareTarget = activeCmpVal;
+        activeTelemetryState.samples = samples;
+        activeTelemetryState.compareSamples = compareSamples;
+        activeTelemetryState.trackLen = effectiveTrackLen;
+
+        const ghostBtn = document.getElementById('btn-telemetry-load-ghost');
+        if (ghostBtn) {
+          ghostBtn.disabled = samples.length < 4;
+          ghostBtn.style.opacity = samples.length < 4 ? '0.45' : '1';
+        }
 
         document.getElementById('tel-laptime').textContent = formatLapTime(lapTimeVal);
-        document.getElementById('tel-s1').textContent = simState.sector1Time ? simState.sector1Time.toFixed(3) + 's' : (PRO_LAP_TIME * 0.33).toFixed(3) + 's';
-        document.getElementById('tel-s2').textContent = simState.sector2Time ? simState.sector2Time.toFixed(3) + 's' : (PRO_LAP_TIME * 0.35).toFixed(3) + 's';
-        document.getElementById('tel-s3').textContent = simState.sector3Time ? simState.sector3Time.toFixed(3) + 's' : (PRO_LAP_TIME * 0.32).toFixed(3) + 's';
+        document.getElementById('tel-s1').textContent = sec1 ? sec1.toFixed(3) + 's' : (PRO_LAP_TIME * 0.33).toFixed(3) + 's';
+        document.getElementById('tel-s2').textContent = sec2 ? sec2.toFixed(3) + 's' : (PRO_LAP_TIME * 0.35).toFixed(3) + 's';
+        document.getElementById('tel-s3').textContent = sec3 ? sec3.toFixed(3) + 's' : (PRO_LAP_TIME * 0.32).toFixed(3) + 's';
 
         let maxV = 0;
         samples.forEach(s => { if (s.speed > maxV) maxV = s.speed; });
         document.getElementById('tel-topspeed').textContent = `${Math.round(maxV)} km/h`;
-        document.getElementById('tel-incidents').textContent =
-          `${simState.lockupCount} 鎖死 / ${simState.understeerCount} 外拋`;
+        document.getElementById('tel-incidents').textContent = `${lockups} 鎖死 / ${understeers} 外拋`;
 
         const cPedal = document.getElementById('chart-pedals');
         cPedal.width = cPedal.clientWidth || 640;
@@ -506,16 +763,14 @@ simState.bestLapTime = PRO_LAP_TIME;
         [0.338, 0.680].forEach(r => {
           const sx = r * cPedal.width;
           ctxP.strokeStyle = '#1e293b';
-          ctxP.beginPath();
-          ctxP.moveTo(sx, 0); ctxP.lineTo(sx, cPedal.height);
-          ctxP.stroke();
+          ctxP.beginPath(); ctxP.moveTo(sx, 0); ctxP.lineTo(sx, cPedal.height); ctxP.stroke();
         });
 
         ctxP.strokeStyle = '#10b981';
         ctxP.lineWidth = 2;
         ctxP.beginPath();
         samples.forEach((pt, idx) => {
-          const x = Math.min(cPedal.width, Math.max(0, (pt.s / totalTrackLength) * cPedal.width));
+          const x = Math.min(cPedal.width, Math.max(0, (pt.s / effectiveTrackLen) * cPedal.width));
           const y = cPedal.height - (pt.throttle / 100) * (cPedal.height - 16) - 8;
           if (idx === 0 || pt.s < samples[idx - 1].s) ctxP.moveTo(x, y);
           else ctxP.lineTo(x, y);
@@ -526,12 +781,27 @@ simState.bestLapTime = PRO_LAP_TIME;
         ctxP.lineWidth = 2;
         ctxP.beginPath();
         samples.forEach((pt, idx) => {
-          const x = Math.min(cPedal.width, Math.max(0, (pt.s / totalTrackLength) * cPedal.width));
+          const x = Math.min(cPedal.width, Math.max(0, (pt.s / effectiveTrackLen) * cPedal.width));
           const y = cPedal.height - (pt.brake / 100) * (cPedal.height - 16) - 8;
           if (idx === 0 || pt.s < samples[idx - 1].s) ctxP.moveTo(x, y);
           else ctxP.lineTo(x, y);
         });
         ctxP.stroke();
+
+        if (compareSamples.length >= 4) {
+          ctxP.save();
+          ctxP.setLineDash([4, 3]);
+          ctxP.strokeStyle = 'rgba(232, 121, 249, 0.55)';
+          ctxP.lineWidth = 1.4;
+          ctxP.beginPath();
+          compareSamples.forEach((pt, idx) => {
+            const x = Math.min(cPedal.width, Math.max(0, (pt.s / effectiveTrackLen) * cPedal.width));
+            const y = cPedal.height - (pt.brake / 100) * (cPedal.height - 16) - 8;
+            if (idx === 0) ctxP.moveTo(x, y); else ctxP.lineTo(x, y);
+          });
+          ctxP.stroke();
+          ctxP.restore();
+        }
 
         const cSteer = document.getElementById('chart-steer-speed');
         cSteer.width = cSteer.clientWidth || 640;
@@ -539,63 +809,138 @@ simState.bestLapTime = PRO_LAP_TIME;
         const ctxS = cSteer.getContext('2d');
         ctxS.clearRect(0, 0, cSteer.width, cSteer.height);
 
+        const maxSpdPlot = Math.max(350, maxV + 15);
         ctxS.strokeStyle = '#f59e0b';
         ctxS.lineWidth = 2;
         ctxS.beginPath();
         samples.forEach((pt, idx) => {
-          const x = Math.min(cSteer.width, Math.max(0, (pt.s / totalTrackLength) * cSteer.width));
-          const y = cSteer.height - (pt.speed / 350) * (cPederHeight(cSteer) - 16) - 8;
+          const x = Math.min(cSteer.width, Math.max(0, (pt.s / effectiveTrackLen) * cSteer.width));
+          const y = cSteer.height - (pt.speed / maxSpdPlot) * (cPederHeight(cSteer) - 16) - 8;
           if (idx === 0 || pt.s < samples[idx - 1].s) ctxS.moveTo(x, y);
           else ctxS.lineTo(x, y);
         });
         ctxS.stroke();
+
+        if (compareSamples.length >= 4) {
+          ctxS.save();
+          ctxS.setLineDash([5, 3]);
+          ctxS.strokeStyle = '#e879f9';
+          ctxS.lineWidth = 1.6;
+          ctxS.beginPath();
+          compareSamples.forEach((pt, idx) => {
+            const x = Math.min(cSteer.width, Math.max(0, (pt.s / effectiveTrackLen) * cSteer.width));
+            const y = cSteer.height - (pt.speed / maxSpdPlot) * (cPederHeight(cSteer) - 16) - 8;
+            if (idx === 0) ctxS.moveTo(x, y); else ctxS.lineTo(x, y);
+          });
+          ctxS.stroke();
+          ctxS.restore();
+        }
 
         ctxS.strokeStyle = '#22d3ee';
         ctxS.lineWidth = 1.8;
         ctxS.beginPath();
         const midY = cSteer.height / 2;
         samples.forEach((pt, idx) => {
-          const x = Math.min(cSteer.width, Math.max(0, (pt.s / totalTrackLength) * cSteer.width));
+          const x = Math.min(cSteer.width, Math.max(0, (pt.s / effectiveTrackLen) * cSteer.width));
           const y = midY - (pt.steer / 450) * (midY - 10);
           if (idx === 0 || pt.s < samples[idx - 1].s) ctxS.moveTo(x, y);
           else ctxS.lineTo(x, y);
         });
         ctxS.stroke();
 
+        // CHANNEL 3: Time Delta (Delta-T vs Distance)
+        const cDelta = document.getElementById('chart-delta');
+        if (cDelta) {
+          cDelta.width = cDelta.clientWidth || 640;
+          cDelta.height = cDelta.clientHeight || 112;
+          const ctxD = cDelta.getContext('2d');
+          ctxD.clearRect(0, 0, cDelta.width, cDelta.height);
+          const midD = cDelta.height * 0.5;
+          ctxD.strokeStyle = '#334155';
+          ctxD.lineWidth = 1;
+          ctxD.beginPath(); ctxD.moveTo(0, midD); ctxD.lineTo(cDelta.width, midD); ctxD.stroke();
+
+          if (compareSamples.length >= 4 && samples.length >= 4) {
+            const bins = 120;
+            const dts = [];
+            let maxAbsDt = 1.0;
+            for (let b = 0; b <= bins; b++) {
+              const sVal = (b / bins) * effectiveTrackLen;
+              const p1 = interpTelemetryAtS(samples, sVal);
+              const p2 = interpTelemetryAtS(compareSamples, sVal);
+              const dtV = (p1 && p2) ? (p1.t - p2.t) : 0;
+              dts.push(dtV);
+              if (Math.abs(dtV) > maxAbsDt) maxAbsDt = Math.abs(dtV);
+            }
+            const scaleY = (midD - 10) / maxAbsDt;
+            for (let b = 1; b <= bins; b++) {
+              const x0 = ((b - 1) / bins) * cDelta.width;
+              const x1 = (b / bins) * cDelta.width;
+              // Negative dt means faster -> plot UPWARD above zero line in green; positive dt slower -> DOWNWARD in red
+              const y0 = midD + dts[b - 1] * scaleY;
+              const y1 = midD + dts[b] * scaleY;
+              ctxD.strokeStyle = dts[b] <= 0 ? '#10b981' : '#ef4444';
+              ctxD.lineWidth = 2.2;
+              ctxD.beginPath(); ctxD.moveTo(x0, y0); ctxD.lineTo(x1, y1); ctxD.stroke();
+            }
+            ctxD.fillStyle = '#94a3b8';
+            ctxD.font = '10px monospace';
+            ctxD.fillText(`更快 -${maxAbsDt.toFixed(1)}s`, 6, 12);
+            ctxD.fillText(`更慢 +${maxAbsDt.toFixed(1)}s`, 6, cDelta.height - 5);
+          } else {
+            ctxD.fillStyle = '#64748b';
+            ctxD.font = '11px sans-serif';
+            ctxD.fillText('選擇上方「疊加對比」圈速（如 PRO 基準圈或歷史單圈）即可顯示各彎道時間差 Δt 曲線', 14, midD + 4);
+          }
+          activeTelemetryState.baseImgD = ctxD.getImageData(0, 0, cDelta.width, cDelta.height);
+        }
+
         const cTraj = document.getElementById('chart-trajectory');
         const ctxT = cTraj.getContext('2d');
         ctxT.clearRect(0, 0, cTraj.width, cTraj.height);
 
+        let trajBounds = null;
+        const ptsXY = (targetCircuit.id === currentCircuit.id)
+          ? trackNodes.filter((_, i) => i % 5 === 0)
+          : computeCircuitPointsXY(targetCircuit);
+        if (ptsXY.length >= 3) {
+          let mnX = Infinity, mxX = -Infinity, mnZ = Infinity, mxZ = -Infinity;
+          ptsXY.forEach(p => { if (p.x < mnX) mnX = p.x; if (p.x > mxX) mxX = p.x; if (p.z < mnZ) mnZ = p.z; if (p.z > mxZ) mxZ = p.z; });
+          trajBounds = { minX: mnX, maxX: mxX, minZ: mnZ, maxZ: mxZ, spanX: Math.max(10, mxX - mnX), spanZ: Math.max(10, mxZ - mnZ) };
+        }
+        activeTelemetryState.mapBounds = trajBounds;
+
         ctxT.strokeStyle = '#334155';
         ctxT.lineWidth = 6;
         ctxT.beginPath();
-        for (let i = 0; i < TRACK_SAMPLES; i += 5) {
-          const n = trackNodes[i];
-          const { px, py } = mapWorldToCanvas(n.x, n.z, cTraj.width, cTraj.height);
+        ptsXY.forEach((n, i) => {
+          const { px, py } = mapCustomXYToCanvas(n.x, n.z, cTraj.width, cTraj.height, trajBounds);
           if (i === 0) ctxT.moveTo(px, py);
-          else ctxT.lineTo(px, py);
-        }
-        ctxT.closePath();
-        ctxT.stroke();
-
-        ctxT.strokeStyle = 'rgba(34, 211, 238, 0.55)';
-        ctxT.setLineDash([4, 4]);
-        ctxT.lineWidth = 1.5;
-        ctxT.beginPath();
-        proTelemetrySamples.forEach((pt, idx) => {
-          const { px, py } = mapWorldToCanvas(pt.x, pt.z, cTraj.width, cTraj.height);
-          if (idx === 0) ctxT.moveTo(px, py);
           else ctxT.lineTo(px, py);
         });
         ctxT.closePath();
         ctxT.stroke();
-        ctxT.setLineDash([]);
+
+        if (targetCircuit.id === currentCircuit.id) {
+          ctxT.strokeStyle = 'rgba(34, 211, 238, 0.55)';
+          ctxT.setLineDash([4, 4]);
+          ctxT.lineWidth = 1.5;
+          ctxT.beginPath();
+          proTelemetrySamples.forEach((pt, idx) => {
+            const { px, py } = mapCustomXYToCanvas(pt.x, pt.z, cTraj.width, cTraj.height, trajBounds);
+            if (idx === 0) ctxT.moveTo(px, py);
+            else ctxT.lineTo(px, py);
+          });
+          ctxT.closePath();
+          ctxT.stroke();
+          ctxT.setLineDash([]);
+        }
 
         for (let i = 1; i < samples.length; i++) {
           const a = samples[i - 1];
           const b = samples[i];
-          const pa = mapWorldToCanvas(a.x, a.z, cTraj.width, cTraj.height);
-          const pb = mapWorldToCanvas(b.x, b.z, cTraj.width, cTraj.height);
+          const pa = mapCustomXYToCanvas(a.x, a.z, cTraj.width, cTraj.height, trajBounds);
+          const pb = mapCustomXYToCanvas(b.x, b.z, cTraj.width, cTraj.height, trajBounds);
           ctxT.strokeStyle = b.brake > 20 ? '#ef4444' : '#10b981';
           ctxT.lineWidth = 2.4;
           ctxT.beginPath();
@@ -604,21 +949,26 @@ simState.bestLapTime = PRO_LAP_TIME;
           ctxT.stroke();
         }
 
+        activeTelemetryState.baseImgP = ctxP.getImageData(0, 0, cPedal.width, cPedal.height);
+        activeTelemetryState.baseImgS = ctxS.getImageData(0, 0, cSteer.width, cSteer.height);
+        activeTelemetryState.baseImgT = ctxT.getImageData(0, 0, cTraj.width, cTraj.height);
+        bindTelemetryScrubbing();
+
         const notesEl = document.getElementById('tel-engineer-notes');
         const notes = [];
-        notes.push(`<div>🗺️ <strong>當前賽道：</strong>${currentCircuit.name} (${currentCircuit.difficultyStars})</div>`);
-        if (usePro) {
+        notes.push(`<div>🗺️ <strong>當前檢視賽道：</strong>${targetCircuit.name} (${targetCircuit.difficultyStars})</div>`);
+        if (source === 'pro') {
           notes.push(`<div>🏁 <strong>基準圈展示：</strong>目前顯示 PRO 最佳基準圈 (${formatLapTime(PRO_LAP_TIME)}) 的完美煞車與油門曲線。</div>`);
         } else {
           notes.push(`<div>📊 <strong>取樣點數：</strong>本圈共記錄 ${samples.length} 個高頻遙測點，最高尾速達 ${Math.round(maxV)} km/h。</div>`);
         }
-        if (simState.lockupCount > 0) {
-          notes.push(`<div class="text-red-400">⚠ <strong>重煞鎖死診斷：</strong>偵測到 ${simState.lockupCount} 次前輪鎖死（煞車 &gt; 88%）。入彎前請適時點放煞車避免鎖死。</div>`);
+        if (lockups > 0) {
+          notes.push(`<div class="text-red-400">⚠ <strong>重煞鎖死診斷：</strong>偵測到 ${lockups} 次前輪鎖死（煞車 &gt; 88%）。入彎前可微調煞車平衡或適時點放煞車避免鎖死。</div>`);
         } else {
           notes.push('<div class="text-emerald-400">✔ <strong>煞車控制優異：</strong>重煞車區未發生嚴重輪胎鎖死，前軸荷重轉移相當線性。</div>');
         }
-        if (simState.understeerCount > 0) {
-          notes.push(`<div class="text-amber-300">⚠ <strong>慣性推頭外拋診斷：</strong>出現 ${simState.understeerCount} 次超速入彎推頭外拋，請在 150m/100m 煞車牌提前減速至「彎道極限速度」以下再轉向。</div>`);
+        if (understeers > 0) {
+          notes.push(`<div class="text-amber-300">⚠ <strong>慣性推頭外拋診斷：</strong>出現 ${understeers} 次超速入彎推頭外拋，請在 150m/100m 煞車牌提前減速至「彎道極限速度」以下再轉向。</div>`);
         }
         notesEl.innerHTML = notes.join('');
       }
@@ -778,6 +1128,33 @@ simState.bestLapTime = PRO_LAP_TIME;
       document.getElementById('select-telemetry-lap').addEventListener('change', (e) => {
         openTelemetryModal(e.target.value);
       });
+      const selTelCompare = document.getElementById('select-telemetry-compare');
+      if (selTelCompare) {
+        selTelCompare.addEventListener('change', (e) => {
+          openTelemetryModal(activeTelemetryState.source, activeTelemetryState.completedTime, activeTelemetryState.recordObj, e.target.value);
+        });
+      }
+      const btnTelLoadGhost = document.getElementById('btn-telemetry-load-ghost');
+      if (btnTelLoadGhost) {
+        btnTelLoadGhost.addEventListener('click', () => {
+          const st = activeTelemetryState;
+          let recToLoad = st.recordObj;
+          if (!recToLoad && st.samples && st.samples.length >= 4) {
+            recToLoad = {
+              id: 'cur_ghost',
+              circuitId: currentCircuit.id,
+              car: { carName: (typeof carAssetState !== 'undefined' ? carAssetState.label : 'GT3') },
+              driverName: (window.ApexRecords ? window.ApexRecords.getDriverName() : 'PLAYER'),
+              timing: { lapTime: st.completedTime || PRO_LAP_TIME },
+              telemetry: st.samples
+            };
+          }
+          if (recToLoad && typeof window.loadRecordAsGhost === 'function') {
+            document.getElementById('modal-telemetry').classList.add('hidden');
+            window.loadRecordAsGhost(recToLoad, true);
+          }
+        });
+      }
       document.getElementById('btn-telemetry-close').addEventListener('click', () => {
         document.getElementById('modal-telemetry').classList.add('hidden');
         // When opened from the results screen, just return to the results (stay paused)

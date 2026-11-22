@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Verify Lap Records DB, Class Leaderboard &amp; Setup Tuning</title></head>
+<body>
+<iframe id="app" src="/index.html" style="width:1280px;height:720px;"></iframe>
+<pre id="status">BOOTING</pre>
+<script>
+function waitUntil(fn, timeoutMs = 25000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      try {
+        const res = fn();
+        if (res) return resolve(res);
+      } catch (e) {}
+      if (Date.now() - start > timeoutMs) return reject(new Error('Timeout waiting for condition'));
+      setTimeout(tick, 100);
+    };
+    tick();
+  });
+}
+
+function makeTelemetry(lenM, lapTimeS) {
+  const arr = [];
+  for (let i = 0; i <= 30; i++) {
+    const f = i / 30;
+    const ang = f * Math.PI * 2;
+    arr.push({
+      s: Number((f * lenM).toFixed(1)),
+      t: Number((f * lapTimeS).toFixed(3)),
+      d: Math.sin(ang * 3) * 2.5,
+      x: Math.cos(ang) * 400,
+      y: Math.sin(ang) * 4,
+      z: Math.sin(ang) * 250,
+      heading: ang + Math.PI * 0.5,
+      speed: Math.round(140 + 130 * Math.abs(Math.cos(ang * 2))),
+      throttle: i % 5 === 3 ? 0 : 100,
+      brake: i % 5 === 3 ? 78 : 0,
+      steer: Math.round(Math.sin(ang * 4) * 160),
+      latG: Number((Math.sin(ang * 4) * 1.35).toFixed(2)),
+      longG: Number((i % 5 === 3 ? -1.4 : 0.65).toFixed(2)),
+      gear: i % 5 === 3 ? 2 : 5,
+      rpm: 7400
+    });
+  }
+  return arr;
+}
+
+function canvasNonZeroPixels(cv) {
+  if (!cv) return 0;
+  const ctx = cv.getContext('2d');
+  const data = ctx.getImageData(0, 0, cv.width, cv.height).data;
+  let nz = 0;
+  for (let i = 3; i < data.length; i += 16) {
+    if (data[i] > 10) nz++;
+  }
+  return nz;
+}
+
+(async () => {
+  const report = { errors: [], setupPhysics: {}, persistence: {}, leaderboard: {}, motecUi: {} };
+  try {
+    const frame = document.getElementById('app');
+    let win = await waitUntil(() => {
+      const w = frame.contentWindow;
+      return (w && w.ApexRecords && w.CIRCUITS && w.simState && w.stepPhysics && w.setCarSetup && w.applyCarSetupPreset && w.getCarSetupPhysicsMods && w.setTrackSurfaceState) ? w : null;
+    });
+    win.carAssetState.loadSeq++;
+    win.carAssetState.loading = false;
+    await win.ApexRecords.ready();
+
+    // ------------------------------------------------------------------
+    // 1. Setup Defaults & Physical Tuning Differences
+    // ------------------------------------------------------------------
+    win.applyCarSetupPreset('balanced');
+    win.setTrackSurfaceState('fast');
+    const neutralMods = win.getCarSetupPhysicsMods();
+
+    const runAccelTest = (setupArg, surfId, secDur, startSpdMs = 15) => {
+      win.selectCircuit(0); // Monza
+      win.resetSession(false);
+      if (typeof setupArg === 'string') win.applyCarSetupPreset(setupArg);
+      else win.setCarSetup(setupArg);
+      win.setTrackSurfaceState(surfId);
+      win.setWeatherMode('dry');
+      win.setTireCompound('medium');
+      win.simState.edition = 'realistic';
+      win.simState.inShowcaseMode = false;
+      win.simState.paused = false;
+      win.simState.countdownActive = false;
+      win.simState.gear = startSpdMs > 40 ? 5 : 1;
+      win.simState.s = 20;
+      win.simState.d = 0;
+      win.simState.speedMs = startSpdMs;
+      win.simState.speedKmh = startSpdMs * 3.6;
+      win.inputs.throttle = true;
+      win.inputs.brake = false;
+      const steps = Math.round(secDur / 0.02);
+      for (let i = 0; i < steps; i++) {
+        const nd = win.sampleTrackAtS(win.simState.s);
+        win.simState.d = 0;
+        win.simState.heading = nd.heading;
+        win.simState.yawRate = 0;
+        win.stepPhysics(0.02);
+      }
+      win.inputs.throttle = false;
+      return {
+        speedKmh: Number(win.simState.speedKmh.toFixed(2)),
+        downforce: win.simState.downforceKgf,
+        effGrip: win.simState.effectiveGrip
+      };
+    };
+
+    const runShort7s = runAccelTest('high_downforce', 'fast', 7.0, 15);
+    const runLong7s = runAccelTest('low_drag', 'fast', 7.0, 15);
+    const runAero1High = runAccelTest({ aeroWing: 1, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' }, 'fast', 8.0, 62);
+    const runAero5High = runAccelTest({ aeroWing: 5, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' }, 'fast', 8.0, 62);
+    const runOpt = runAccelTest('balanced', 'optimum', 2.0, 15);
+    const runGreen = runAccelTest('balanced', 'green', 2.0, 15);
+    win.applyCarSetupPreset('balanced');
+    win.setTrackSurfaceState('fast');
+
+    const modsSoft = win.getCarSetupPhysicsMods({ aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'soft' });
+    const modsStiff = win.getCarSetupPhysicsMods({ aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'stiff' });
+
+    report.setupPhysics = {
+      neutralMods,
+      shortGear7sKmh: runShort7s.speedKmh,
+      longGear7sKmh: runLong7s.speedKmh,
+      aero1TopEndKmh: runAero1High.speedKmh,
+      aero5TopEndKmh: runAero5High.speedKmh,
+      lowDragDf: runAero1High.downforce,
+      highDfDf: runAero5High.downforce,
+      optimumGrip: runOpt.effGrip,
+      greenGrip: runGreen.effGrip,
+      softKerbGrip: modsSoft.kerbGrip,
+      stiffKerbGrip: modsStiff.kerbGrip
+    };
+
+    // ------------------------------------------------------------------
+    // 2. Record Laps Across Isolated Partitions + Reload Frame Persistence
+    // ------------------------------------------------------------------
+    win.ApexRecords.clearAllForTesting();
+    await win.ApexRecords.whenIdle();
+    win.ApexRecords.setDriverName('R.LUO');
+    win.selectCircuit(0);
+    const monzaLen = win.getTotalTrackLength();
+    const baseTel = makeTelemetry(monzaLen, 104.25);
+
+    const r1 = win.ApexRecords.recordCompletedLap({
+      circuitId: 'monza', circuitName: win.CIRCUITS[0].name, trackLengthM: monzaLen,
+      edition: 'realistic', mode: 'time_attack',
+      car: { presetId: 'ferrari458', carName: 'FERRARI 458 ITALIA GT3', carClass: 'GT3' },
+      setup: { tireCompound: 'soft', transmission: 'AT', aeroWing: 1, brakeBias: 59, gearRatio: 'long', suspension: 'stiff' },
+      conditions: { weather: 'dry', surfaceState: 'fast', ambientTempC: 27, trackTempC: 41, timeOfDay: 'day', effectiveGrip: 1.0 },
+      timing: { lapTime: 104.250, s1: 35.1, s2: 36.4, s3: 32.75, isValidLap: true, topSpeedKmh: 309, avgSpeedKmh: 198.6, driverGrade: 'S' },
+      telemetry: baseTel
+    });
+    win.ApexRecords.recordCompletedLap({
+      circuitId: 'monza', circuitName: win.CIRCUITS[0].name, trackLengthM: monzaLen,
+      edition: 'realistic', mode: 'time_attack',
+      car: { presetId: 'mclaren_senna', carName: 'MCLAREN SENNA GTR-SPEC', carClass: 'HYPER' },
+      setup: { tireCompound: 'medium', transmission: 'AT', aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' },
+      conditions: { weather: 'dry', surfaceState: 'fast', ambientTempC: 27, trackTempC: 41, timeOfDay: 'day', effectiveGrip: 1.0 },
+      timing: { lapTime: 96.180, s1: 32.1, s2: 33.4, s3: 30.68, isValidLap: true, topSpeedKmh: 324, avgSpeedKmh: 215.2, driverGrade: 'S+' },
+      telemetry: makeTelemetry(monzaLen, 96.18)
+    });
+    win.ApexRecords.recordCompletedLap({
+      circuitId: 'monza', circuitName: win.CIRCUITS[0].name, trackLengthM: monzaLen,
+      edition: 'realistic', mode: 'time_attack',
+      car: { presetId: 'porsche_919_evo', carName: 'PORSCHE 919 HYBRID EVO LMP1', carClass: 'LMP1' },
+      setup: { tireCompound: 'soft', transmission: 'AT', aeroWing: 5, brakeBias: 56, gearRatio: 'standard', suspension: 'stiff' },
+      conditions: { weather: 'dry', surfaceState: 'optimum', ambientTempC: 27, trackTempC: 43, timeOfDay: 'day', effectiveGrip: 1.02 },
+      timing: { lapTime: 86.420, s1: 28.9, s2: 30.1, s3: 27.42, isValidLap: true, topSpeedKmh: 362, avgSpeedKmh: 239.5, driverGrade: 'S+' },
+      telemetry: makeTelemetry(monzaLen, 86.42)
+    });
+    win.ApexRecords.recordCompletedLap({
+      circuitId: 'monza', circuitName: win.CIRCUITS[0].name, trackLengthM: monzaLen,
+      edition: 'arcade', mode: 'time_attack',
+      car: { presetId: 'ferrari458', carName: 'FERRARI 458 ITALIA GT3', carClass: 'GT3' },
+      setup: { tireCompound: 'soft', transmission: 'AT', aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' },
+      conditions: { weather: 'dry', surfaceState: 'fast', ambientTempC: 27, trackTempC: 41, timeOfDay: 'day', effectiveGrip: 1.0 },
+      timing: { lapTime: 95.100, s1: 31.8, s2: 33.0, s3: 30.30, isValidLap: true, topSpeedKmh: 345, avgSpeedKmh: 217.6, driverGrade: 'S' },
+      telemetry: baseTel
+    });
+    win.ApexRecords.recordCompletedLap({
+      circuitId: 'monza', circuitName: win.CIRCUITS[0].name, trackLengthM: monzaLen,
+      edition: 'realistic', mode: 'time_attack',
+      car: { presetId: 'ferrari458', carName: 'FERRARI 458 ITALIA GT3', carClass: 'GT3' },
+      setup: { tireCompound: 'wet', transmission: 'AT', aeroWing: 4, brakeBias: 56, gearRatio: 'standard', suspension: 'soft' },
+      conditions: { weather: 'wet', surfaceState: 'wet', ambientTempC: 23, trackTempC: 32, timeOfDay: 'day', effectiveGrip: 0.907 },
+      timing: { lapTime: 116.840, s1: 39.0, s2: 41.2, s3: 36.64, isValidLap: true, topSpeedKmh: 288, avgSpeedKmh: 177.2, driverGrade: 'A' },
+      telemetry: baseTel
+    });
+    win.ApexRecords.recordCompletedLap({
+      circuitId: 'monza', circuitName: win.CIRCUITS[0].name, trackLengthM: monzaLen,
+      edition: 'realistic', mode: 'time_attack',
+      car: { presetId: 'ferrari458', carName: 'FERRARI 458 ITALIA GT3', carClass: 'GT3' },
+      setup: { tireCompound: 'soft', transmission: 'AT', aeroWing: 3, brakeBias: 58, gearRatio: 'standard', suspension: 'balanced' },
+      conditions: { weather: 'dry', surfaceState: 'fast', ambientTempC: 27, trackTempC: 41, timeOfDay: 'day', effectiveGrip: 1.0 },
+      timing: { lapTime: 81.000, s1: 27.0, s2: 28.0, s3: 26.0, isValidLap: false, topSpeedKmh: 305, avgSpeedKmh: 255.0, driverGrade: 'C' },
+      telemetry: baseTel
+    });
+
+    await win.ApexRecords.whenIdle();
+
+    // Reload iframe completely to verify real IndexedDB cross-reload persistence!
+    win.__beforeReloadTag = true;
+    await new Promise((resolve) => {
+      frame.addEventListener('load', resolve, { once: true });
+      frame.src = '/index.html?idb_reload=' + Date.now();
+    });
+    win = await waitUntil(() => {
+      const w = frame.contentWindow;
+      return (w && !w.__beforeReloadTag && w.ApexRecords && w.openTelemetryModal && w.openRecordsScreen && w.loadRecordAsGhost && w.CIRCUITS && w.simState && w.getTotalTrackLength) ? w : null;
+    }, 30000);
+    win.carAssetState.loadSeq++;
+    win.carAssetState.loading = false;
+    await win.ApexRecords.ready();
+
+    const gt3Board = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'GT3', edition: 'realistic', weather: 'dry' });
+    const hyperBoard = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'HYPER', edition: 'realistic', weather: 'dry' });
+    const lmp1Board = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'LMP1', edition: 'realistic', weather: 'dry' });
+    const arcBoard = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'GT3', edition: 'arcade', weather: 'dry' });
+    const wetBoard = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'GT3', edition: 'realistic', weather: 'wet' });
+
+    // Class-spoofing rejection test on JSON import
+    const spoofRes = win.ApexRecords.importRecordsJSON(JSON.stringify({
+      schema: 'apex-pro-records-v1',
+      records: [{
+        id: 'spoof_test_919',
+        recordedAt: '2026-11-22T20:10:00Z',
+        driverName: 'CHEATER',
+        circuitId: 'monza',
+        edition: 'realistic',
+        car: { presetId: 'porsche_919_evo', carName: 'FAKE GT3 919', carClass: 'GT3' },
+        conditions: { weather: 'dry' },
+        timing: { lapTime: 84.500, isValidLap: true }
+      }]
+    }));
+    const gt3AfterSpoof = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'GT3', edition: 'realistic', weather: 'dry' });
+    const lmp1AfterSpoof = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'LMP1', edition: 'realistic', weather: 'dry', dedupeMode: 'all' });
+
+    report.persistence = {
+      driverName: win.ApexRecords.getDriverName(),
+      totalValidAfterReload: win.ApexRecords.getTotalValidCount(),
+      exportSchema: JSON.parse(win.ApexRecords.exportRecordsJSON()).schema
+    };
+    report.leaderboard = {
+      gt3Times: gt3Board.entries.map(e => e.record.timing.lapTime),
+      hyperTimes: hyperBoard.entries.map(e => e.record.timing.lapTime),
+      lmp1Times: lmp1Board.entries.map(e => e.record.timing.lapTime),
+      arcTimes: arcBoard.entries.map(e => e.record.timing.lapTime),
+      wetTimes: wetBoard.entries.map(e => e.record.timing.lapTime),
+      gt3BenchPro: gt3Board.benchmarks.proTime,
+      hyperBenchPro: hyperBoard.benchmarks.proTime,
+      lmp1BenchPro: lmp1Board.benchmarks.proTime,
+      spoofSanitized: spoofRes.sanitizedClasses,
+      gt3AfterSpoofCount: gt3AfterSpoof.entries.length,
+      lmp1AfterSpoofCount: lmp1AfterSpoof.entries.length
+    };
+
+    // ------------------------------------------------------------------
+    // 3. Historical MoTeC Overlay + Delta-T + Canvas Pixels + Ghost Loader + #scr-records UI
+    // ------------------------------------------------------------------
+    win.selectCircuit(0);
+    const savedRec = gt3Board.entries[0].record;
+    win.openTelemetryModal('record', savedRec.timing.lapTime, savedRec, 'pro');
+
+    const metaText = (win.document.getElementById('tel-meta-strip') || {}).textContent || '';
+    const pxPedal = canvasNonZeroPixels(win.document.getElementById('chart-pedals'));
+    const pxSteer = canvasNonZeroPixels(win.document.getElementById('chart-steer-speed'));
+    const pxDelta = canvasNonZeroPixels(win.document.getElementById('chart-delta'));
+    const pxTraj = canvasNonZeroPixels(win.document.getElementById('chart-trajectory'));
+
+    const ghostOk = win.loadRecordAsGhost(savedRec, false);
+    const ghostMetaId = win.simState.customGhostMeta ? win.simState.customGhostMeta.id : null;
+    const ghostLen = win.simState.pbTelemetrySamples.length;
+
+    win.openRecordsScreen({ circuitId: 'monza', carClass: 'GT3', edition: 'realistic', weather: 'dry' });
+    const gt3Html = (win.document.getElementById('rec-table-container') || {}).textContent || '';
+    win.document.querySelector('[data-rec-class="HYPER"]').click();
+    const hyperHtml = (win.document.getElementById('rec-table-container') || {}).textContent || '';
+
+    report.motecUi = {
+      metaHasFerrari: metaText.includes('FERRARI 458'),
+      metaHasTemp: metaText.includes('41°C'),
+      pxPedal, pxSteer, pxDelta, pxTraj,
+      ghostOk,
+      ghostMatchedId: ghostMetaId === savedRec.id,
+      ghostLen,
+      recordsScreenHasFerrariInGT3: gt3Html.includes('FERRARI 458'),
+      recordsScreenHasSennaInHYPER: hyperHtml.includes('SENNA') && !hyperHtml.includes('FERRARI 458')
+    };
+
+    // Clean up test DB state
+    win.ApexRecords.clearAllForTesting();
+    await win.ApexRecords.whenIdle();
+    win.localStorage.removeItem('apexpro.driverName');
+
+    if (win.__APEX_ERRORS && win.__APEX_ERRORS.length) {
+      report.errors.push(...win.__APEX_ERRORS);
+    }
+  } catch (err) {
+    report.errors.push(err && err.stack ? err.stack : String(err));
+  }
+  document.getElementById('status').textContent = JSON.stringify(report);
+  try {
+    await fetch('/__report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report)
+    });
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

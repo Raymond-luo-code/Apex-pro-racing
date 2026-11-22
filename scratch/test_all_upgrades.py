@@ -75,10 +75,20 @@ with open(os.path.join(BASE, "js", "render.js"), encoding="utf-8") as f:
     render_src = f.read()
 assert "brakeDiscGlow" not in render_src, "brakeDiscGlow found in js/render.js"
 
-# 2. All 5 Circuits, Biomes, SkyDome, Fuji/Suzuka Landmarks
+# 2. All 9 Circuits, Biomes, SkyDome, Fuji/Suzuka Landmarks & All 7 1:1 Track GLBs
 circuits = report_data.get("circuits", [])
-expected_biomes = ["monza_park", "fuji_sunset", "hakone_night", "spa_ardennes", "suzuka_bay"]
-assert len(circuits) == 5, f"Expected 5 circuits, got {len(circuits)}"
+expected_biomes = [
+    "monza_park",
+    "fuji_sunset",
+    "hakone_night",
+    "spa_ardennes",
+    "suzuka_bay",
+    "silverstone_uk",
+    "interlagos_sun",
+    "spielberg_alps",
+    "cota_texas",
+]
+assert len(circuits) == 9, f"Expected 9 circuits, got {len(circuits)}"
 for i, c in enumerate(circuits):
     assert c["biome"] == expected_biomes[i], f"Circuit {i} wrong biome: {c}"
     assert c["hasSkyDome"] and c["skyIsShaderMat"], f"Missing GLSL sky dome on circuit {c['id']}"
@@ -155,5 +165,11 @@ glb_sp = sp.get("glbSpaCheck", {})
 assert glb_sp.get("ok") and glb_sp.get("meshCount", 0) >= 5, f"Spa GLB load failed: {glb_sp}"
 assert glb_sp.get("spanX", 0) > 1800 and glb_sp.get("spanZ", 0) > 1100 and 95.0 < glb_sp.get("spanY", 0) < 120.0, f"Spa GLB size mismatch: {glb_sp}"
 assert glb_sp.get("centerDeltaX", 9999) < 80.0, f"Spa GLB not aligned 1:1 with playable trackNodes: {glb_sp}"
+
+all_glbs = bf.get("allRebuiltTrackGlbs", {})
+for tid in ["monza", "suzuka", "spa", "silverstone", "interlagos", "spielberg", "cota"]:
+    g = all_glbs.get(tid, {})
+    assert g.get("ok") and g.get("meshCount", 0) >= 5, f"Track GLB load failed for {tid}: {g}"
+    assert g.get("spanX", 0) > 600 and g.get("spanZ", 0) > 500, f"Track GLB span invalid for {tid}: {g}"
 
 print("\nALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!")

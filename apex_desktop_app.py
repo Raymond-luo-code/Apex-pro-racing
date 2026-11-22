@@ -139,9 +139,16 @@ def run_self_check(port):
         ("GET", "/index.html"),
         ("HEAD", "/assets/models/cars/mclaren_senna.glb"),
         ("HEAD", "/assets/models/cars/amg%201.glb"),
+        ("HEAD", "/assets/models/cars/f1_2026_sf26.glb"),
+        ("HEAD", "/assets/models/cars/ferrari_296_gt3.glb"),
+        ("HEAD", "/assets/models/cars/nissan_x-trail.glb"),
         ("HEAD", "/assets/models/tracks/suzuka_circuit.glb"),
         ("HEAD", "/assets/models/tracks/spa_francorchamps.glb"),
         ("HEAD", "/assets/models/tracks/monza.glb"),
+        ("HEAD", "/assets/models/tracks/silverstone.glb"),
+        ("HEAD", "/assets/models/tracks/interlagos.glb"),
+        ("HEAD", "/assets/models/tracks/red_bull_ring.glb"),
+        ("HEAD", "/assets/models/tracks/cota_austin.glb"),
     ]
     for method, path in endpoints:
         req = urllib.request.Request(base_url + path, method=method)

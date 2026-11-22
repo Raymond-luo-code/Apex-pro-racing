@@ -70,7 +70,7 @@ for car in report_data.get("cars", []):
 print("Class Benchmarks on Spa:", report_data.get("classBenchmarks"))
 
 assert not report_data.get("errors"), f"Runtime errors: {report_data['errors']}"
-assert len(report_data.get("circuits", [])) == 5, f"Expected 5 circuits, got {len(report_data.get('circuits', []))}"
+assert len(report_data.get("circuits", [])) == 9, f"Expected 9 circuits, got {len(report_data.get('circuits', []))}"
 for car in report_data.get("cars", []):
     assert car.get("ok"), f"Car failed verification: {car}"
 cb = report_data.get("classBenchmarks", {})

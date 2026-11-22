@@ -266,13 +266,45 @@ simState.bestLapTime = PRO_LAP_TIME;
           `${Math.hypot(simState.latG, simState.longG).toFixed(1)}G`;
       }
 
+      let _minimapBoundsKey = '';
+      let _minimapBounds = { minX: -1220, spanX: 2550, minZ: -110, spanZ: 1450 };
+      function getTrackMinimapBounds() {
+        const key = `${currentCircuit ? currentCircuit.id : ''}_${Math.round(totalTrackLength)}`;
+        if (key === _minimapBoundsKey || !trackNodes.length) return _minimapBounds;
+        let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+        for (let i = 0; i < trackNodes.length; i++) {
+          const n = trackNodes[i];
+          if (n.x < minX) minX = n.x;
+          if (n.x > maxX) maxX = n.x;
+          if (n.z < minZ) minZ = n.z;
+          if (n.z > maxZ) maxZ = n.z;
+        }
+        const spanX = Math.max(100, maxX - minX);
+        const spanZ = Math.max(100, maxZ - minZ);
+        const padX = spanX * 0.08;
+        const padZ = spanZ * 0.08;
+        _minimapBounds = {
+          minX: minX - padX,
+          spanX: spanX + padX * 2,
+          minZ: minZ - padZ,
+          spanZ: spanZ + padZ * 2
+        };
+        _minimapBoundsKey = key;
+        return _minimapBounds;
+      }
+
       function mapWorldToCanvas(x, z, w, h) {
         const pad = 8;
-        const scaleX = (w - pad * 2) / 2550;
-        const scaleZ = (h - pad * 2) / 1450;
+        const b = getTrackMinimapBounds();
+        const scaleX = (w - pad * 2) / b.spanX;
+        const scaleZ = (h - pad * 2) / b.spanZ;
         const s = Math.min(scaleX, scaleZ);
-        const px = pad + (x + 1220) * s;
-        const py = h - (pad + (z + 110) * s);
+        const drawW = b.spanX * s;
+        const drawH = b.spanZ * s;
+        const offX = (w - drawW) * 0.5;
+        const offY = (h - drawH) * 0.5;
+        const px = offX + (x - b.minX) * s;
+        const py = h - (offY + (z - b.minZ) * s);
         return { px, py };
       }
 

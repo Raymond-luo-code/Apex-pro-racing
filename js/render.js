@@ -1604,6 +1604,7 @@ function rebuild3DCircuitScene() {
 
   for (let s = 40; s <= 400; s += 60) {
     const n = sampleTrackAtS(s);
+    if (Math.abs(n.curvature) > 0.0038) continue;
     const standOffset = TRACK_WIDTH * 0.5 + 7.2;
     const gx = n.x - n.rightX * standOffset;
     const gz = n.z - n.rightZ * standOffset;

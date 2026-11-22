@@ -1,3 +1,5 @@
 .apex_app_profile/
 __pycache__/
 *.pyc
+.venv_telemetry/
+.fastf1_cache/

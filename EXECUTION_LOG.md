@@ -1073,3 +1073,28 @@ Script error. at module(main.js:START):0:0
 - `python scratch/verify_new_assets.py`：**ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!**
 - `python scratch/test_all_upgrades.py`：**ALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!**（`gtrCheck.removedEverywhere = true`、Spa 遠端點驗證 `cameraFar = 4800 / domeRadius = 4200 / camDistDelta = 0`）
 - `launch_apex_desktop.bat --check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%**（`6/6` HTTP 200）
+
+---
+
+## 2026-11-22 // 真實 1:1 斯帕-弗朗科爾尚賽道重建（OpenF1 3D 遙測 × TUMFTM 幾何中心線融合 + `.glb` 3D 模型實裝）
+
+### 1. 資料管線與前處理實作
+1. **真實 Telemetry 擷取與賽車線修正**（[`scratch/preprocess_spa_f1.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/preprocess_spa_f1.py)）：
+   - 原 [`assets/models/tracks/spa_telemetry.csv`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/spa_telemetry.csv) 僅含 Garage 61 單圈摘要統計（10 列，無軌跡經緯度／高程）。改由免費無須帳號之 **OpenF1 API**（2024 Belgian GP Race `Lap 32`, Driver `#1 VER`, `106.128s`）擷取 `415` 點真實 3D 座標與油門／煞車／檔位遙測並存於 [`assets/models/tracks/spa_f1_telemetry.csv`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/spa_f1_telemetry.csv)（高程落差 `dZ = 102.30m`），經曲率／駕駛偏移估測修正賽車線並以 Periodic Cubic Spline 等距重採樣為 `0.5m`（`14,072` 點，`7036.11m`）。
+2. **TUMFTM 衛星中心線融合與 1:1 PBR `.glb` 輸出**（[`scratch/build_spa_track.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/build_spa_track.py)）：
+   - 將 OpenF1 3D 軌跡以剛體 ICP 對齊 **TUMFTM** `Spa.csv`（`1,401` 點，寬度 `7.87m..16.42m`，`mirror=False, mean_residual=2.67m, rms=3.00m`），產出遊戲世界座標 `0.5m` 融合中心線（`7000.74m`、`X=[-1770.6, 360.8]`、`Z=[-1125.7, 280.4]`、`Y=[-48.46, 53.80]`、`dY=102.27m`），產出對比圖 [`spa_fused_verification.png`](file:///C:/Users/raymo/.gemini/antigravity/brain/cfd58b47-e6c4-4542-a9aa-430b016e1717/spa_fused_verification.png)。
+   - 匯出 1:1 PBR glTF 2.0 3D 賽道模型 [`assets/models/tracks/spa_francorchamps.glb`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/assets/models/tracks/spa_francorchamps.glb)（`2,513,616` bytes，5 個 Mesh：`Spa_Asphalt`、`Spa_Grass_Runoff_Skirt`、`Spa_Kerbs_RedYellow`、`Spa_Armco_Barriers`、`Spa_Start_Gantry`）。
+3. **遊戲賽道與 HUD 整合**：
+   - [`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)：更新 `CIRCUITS[3]` (`spa`) 為 140 組零折疊 1:1 Catmull-Rom 路點（`width: 16.0`, `proLapTime: 134.500`, `glbTransform` 歸零對齊），並匯出 `window.trackNodes` 與 `window.getTotalTrackLength`。
+   - [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)：於 `rebuild3DCircuitScene()` 看台與維修區建物生成迴圈加入曲率過濾（`if (Math.abs(n.curvature) > 0.0038) continue;`），避免 T1 La Source 髮夾彎內側誤生看台。
+   - [`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)：新增快取式 `getTrackMinimapBounds()` 動態計算小地圖縮放邊界，使 7 km 真實比例斯帕與其餘賽道皆可完整自適應顯示於小地圖。
+
+### 2. 全套實機驗證結果 (2026-11-22)
+- `python scratch/check_syntax.py`：**7 / 7 OK**
+- `verify_track_geometry.py`：**ALL 5 CIRCUITS PASSED ZERO-FOLD, ZERO-OVERLAP, EMBEDDED-BASE, RUNOFF-BOUNDED SCENERY & GLB-OFF AUDIT!**（`spa`: `len=6818.2m | minY=-48.48m (gnd=-58.48m) | road_folds=0 | runoff_folds=0 | same_overlaps=0 | scenery_hits=0 | outside_runoff=0 | floating_hills=0 | hill_overlaps=0 | pier_hits=0`）
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**ALL PROPOSAL TESTS PASSED: 44/44**（`index.html booted cleanly (148291 chars, zero #apex-crash-banner)`）
+- `python scratch/verify_new_assets.py`：**ALL 6 NEW CAR GLBs + 5 CIRCUITS + MULTI-CLASS SCALING VERIFIED 100%!**（`spa`: `proLapTime: 138.139, minY: -48.4, maxY: 53.8`；`Class Benchmarks on Spa: procedural 138.139 / mclaren_senna 129.868 / porsche_919_evo 119.774`）
+- `python scratch/test_all_upgrades.py`：**ALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!**（`spaRealTrack`: `totalLen=6818.2`, `elevSpanY=102.32`, `glbSpaCheck: ok=true, meshCount=5, spanX=2166.6, spanY=113.3, spanZ=1439.3, centerDeltaX=37.9`）
+- `launch_apex_desktop.bat --check`：**APEX DESKTOP SERVER SELF-CHECK PASSED 100%!**（`6/6` HTTP 200，`spa_francorchamps.glb` `2,513,616 bytes`）

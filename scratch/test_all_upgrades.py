@@ -149,4 +149,11 @@ sd = bf.get("skyDomeTracking", {})
 assert sd.get("cameraFar", 0) >= 4500 and 4000 <= sd.get("domeRadius", 0) < sd.get("cameraFar", 0), f"SkyDome/camera.far clipping check failed: {sd}"
 assert sd.get("camDistDelta") is not None and sd["camDistDelta"] < 0.01, f"SkyDome not centered on camera: {sd}"
 
+sp = bf.get("spaRealTrack", {})
+assert 6600 < sp.get("totalLen", 0) < 7150 and sp.get("elevSpanY", 0) > 95.0, f"Spa real scale/elevation check failed: {sp}"
+glb_sp = sp.get("glbSpaCheck", {})
+assert glb_sp.get("ok") and glb_sp.get("meshCount", 0) >= 5, f"Spa GLB load failed: {glb_sp}"
+assert glb_sp.get("spanX", 0) > 1800 and glb_sp.get("spanZ", 0) > 1100 and 95.0 < glb_sp.get("spanY", 0) < 120.0, f"Spa GLB size mismatch: {glb_sp}"
+assert glb_sp.get("centerDeltaX", 9999) < 80.0, f"Spa GLB not aligned 1:1 with playable trackNodes: {glb_sp}"
+
 print("\nALL UPGRADES & BUG FIXES VERIFIED 100% SUCCESSFULLY!")

@@ -73,6 +73,9 @@
             w.getProceduralLiveryTexture &&
             w.ensureBloomResources &&
             w.classifyHiFiMaterials &&
+            w.createGLTFLoader &&
+            w.getTotalTrackLength &&
+            w.trackNodes &&
             w.loadVehicleFromURLs &&
             w.setPhysicsEdition &&
             w.sampleTrackAtS &&
@@ -230,6 +233,39 @@
           cameraFar: win.camera ? win.camera.far : null,
           domeRadius: skyObj && skyObj.geometry && skyObj.geometry.parameters ? skyObj.geometry.parameters.radius : null,
           camDistDelta: (skyObj && win.camera) ? Number(skyObj.position.distanceTo(win.camera.position).toFixed(4)) : null
+        };
+
+        // Real 1:1 Spa Circuit (length ~6.8km, elevation span ~102.3m) + realigning GLB model load check
+        let tMinY = Infinity, tMaxY = -Infinity, tMinX = Infinity, tMaxX = -Infinity, tMinZ = Infinity, tMaxZ = -Infinity;
+        for (const n of win.trackNodes) {
+          if (n.y < tMinY) tMinY = n.y; if (n.y > tMaxY) tMaxY = n.y;
+          if (n.x < tMinX) tMinX = n.x; if (n.x > tMaxX) tMaxX = n.x;
+          if (n.z < tMinZ) tMinZ = n.z; if (n.z > tMaxZ) tMaxZ = n.z;
+        }
+        const spaLen = win.getTotalTrackLength();
+        const glbSpaCheck = await new Promise((resolve) => {
+          const loader = win.createGLTFLoader();
+          loader.load('/assets/models/tracks/spa_francorchamps.glb', (gltf) => {
+            const box = new win.THREE.Box3().setFromObject(gltf.scene);
+            const sz = box.getSize(new win.THREE.Vector3());
+            const ct = box.getCenter(new win.THREE.Vector3());
+            let meshCount = 0;
+            gltf.scene.traverse(o => { if (o.isMesh) meshCount++; });
+            const trackCtX = 0.5 * (tMinX + tMaxX);
+            resolve({
+              ok: true,
+              meshCount,
+              spanX: Number(sz.x.toFixed(1)),
+              spanY: Number(sz.y.toFixed(1)),
+              spanZ: Number(sz.z.toFixed(1)),
+              centerDeltaX: Number(Math.abs(ct.x - trackCtX).toFixed(1))
+            });
+          }, undefined, (err) => resolve({ ok: false, error: String(err && err.message || err) }));
+        });
+        report.bugFixes.spaRealTrack = {
+          totalLen: Number(spaLen.toFixed(1)),
+          elevSpanY: Number((tMaxY - tMinY).toFixed(2)),
+          glbSpaCheck
         };
 
         // ------------------------------------------------------------------

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Verify Phase A-D Driving Experience Overhaul</title></head>
+<body>
+<iframe id="app" src="/index.html" style="width:1280px;height:720px;"></iframe>
+<pre id="status">BOOTING</pre>
+<script>
+function waitUntil(fn, timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      try {
+        const res = fn();
+        if (res) return resolve(res);
+      } catch (e) {}
+      if (Date.now() - start > timeoutMs) return reject(new Error('Timeout waiting for app'));
+      setTimeout(tick, 100);
+    };
+    tick();
+  });
+}
+
+(async () => {
+  const report = { checks: [], errors: [], metrics: {} };
+  const check = (cond, name, detail = '') => {
+    report.checks.push({ name, passed: !!cond, detail });
+    if (!cond) report.errors.push(`FAIL: ${name}${detail ? ' -> ' + detail : ''}`);
+  };
+
+  try {
+    const frame = document.getElementById('app');
+    const win = await waitUntil(() => {
+      const w = frame.contentWindow;
+      return (
+        w && w.CIRCUITS && w.CAR_HANDLING_PROFILES && w.carAssetState &&
+        w.simState && w.stepPhysics && w.selectCircuit && w.resetSession &&
+        w.rebuildProBenchmarkForCurrentCar && w.getCarChassisTraits &&
+        w.evalTorqueCurveMultiplier && w.getLookaheadCornerTargetKmh &&
+        w.computeDynamicOptimalLine && w.refreshTacticalRibbonForCurrentCar
+      ) ? w : null;
+    }, 30000);
+
+    win.applyCarSetupPreset('balanced');
+    win.setTrackSurfaceState('fast');
+    win.setWeatherMode('dry');
+    win.setTireCompound('medium');
+    win.simState.edition = 'realistic';
+    win.simState.mode = 'time_attack';
+
+    // ------------------------------------------------------------------
+    // 1. Frenet-Serret (1 - k * d) World Arc-Length Metric Accuracy
+    // ------------------------------------------------------------------
+    win.selectCircuit(3); // Spa
+    win.carAssetState.presetId = 'procedural';
+    win.rebuildProBenchmarkForCurrentCar();
+    let maxK = 0, peakS = 0;
+    for (let i = 0; i < win.trackNodes.length; i++) {
+      const k = Math.abs(win.trackNodes[i].curvature);
+      if (k > maxK) { maxK = k; peakS = win.trackNodes[i].s; }
+    }
+    const peakNode = win.sampleTrackAtS(peakS);
+    const kSign = Math.sign(peakNode.curvature) || 1;
+    const measureFrenetStep = (dVal) => {
+      win.resetSession(false);
+      win.simState.paused = false;
+      win.simState.inShowcaseMode = false;
+      win.simState.countdownActive = false;
+      win.simState.s = peakS;
+      win.simState.d = dVal;
+      win.simState.heading = peakNode.heading;
+      win.simState.speedMs = 40.0;
+      win.simState.speedKmh = 144.0;
+      win.eval('manualSteerDrag = true; manualThrottleDrag = true; manualBrakeDrag = true;');
+      win.simState.steerInput = 0;
+      win.simState.throttleInput = 0;
+      win.simState.brakeInput = 0;
+      const p0 = win.sdToWorld(win.simState.s, win.simState.d);
+      win.stepPhysics(0.02);
+      const p1 = win.sdToWorld(win.simState.s, win.simState.d);
+      win.eval('manualSteerDrag = false; manualThrottleDrag = false; manualBrakeDrag = false;');
+      return Math.hypot(p1.x - p0.x, p1.z - p0.z) / (40.0 * 0.02);
+    };
+    const outWorldRatio = measureFrenetStep(-6.0 * kSign);
+    const inWorldRatio = measureFrenetStep(6.0 * kSign);
+    report.metrics.frenetOutsideWorldRatio = Number(outWorldRatio.toFixed(4));
+    report.metrics.frenetInsideWorldRatio = Number(inWorldRatio.toFixed(4));
+    check(
+      outWorldRatio >= 0.96 && outWorldRatio <= 1.04 && inWorldRatio >= 0.96 && inWorldRatio <= 1.04,
+      'Frenet-Serret world arc distance matches v*dt on outside and inside lines',
+      `out=${outWorldRatio.toFixed(4)} in=${inWorldRatio.toFixed(4)}`
+    );
+
+    // ------------------------------------------------------------------
+    // 2. ABS vs Non-ABS Braking & S vs Space Trail Brake Synergy
+    // ------------------------------------------------------------------
+    win.selectCircuit(0); // Monza
+    const runStraightBrake = (carId, brkPct) => {
+      win.carAssetState.presetId = carId;
+      win.rebuildProBenchmarkForCurrentCar();
+      win.resetSession(false);
+      win.simState.paused = false;
+      win.simState.inShowcaseMode = false;
+      win.simState.countdownActive = false;
+      win.simState.s = 200;
+      win.simState.d = 0;
+      win.simState.heading = win.sampleTrackAtS(200).heading;
+      win.simState.speedMs = 290 / 3.6;
+      win.simState.speedKmh = 290;
+      win.eval('manualSteerDrag = true; manualThrottleDrag = true; manualBrakeDrag = true;');
+      win.simState.steerInput = 0;
+      win.simState.throttleInput = 0;
+      win.simState.brakeInput = brkPct;
+      let dist = 0, locked = false;
+      for (let i = 0; i < 300; i++) {
+        if (win.simState.speedKmh <= 90) break;
+        const prevMs = win.simState.speedMs;
+        win.simState.s = 200;
+        win.simState.d = 0;
+        win.simState.heading = win.sampleTrackAtS(200).heading;
+        win.stepPhysics(0.02);
+        dist += 0.5 * (prevMs + win.simState.speedMs) * 0.02;
+        if (win.simState.isBrakeLockup) locked = true;
+      }
+      win.eval('manualSteerDrag = false; manualThrottleDrag = false; manualBrakeDrag = false;');
+      return { dist: Number(dist.toFixed(1)), locked };
+    };
+    const gt3FullBrk = runStraightBrake('amggt3', 100);
+    const f1SafeBrk = runStraightBrake('f1_2026_sf26', 90);
+    report.metrics.gt3Straight290To90DistM = gt3FullBrk.dist;
+    report.metrics.gt3StraightLocked = gt3FullBrk.locked;
+    check(
+      !gt3FullBrk.locked && gt3FullBrk.dist < 170,
+      'GT3 Motorsport ABS stops 290->90 km/h cleanly without binary S-key lockup trap',
+      `dist=${gt3FullBrk.dist}m locked=${gt3FullBrk.locked}`
+    );
+    check(!f1SafeBrk.locked, 'F1 non-ABS at 90% straight brake does not prematurely lock', `locked=${f1SafeBrk.locked}`);
+
+    // Test non-ABS trail turn-in lockup at 100% brake + steer vs Spacebar 75%
+    const measureTurnInLatG = (carId, brkPct, thrPct, spdKmh = 140, steer = 0.85) => {
+      win.carAssetState.presetId = carId;
+      win.rebuildProBenchmarkForCurrentCar();
+      win.resetSession(false);
+      win.simState.paused = false;
+      win.simState.inShowcaseMode = false;
+      win.simState.countdownActive = false;
+      win.simState.s = 200;
+      win.simState.d = 0;
+      win.simState.heading = win.sampleTrackAtS(200).heading;
+      win.simState.speedMs = spdKmh / 3.6;
+      win.simState.speedKmh = spdKmh;
+      win.eval('manualSteerDrag = true; manualThrottleDrag = true; manualBrakeDrag = true;');
+      win.simState.steerInput = steer;
+      win.simState.brakeInput = brkPct;
+      win.simState.throttleInput = thrPct;
+      let locked = false, oversteer = false, maxDrift = 0;
+      for (let i = 0; i < 18; i++) {
+        win.simState.s = 200;
+        win.simState.heading = win.sampleTrackAtS(200).heading;
+        win.simState.speedMs = spdKmh / 3.6;
+        win.simState.speedKmh = spdKmh;
+        win.stepPhysics(0.02);
+        if (win.simState.isBrakeLockup) locked = true;
+        if (win.simState.isOversteer) oversteer = true;
+        if (Math.abs(win.simState.driftAngle) > maxDrift) maxDrift = Math.abs(win.simState.driftAngle);
+      }
+      const res = {
+        latG: Number(Math.abs(win.simState.latG).toFixed(3)),
+        yawRate: Number(Math.abs(win.simState.yawRate).toFixed(3)),
+        locked,
+        oversteer,
+        maxDrift: Number(maxDrift.toFixed(4))
+      };
+      win.eval('manualSteerDrag = false; manualThrottleDrag = false; manualBrakeDrag = false;');
+      return res;
+    };
+
+    const f1LockTurn = measureTurnInLatG('f1_2026_sf26', 100, 0, 140, 0.85);
+    const p911SpaceTrail = measureTurnInLatG('porsche911', 75, 0, 140, 0.85);
+    const p911FullS = measureTurnInLatG('porsche911', 100, 0, 140, 0.85);
+    const p911Coast = measureTurnInLatG('porsche911', 0, 0, 140, 0.85);
+    const awdSpaceTrail = measureTurnInLatG('lamborghini_aventador', 75, 0, 140, 0.85);
+    const awdCoast = measureTurnInLatG('lamborghini_aventador', 0, 0, 140, 0.85);
+
+    report.metrics.f1TurnInLockLatG = f1LockTurn;
+    report.metrics.p911SpaceTrail = p911SpaceTrail;
+    report.metrics.p911FullS = p911FullS;
+    check(f1LockTurn.locked, 'F1 non-ABS locks front tires when holding 100% brake while turning');
+    check(
+      p911SpaceTrail.latG > p911FullS.latG * 1.15 && p911SpaceTrail.latG > p911Coast.latG * 1.12,
+      'Spacebar 75% Trail Brake outperforms S-key 100% turning brake and grants RR front bite',
+      `space=${p911SpaceTrail.latG}G vs S100=${p911FullS.latG}G vs coast=${p911Coast.latG}G`
+    );
+    check(
+      (p911SpaceTrail.latG / p911Coast.latG) > (awdSpaceTrail.latG / awdCoast.latG),
+      'Porsche 911 RR trail-brake front bite bonus exceeds Aventador AWD',
+      `911_ratio=${(p911SpaceTrail.latG / p911Coast.latG).toFixed(3)} vs AWD_ratio=${(awdSpaceTrail.latG / awdCoast.latG).toFixed(3)}`
+    );
+
+    // ------------------------------------------------------------------
+    // 3. Chicane Steering Reversal Time (< 0.46s @ 150 km/h)
+    // ------------------------------------------------------------------
+    const measureChicaneFlipSec = (carId) => {
+      const cp = win.CAR_HANDLING_PROFILES[carId];
+      let s = 1.0, steps = 0;
+      while (s > -1.0 && steps < 100) {
+        s = win.stepAnalogSteering(s, true, false, 150, 0.01, cp, true);
+        steps++;
+      }
+      return Number((steps * 0.01).toFixed(2));
+    };
+    const chicaneGt3 = measureChicaneFlipSec('amggt3');
+    const chicane458 = measureChicaneFlipSec('ferrari458');
+    const chicaneF1 = measureChicaneFlipSec('f1_2026_sf26');
+    report.metrics.chicaneFlipSec = { amggt3: chicaneGt3, ferrari458: chicane458, f1: chicaneF1 };
+    check(
+      chicaneGt3 <= 0.46 && chicane458 <= 0.46 && chicaneF1 <= 0.40,
+      'Chicane full lock-to-lock steering reversal completes in <= 0.46s at 150 km/h',
+      JSON.stringify(report.metrics.chicaneFlipSec)
+    );
+
+    // ------------------------------------------------------------------
+    // 4. Chassis Personalities & Torque Curves
+    // ------------------------------------------------------------------
+    const f40Traits = win.getCarChassisTraits(win.CAR_HANDLING_PROFILES.ferrari_f40_lbw);
+    const gt3Traits = win.getCarChassisTraits(win.CAR_HANDLING_PROFILES.procedural);
+    const f1Traits = win.getCarChassisTraits(win.CAR_HANDLING_PROFILES.f1_2026_sf26);
+    const f40LagLow = win.evalTorqueCurveMultiplier(f40Traits, 0.30);
+    const f40LagBoost = win.evalTorqueCurveMultiplier(f40Traits, 0.72);
+    const gt3FlatMid = win.evalTorqueCurveMultiplier(gt3Traits, 0.55);
+    const f1HybridLow = win.evalTorqueCurveMultiplier(f1Traits, 0.35);
+    check(
+      f40LagBoost / f40LagLow > 1.38 && Math.abs(gt3FlatMid - 1.0) < 1e-6 && f1HybridLow >= 1.07,
+      'Engine torque curves differentiate F40 turbo lag, GT3 linear, and F1 hybrid instant torque',
+      `F40 ${f40LagLow.toFixed(2)}->${f40LagBoost.toFixed(2)}, GT3=${gt3FlatMid.toFixed(2)}, F1=${f1HybridLow.toFixed(2)}`
+    );
+
+    // Controllable <118 km/h RWD no-TC Power Oversteer vs >=118 planted vs GT3 TC planted
+    const f40Over75 = measureTurnInLatG('ferrari_f40_lbw', 0, 100, 75, 0.80);
+    const amgOver75 = measureTurnInLatG('amggt3', 0, 100, 75, 0.80);
+    const f1Fast220 = measureTurnInLatG('f1_2026_sf26', 0, 100, 220, 0.85);
+    report.metrics.powerOversteer = { f40_75: f40Over75, amg_75: amgOver75, f1_220: f1Fast220 };
+    check(
+      f40Over75.oversteer && f40Over75.maxDrift >= 0.045 && !amgOver75.oversteer && !f1Fast220.oversteer,
+      'RWD no-TC induces controllable power oversteer at 75 km/h while GT3 TC & >=118 km/h stay planted',
+      `F40_75 drift=${f40Over75.maxDrift} over=${f40Over75.oversteer}, AMG_75=${amgOver75.oversteer}, F1_220=${f1Fast220.oversteer}`
+    );
+
+    // MR lift-off nose-tuck rotation (< 0.18 thr vs 0.25 neutral thr)
+    const mrLiftYaw = measureTurnInLatG('ferrari_laferrari', 0, 0, 110, 0.55);
+    const mrNeutralYaw = measureTurnInLatG('ferrari_laferrari', 0, 25, 110, 0.55);
+    check(
+      mrLiftYaw.yawRate > mrNeutralYaw.yawRate * 1.05,
+      'MR chassis exhibits crisp lift-off nose tuck when lifting below 18% throttle',
+      `liftYaw=${mrLiftYaw.yawRate} vs neutral=${mrNeutralYaw.yawRate}`
+    );
+
+    // ------------------------------------------------------------------
+    // 5. Car-Specific Racing Lines (V-Line vs U-Line) + 3D Ribbon Sync
+    // ------------------------------------------------------------------
+    win.selectCircuit(3); // Spa
+    win.rebuild3DCircuitScene();
+    win.carAssetState.presetId = 'f1_2026_sf26';
+    win.rebuildProBenchmarkForCurrentCar();
+    const uNodesD = win.trackNodes.map(n => n.optimalD);
+
+    let ribbonMeshObj = null;
+    win.circuitSceneryGroup.traverse(obj => {
+      if (obj.isMesh && obj.material && obj.material.vertexColors && Math.abs((obj.material.opacity || 0) - 0.65) < 0.02) {
+        ribbonMeshObj = obj;
+      }
+    });
+    const ribArrU = ribbonMeshObj ? Array.from(ribbonMeshObj.geometry.attributes.position.array.slice(0, 600)) : [];
+
+    win.carAssetState.presetId = 'ferrari_laferrari';
+    win.rebuildProBenchmarkForCurrentCar();
+    const vNodesD = win.trackNodes.map(n => n.optimalD);
+    const ribArrV = ribbonMeshObj ? Array.from(ribbonMeshObj.geometry.attributes.position.array.slice(0, 600)) : [];
+
+    let maxLineDiff = 0;
+    for (let i = 0; i < uNodesD.length; i++) {
+      const diff = Math.abs(vNodesD[i] - uNodesD[i]);
+      if (diff > maxLineDiff) maxLineDiff = diff;
+    }
+    let maxRibDelta = 0;
+    for (let i = 0; i < Math.min(ribArrU.length, ribArrV.length); i++) {
+      const dlt = Math.abs(ribArrV[i] - ribArrU[i]);
+      if (dlt > maxRibDelta) maxRibDelta = dlt;
+    }
+    report.metrics.maxRacingLineSeparationM = Number(maxLineDiff.toFixed(3));
+    report.metrics.max3DRibbonVertexDeltaM = Number(maxRibDelta.toFixed(3));
+    check(
+      maxLineDiff > 0.65 && maxRibDelta > 0.45,
+      'F1 U-Line and LaFerrari Late-Apex V-Line update both optimalD and 3D tacticalRibbonMesh vertices live',
+      `maxSep=${maxLineDiff.toFixed(3)}m ribbonDelta=${maxRibDelta.toFixed(3)}m`
+    );
+
+    // ------------------------------------------------------------------
+    // 6. Dynamic Lookahead HUD + 'heavy' Pill + Dynamic FOV + Garage Badge
+    // ------------------------------------------------------------------
+    win.selectCircuit(0); // Monza
+    win.carAssetState.presetId = 'amggt3';
+    win.rebuildProBenchmarkForCurrentCar();
+    // Search Monza main straight ~160m before heavy T1 braking zone
+    let testHeavyS = -1;
+    for (let s = 100; s < win.getTotalTrackLength(); s += 20) {
+      if (win.getProProfileAtDistance(s + 95).brake > 60) { testHeavyS = s; break; }
+    }
+    const checkS = testHeavyS >= 0 ? testHeavyS : 500;
+    const lookTarget = win.getLookaheadCornerTargetKmh(checkS, 310);
+    const heavyCue = win.computeDrivingCue(checkS, 310, 0, 1);
+    report.metrics.lookaheadAt310Kmh = lookTarget;
+    report.metrics.heavyCueTier = heavyCue.tier;
+    check(lookTarget < 150, 'Speed-dependent HUD lookahead warns early at 310 km/h before heavy corner', `look=${lookTarget}km/h`);
+    check(heavyCue.tier === 'heavy', 'computeDrivingCue emits heavy cue on heavy straight approach', `tier=${heavyCue.tier}`);
+
+    // Trigger HUD & Camera FOV update at 320 km/h approaching heavy corner
+    win.simState.inShowcaseMode = false;
+    win.simState.paused = false;
+    win.simState.countdownActive = false;
+    win.simState.s = checkS;
+    win.simState.speedMs = 320 / 3.6;
+    win.simState.speedKmh = 320;
+    win.simState.drivingCue = heavyCue.tier;
+    win.simState.cueTargetKmh = heavyCue.targetKmh;
+    for (let f = 0; f < 30; f++) win.update3DSceneAndVisualFX(0.033);
+    await new Promise(r => setTimeout(r, 120));
+    const fovAt320 = Number(win.camera.fov.toFixed(2));
+    const hudCueText = (win.document.getElementById('alert-brake-now') || {}).textContent || '';
+    const hudCueHidden = (win.document.getElementById('alert-brake-now') || {}).classList.contains('hidden');
+    const hudLimitText = (win.document.getElementById('hud-corner-limit') || {}).textContent || '';
+    report.metrics.cameraFovAt320Kmh = fovAt320;
+    check(fovAt320 >= 76.0, 'Dynamic high-speed FOV expands meaningfully at 320 km/h', `fov=${fovAt320}`);
+    check(!hudCueHidden && hudCueText.includes('HEAVY BRAKE'), 'HUD alert-brake-now shows compact heavy braking cue pill', hudCueText);
+    check(Number(hudLimitText) < 150, 'HUD #hud-corner-limit displays lookahead target speed early on straight', hudLimitText);
+
+    // Garage driving style badge
+    win.carAssetState.presetId = 'ferrari_laferrari';
+    if (typeof win.renderGarageScreen === 'function') win.renderGarageScreen();
+    const garNote = (win.document.getElementById('lbl-gar-chassis-note') || {}).textContent || '';
+    check(garNote.includes('V-Line') && garNote.includes('油電'), 'Garage chassis note surfaces driving style & racing line badge', garNote);
+
+    report.status = report.errors.length === 0 ? 'ALL_PASS' : 'HAS_ERRORS';
+  } catch (e) {
+    report.errors.push('EXCEPTION: ' + (e && e.stack ? e.stack : String(e)));
+    report.status = 'EXCEPTION';
+  }
+
+  document.getElementById('status').textContent = JSON.stringify(report, null, 2);
+  try {
+    await fetch('/__report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report)
+    });
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

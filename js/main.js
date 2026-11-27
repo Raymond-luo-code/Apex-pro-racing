@@ -38,7 +38,9 @@ simState.bestLapTime = PRO_LAP_TIME;
             : 'w-11 h-12 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center font-mono-tech text-2xl font-extrabold text-amber-400';
         }
 
-        const cornerLimitKmh = getUpcomingCornerMaxSpeedKmh(simState.s);
+        const cornerLimitKmh = (typeof getLookaheadCornerTargetKmh === 'function')
+          ? getLookaheadCornerTargetKmh(simState.s, simState.speedKmh)
+          : getUpcomingCornerMaxSpeedKmh(simState.s);
         const limitEl = document.getElementById('hud-corner-limit');
         limitEl.textContent = `${cornerLimitKmh}`;
         if (simState.speedKmh > cornerLimitKmh + 22) {
@@ -149,12 +151,16 @@ simState.bestLapTime = PRO_LAP_TIME;
         const jumpEl = document.getElementById('alert-jump-start');
         if (jumpEl) jumpEl.classList.toggle('hidden', !simState.hasJumpStarted);
 
-        // Subtle Lift & Trail Braking Guidance (Heavy Brake red popup warning removed per user request)
+        // Progressive Heavy / Trail Braking & Lift Guidance
         const cueEl = document.getElementById('alert-brake-now');
         if (cueEl) {
           const cueTier = simState.drivingCue || 'none';
           const tgtKmh = simState.cueTargetKmh || cornerLimitKmh;
-          if (cueTier === 'trail') {
+          if (cueTier === 'heavy') {
+            cueEl.classList.remove('hidden');
+            cueEl.className = 'px-3 py-0.5 rounded-full bg-red-600/95 text-white font-mono-tech text-[11px] font-extrabold shadow-lg border border-red-300/60';
+            cueEl.textContent = `🔴 HEAVY BRAKE · 重踩煞車 (S ➔ 空白鍵入彎) · 目標 ${tgtKmh} km/h`;
+          } else if (cueTier === 'trail') {
             cueEl.classList.remove('hidden');
             cueEl.className = 'px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono-tech text-[11px] font-extrabold shadow-lg';
             cueEl.textContent = `🟡 TRAIL BRAKE · 輕含煞車 (25%~40%) 目標 ${tgtKmh} km/h — 嚴禁踩死`;

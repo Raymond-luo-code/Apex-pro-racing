@@ -1481,10 +1481,26 @@ window.formatLapTime = formatLapTime;
         const last = rawPts[TRACK_SAMPLES - 1];
         const first = rawPts[0];
         totalTrackLength = cumS + Math.hypot(first.x - last.x, first.z - last.z);
+        computeDynamicOptimalLine();
+      }
 
-        // Multi-pass Out-In-Out (外-內-外) Optimal Racing Line Solver (true arc-length meters):
-        // Swings wide to outside kerb (-sign(k)*maxD) on corner entry (65m-135m before apex),
-        // clips inside kerb (+sign(k)*maxD) at apex, and tracks out to outside kerb on exit.
+      // Multi-pass Out-In-Out (外-內-外) & Class-Specific Optimal Racing Line Solver:
+      //   lineBias  0.00 = GT3 classic Out-In-Out (preserves exact baseline)
+      //   lineBias -0.35 = High-downforce / SUV momentum U-Line (sweeping arc, earlier roll-in)
+      //   lineBias +0.35 = Track Hypercar (crisp late-apex rotation)
+      //   lineBias +0.85 = Road Hypercar / Street V12 V-Line (deeper entry, delayed apex, early exit)
+      function computeDynamicOptimalLine(optSpec) {
+        if (!trackNodes || trackNodes.length === 0) return;
+        const activeH = (!optSpec && typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+        const spec = optSpec || (typeof window !== 'undefined' && window.selectedCarClassSpec) || (activeH && activeH.classSpec) || null;
+        const bias = (spec && typeof spec.lineBias === 'number') ? spec.lineBias
+          : ((activeH && typeof activeH.lineBias === 'number') ? activeH.lineBias : 0.0);
+
+        const apexShiftM = bias * 12.0;
+        const entrySwingMult = 1.35 + bias * 0.25;
+        const exitSwingMult = 1.25 - bias * 0.18;
+        const midApexWeight = 2.40 - Math.max(0, -bias) * 0.35;
+
         const maxD = TRACK_WIDTH * 0.38;
         const dRaw = new Float64Array(TRACK_SAMPLES);
         for (let i = 0; i < TRACK_SAMPLES; i++) {
@@ -1494,9 +1510,10 @@ window.formatLapTime = formatLapTime;
             const cAbs = Math.abs(sampleTrackAtS(s + ds).curvature);
             if (cAbs > localPeak) localPeak = cAbs;
           }
+          const sApexProbe = s - apexShiftM;
           let kApex = 0;
           for (let ds = -10; ds <= 10; ds += 5) {
-            kApex += sampleTrackAtS(s + ds).curvature;
+            kApex += sampleTrackAtS(sApexProbe + ds).curvature;
           }
           kApex /= 5.0;
           let kEntry = 0, kExit = 0;
@@ -1507,7 +1524,7 @@ window.formatLapTime = formatLapTime;
           kEntry /= 8.0;
           kExit /= 8.0;
           const kApexEff = kApex * Math.pow(Math.min(1.0, Math.abs(kApex) / localPeak), 1.15);
-          const normVal = (2.40 * kApexEff - 1.35 * kEntry - 1.25 * kExit) / localPeak;
+          const normVal = (midApexWeight * kApexEff - entrySwingMult * kEntry - exitSwingMult * kExit) / localPeak;
           dRaw[i] = Math.max(-maxD, Math.min(maxD, normVal * maxD));
         }
         let dSmooth = Array.from(dRaw);
@@ -1541,6 +1558,7 @@ window.formatLapTime = formatLapTime;
         let dHead = n1.heading - n0.heading;
         while (dHead > Math.PI) dHead -= Math.PI * 2;
         while (dHead < -Math.PI) dHead += Math.PI * 2;
+        const frenetCurvature = (segLen > 0.25) ? (dHead / segLen) : (n0.curvature || 0);
 
         const nPrev = trackNodes[(idx - 1 + TRACK_SAMPLES) % TRACK_SAMPLES];
         const nNext = trackNodes[(idx + 2) % TRACK_SAMPLES];
@@ -1560,6 +1578,7 @@ window.formatLapTime = formatLapTime;
           heading: n0.heading + dHead * t,
           slopePitch,
           curvature: n0.curvature + (n1.curvature - n0.curvature) * t,
+          frenetCurvature,
           vTarget: n0.vTarget + (n1.vTarget - n0.vTarget) * t,
           optimalD: n0.optimalD + (n1.optimalD - n0.optimalD) * t,
           name: n0.name
@@ -1578,8 +1597,12 @@ window.formatLapTime = formatLapTime;
         };
       }
 
-      function getCornerLineCutFactor() {
-        return TRACK_WIDTH >= 22.0 ? 0.62 : (TRACK_WIDTH >= 19.0 ? 0.70 : 0.85);
+      function getCornerLineCutFactor(optSpec) {
+        const activeH = (!optSpec && typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+        const spec = optSpec || (typeof window !== 'undefined' && window.selectedCarClassSpec) || (activeH && activeH.classSpec) || null;
+        const baseCut = TRACK_WIDTH >= 22.0 ? 0.62 : (TRACK_WIDTH >= 19.0 ? 0.70 : 0.85);
+        const bias = (spec && typeof spec.lineBias === 'number') ? spec.lineBias : 0.0;
+        return Math.max(0.55, Math.min(0.92, baseCut + bias * 0.045));
       }
 
       function getUpcomingCornerMaxSpeedKmh(s, optSpec) {
@@ -1592,7 +1615,7 @@ window.formatLapTime = formatLapTime;
           const n = sampleTrackAtS(s + offset);
           if (Math.abs(n.curvature) > maxCurv) maxCurv = Math.abs(n.curvature);
         }
-        const effectiveCurv = maxCurv * getCornerLineCutFactor();
+        const effectiveCurv = maxCurv * getCornerLineCutFactor(spec);
         if (isGT3) {
           if (effectiveCurv < 0.00155) return 300;
           const gLat = effectiveCurv < 0.0032 ? 1.56 : (effectiveCurv < 0.0075 ? 1.46 : 1.24);
@@ -1646,6 +1669,8 @@ window.formatLapTime = formatLapTime;
         const baseMu = spec.baseMuLat || 1.48;
         const shiftEffCar = spec.shiftEff || 0.955;
         const topCapMs = (spec.topSpeedKmh || 300) / 3.6;
+        const lineCut = getCornerLineCutFactor(spec);
+        computeDynamicOptimalLine(spec);
 
         const stepM = 10; // High-resolution 10m spatial integration
         const numSteps = Math.floor(totalTrackLength / stepM);
@@ -1695,7 +1720,7 @@ window.formatLapTime = formatLapTime;
             const vCurr = vFlyingMs[i];
             const vEff = Math.max(vCurr, 12.5);
             const curv = Math.abs(nodes[i].curvature);
-            const latG = (vCurr * vCurr * curv * getCornerLineCutFactor()) / 9.81;
+            const latG = (vCurr * vCurr * curv * lineCut) / 9.81;
 
             let netAccel;
             if (isGT3) {
@@ -1730,7 +1755,7 @@ window.formatLapTime = formatLapTime;
           const vEff = Math.max(vCurr, 12.5);
           const launchRamp = (i === 0) ? 0.78 : (i === 1 ? 0.94 : 1.0);
           const curv = Math.abs(nodes[i].curvature);
-          const latG = (vCurr * vCurr * curv * getCornerLineCutFactor()) / 9.81;
+          const latG = (vCurr * vCurr * curv * lineCut) / 9.81;
 
           let netAccel;
           if (isGT3) {
@@ -1777,7 +1802,7 @@ window.formatLapTime = formatLapTime;
           if (longAccel < -1.2) {
             brake = Math.min(86, Math.max(15, Math.round((-longAccel / maxBrakeDecel) * 84)));
             throttle = 0;
-          } else if (Math.abs(node.curvature) * getCornerLineCutFactor() > 0.0045 && longAccel < 1.0) {
+          } else if (Math.abs(node.curvature) * lineCut > 0.0045 && longAccel < 1.0) {
             throttle = Math.max(45, Math.min(85, Math.round(62 + longAccel * 14)));
             brake = 0;
           } else {
@@ -1870,17 +1895,42 @@ window.formatLapTime = formatLapTime;
         return a.t + (b.t - a.t) * f;
       }
 
+      function getLookaheadCornerTargetKmh(s, currSpeedKmh) {
+        const spd = Math.max(40, Math.abs(currSpeedKmh || 0));
+        // Speed-dependent braking distance lookahead (57m slow hairpins -> 270m top-speed approaches)
+        const lookDist = Math.min(270, Math.max(40, 26 + spd * 0.78));
+        const activeH = (typeof getCurrentCarHandling === 'function') ? getCurrentCarHandling() : null;
+        const spec = (typeof window !== 'undefined' && window.selectedCarClassSpec) || (activeH && activeH.classSpec) || null;
+        const topCap = (spec && spec.topSpeedKmh) ? Math.max(180, spec.topSpeedKmh) : 305;
+        let minKmh = topCap;
+        for (let off = 10; off <= lookDist; off += 20) {
+          let candidate = getUpcomingCornerMaxSpeedKmh(s + off, spec);
+          if (typeof proTelemetrySamples !== 'undefined' && proTelemetrySamples.length > 2) {
+            const proP = getProProfileAtDistance(s + off);
+            if (proP && proP.speedKmh < candidate) candidate = proP.speedKmh;
+          }
+          if (candidate < minKmh) minKmh = candidate;
+        }
+        return Math.round(minKmh);
+      }
+
 window.selectedCarClassSpec = window.selectedCarClassSpec || null;
 window.rebuildProBenchmarkForCurrentCar = function rebuildProBenchmarkForCurrentCar() {
   if (typeof getCurrentCarHandling === 'function') {
     const h = getCurrentCarHandling();
     if (h && h.classSpec) {
-      window.selectedCarClassSpec = Object.assign({ carClass: h.carClass }, h.classSpec);
+      window.selectedCarClassSpec = Object.assign({
+        carClass: h.carClass,
+        lineBias: (typeof h.lineBias === 'number') ? h.lineBias : (h.classSpec.lineBias || 0.0)
+      }, h.classSpec);
     } else {
       window.selectedCarClassSpec = null;
     }
   }
   generateProBenchmarkLap(window.selectedCarClassSpec);
+  if (typeof window.refreshTacticalRibbonForCurrentCar === 'function') {
+    window.refreshTacticalRibbonForCurrentCar();
+  }
   if (typeof simState !== 'undefined' && simState) {
     simState.bestLapTime = PRO_LAP_TIME;
     const hudBest = typeof document !== 'undefined' && document.getElementById('hud-best-time');
@@ -1904,12 +1954,14 @@ window.currentCircuit = currentCircuit;
 window.sampleTrackAtS = sampleTrackAtS;
 window.sdToWorld = sdToWorld;
 window.buildTrackGeometryData = buildTrackGeometryData;
+window.computeDynamicOptimalLine = computeDynamicOptimalLine;
 window.generateProBenchmarkLap = generateProBenchmarkLap;
 window.sampleGhostAtTime = sampleGhostAtTime;
 window.proTelemetrySamples = proTelemetrySamples;
 window.PRO_LAP_TIME = PRO_LAP_TIME;
 window.getCornerLineCutFactor = getCornerLineCutFactor;
 window.getUpcomingCornerMaxSpeedKmh = getUpcomingCornerMaxSpeedKmh;
+window.getLookaheadCornerTargetKmh = getLookaheadCornerTargetKmh;
 window.getProProfileAtDistance = getProProfileAtDistance;
 window.getProTimeAtDistance = getProTimeAtDistance;
 if (window.__apexTrace) window.__apexTrace('circuits.js', 'OK');

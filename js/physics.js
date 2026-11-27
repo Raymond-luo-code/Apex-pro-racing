@@ -4,7 +4,7 @@
 'use strict';
 if (window.__apexTrace) window.__apexTrace('physics.js', 'START');
 
-function buildClassSpec(carClass, cornerGripMult, accelMult, launchMult, brakeDecelMult, topSpeedKmh, aeroDragFactor, aeroDownforceCoeff, baseMuLat, weightKg, shiftEff) {
+function buildClassSpec(carClass, cornerGripMult, accelMult, launchMult, brakeDecelMult, topSpeedKmh, aeroDragFactor, aeroDownforceCoeff, baseMuLat, weightKg, shiftEff, lineBias = 0.0) {
   return {
     carClass,
     cornerGripMult,
@@ -16,7 +16,8 @@ function buildClassSpec(carClass, cornerGripMult, accelMult, launchMult, brakeDe
     aeroDownforceCoeff,
     baseMuLat,
     weightKg,
-    shiftEff
+    shiftEff,
+    lineBias
   };
 }
 
@@ -913,6 +914,91 @@ const CAR_HANDLING_PROFILES = {
 CAR_HANDLING_PROFILES.porsche911_locked = CAR_HANDLING_PROFILES.porsche911;
 CAR_HANDLING_PROFILES.amggt3_locked = CAR_HANDLING_PROFILES.amggt3;
 
+const CAR_CHASSIS_TRAITS_MAP = {
+  // GT3 Class (lineBias = 0.00 preserves baseline Out-In-Out line & Test 25)
+  procedural:            { layout: 'FMR', absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.12 },
+  ferrari458:            { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.12 },
+  porsche911:            { layout: 'RR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.13 },
+  amggt3:                { layout: 'FMR', absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.15 },
+  ferrari_296_gt3:       { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.14 },
+  ferrari_488_gt3:       { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.14 },
+  lamborghini_huracan_gt3:{ layout: 'MR', absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.14 },
+  mclaren_650s_gt3:      { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.00,  steerScale: 1.13 },
+  // Street Class
+  nissan_xtrail:         { layout: 'SUV', absMode: 'street_abs',     tcMode: 'awd_vectored', torqueCurve: 'hybrid_instant',    lineBias: -0.35, steerScale: 1.18 },
+  lamborghini_countach:  { layout: 'MR',  absMode: 'none',           tcMode: 'none',         torqueCurve: 'na_screamer',       lineBias: 0.85,  steerScale: 1.16 },
+  ferrari_f40_lbw:       { layout: 'MR',  absMode: 'none',           tcMode: 'none',         torqueCurve: 'turbo_lag_classic', lineBias: 0.85,  steerScale: 1.15 },
+  lamborghini_aventador: { layout: 'AWD', absMode: 'street_abs',     tcMode: 'awd_vectored', torqueCurve: 'na_screamer',       lineBias: 0.85,  steerScale: 1.14 },
+  // Track Hypercars (point-and-shoot V-Line bias +0.35)
+  aston_vulcan:          { layout: 'FMR', absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'na_screamer',       lineBias: 0.35,  steerScale: 1.14 },
+  mclaren_senna:         { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'gt3_flat',          lineBias: 0.35,  steerScale: 1.14 },
+  zenvo_tsrs:            { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'none',         torqueCurve: 'turbo_lag_classic', lineBias: 0.35,  steerScale: 1.14 },
+  pagani_huayra_r:       { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'na_screamer',       lineBias: 0.35,  steerScale: 1.14 },
+  amg_one:               { layout: 'AWD', absMode: 'motorsport_abs', tcMode: 'awd_vectored', torqueCurve: 'hybrid_instant',    lineBias: 0.35,  steerScale: 1.14 },
+  mclaren_p1_gtr:        { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'hybrid_instant',    lineBias: 0.35,  steerScale: 1.14 },
+  ferrari_fxxk_evo:      { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'hybrid_instant',    lineBias: 0.35,  steerScale: 1.14 },
+  lamborghini_essenza:   { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'na_screamer',       lineBias: 0.35,  steerScale: 1.14 },
+  // Road Hypercars (classic late-apex V-Line bias +0.85)
+  ferrari_laferrari:     { layout: 'MR',  absMode: 'street_abs',     tcMode: 'none',         torqueCurve: 'hybrid_instant',    lineBias: 0.85,  steerScale: 1.14 },
+  mclaren_p1:            { layout: 'MR',  absMode: 'street_abs',     tcMode: 'none',         torqueCurve: 'hybrid_instant',    lineBias: 0.85,  steerScale: 1.14 },
+  ferrari_sf90_xx:       { layout: 'AWD', absMode: 'motorsport_abs', tcMode: 'awd_vectored', torqueCurve: 'hybrid_instant',    lineBias: 0.85,  steerScale: 1.14 },
+  lamborghini_revuelto:  { layout: 'AWD', absMode: 'street_abs',     tcMode: 'awd_vectored', torqueCurve: 'hybrid_instant',    lineBias: 0.85,  steerScale: 1.14 },
+  lamborghini_centenario:{ layout: 'AWD', absMode: 'street_abs',     tcMode: 'awd_vectored', torqueCurve: 'na_screamer',       lineBias: 0.85,  steerScale: 1.14 },
+  lamborghini_veneno:    { layout: 'AWD', absMode: 'street_abs',     tcMode: 'awd_vectored', torqueCurve: 'na_screamer',       lineBias: 0.85,  steerScale: 1.14 },
+  lamborghini_sc20:      { layout: 'AWD', absMode: 'street_abs',     tcMode: 'awd_vectored', torqueCurve: 'na_screamer',       lineBias: 0.85,  steerScale: 1.14 },
+  // LMP1 / Vision GT (high-downforce U-Line bias -0.35)
+  porsche_919_evo:       { layout: 'AWD', absMode: 'none',           tcMode: 'awd_vectored', torqueCurve: 'hybrid_instant',    lineBias: -0.35, steerScale: 1.12 },
+  lamborghini_terzo:     { layout: 'AWD', absMode: 'motorsport_abs', tcMode: 'awd_vectored', torqueCurve: 'hybrid_instant',    lineBias: -0.35, steerScale: 1.13 },
+  alpine_vision:         { layout: 'MR',  absMode: 'motorsport_abs', tcMode: 'gt3_tc',       torqueCurve: 'na_screamer',       lineBias: -0.35, steerScale: 1.13 },
+  mazda_furai:           { layout: 'MR',  absMode: 'none',           tcMode: 'none',         torqueCurve: 'na_screamer',       lineBias: -0.35, steerScale: 1.13 },
+  mazda_lm_vision:       { layout: 'AWD', absMode: 'motorsport_abs', tcMode: 'awd_vectored', torqueCurve: 'na_screamer',       lineBias: -0.35, steerScale: 1.13 },
+  // F1 (pure aero momentum U-Line bias -0.35, no ABS/TC)
+  f1_2026_sf26:          { layout: 'OPEN_WHEEL', absMode: 'none',    tcMode: 'none',         torqueCurve: 'hybrid_instant',    lineBias: -0.35, steerScale: 1.12 }
+};
+
+Object.entries(CAR_CHASSIS_TRAITS_MAP).forEach(([cid, tr]) => {
+  const cp = CAR_HANDLING_PROFILES[cid];
+  if (!cp) return;
+  cp.id = cid;
+  cp.layout = tr.layout;
+  cp.absMode = tr.absMode;
+  cp.tcMode = tr.tcMode;
+  cp.torqueCurve = tr.torqueCurve;
+  cp.lineBias = tr.lineBias;
+  cp.steerRampRate = Number((cp.steerRampRate * (tr.steerScale || 1.12)).toFixed(3));
+  if (cp.classSpec) cp.classSpec.lineBias = tr.lineBias;
+});
+
+function getCarChassisTraits(carProfile) {
+  const cp = carProfile || getCurrentCarHandling();
+  if (cp && cp.layout) {
+    return {
+      layout: cp.layout,
+      absMode: cp.absMode || 'motorsport_abs',
+      tcMode: cp.tcMode || 'gt3_tc',
+      torqueCurve: cp.torqueCurve || 'gt3_flat',
+      lineBias: (typeof cp.lineBias === 'number') ? cp.lineBias : 0.0
+    };
+  }
+  const byId = (cp && cp.id && CAR_CHASSIS_TRAITS_MAP[cp.id]) ? CAR_CHASSIS_TRAITS_MAP[cp.id] : CAR_CHASSIS_TRAITS_MAP.procedural;
+  return Object.assign({}, byId);
+}
+
+function evalTorqueCurveMultiplier(traits, normRpm) {
+  const curve = traits ? traits.torqueCurve : 'gt3_flat';
+  const r = Math.max(0.15, Math.min(1.03, normRpm || 0.5));
+  if (curve === 'turbo_lag_classic') {
+    return 0.72 + 0.38 * smoothstepBand(0.32, 0.58, r) - 0.04 * smoothstepBand(0.86, 1.00, r);
+  }
+  if (curve === 'na_screamer') {
+    return 0.90 + 0.16 * smoothstepBand(0.28, 0.82, r);
+  }
+  if (curve === 'hybrid_instant') {
+    return 1.08 - 0.10 * smoothstepBand(0.38, 0.74, r) + 0.02 * smoothstepBand(0.86, 0.98, r);
+  }
+  return 1.0;
+}
+
 function getCurrentCarHandling() {
   const id = (typeof carAssetState !== 'undefined' && carAssetState && carAssetState.presetId) ? carAssetState.presetId : 'procedural';
   return CAR_HANDLING_PROFILES[id] || CAR_HANDLING_PROFILES.procedural;
@@ -1687,33 +1773,33 @@ function getDynamicMaxSteerDeg(spdKmh, carProfile, isReal) {
     maxDeg = 32.0 + chassisBias * 0.8;
   } else if (spd <= 80) {
     const s = smoothstepBand(45, 80, spd);
-    maxDeg = 32.0 - s * 14.0 + chassisBias * (0.8 - s * 0.4);
+    maxDeg = 32.0 - s * 13.7 + chassisBias * (0.8 - s * 0.4);
   } else if (spd <= 180) {
-    // Mid speed (80-180 km/h): progressive damping within 13.8-18.0 deg
+    // Mid speed (80-180 km/h): crisp authority within 14.6-18.3 deg
     const s = smoothstepBand(80, 180, spd);
-    maxDeg = 18.0 - s * 4.2 + chassisBias * 0.35;
+    maxDeg = 18.3 - s * 3.7 + chassisBias * 0.35;
   } else if (spd <= 235) {
-    // High speed (180-235 km/h): generous authority (9.8-13.8 deg) for sweepers & lane corrections
+    // High speed (180-235 km/h): generous authority (9.8-14.6 deg) for sweepers & lane corrections
     const s = smoothstepBand(180, 235, spd);
-    maxDeg = 13.8 - s * 4.0 + chassisBias * (0.35 - s * 0.1);
+    maxDeg = 14.6 - s * 4.8 + chassisBias * (0.35 - s * 0.1);
   } else {
-    // Top speed (> 235 km/h): ~8.2-9.8 deg so high-speed turn-in never feels locked out
+    // Top speed (> 235 km/h): ~8.3-9.8 deg so high-speed turn-in never feels locked out
     const s = smoothstepBand(235, 310, spd);
-    maxDeg = 9.8 - s * 1.6 + chassisBias * 0.25;
+    maxDeg = 9.8 - s * 1.5 + chassisBias * 0.25;
   }
   return isReal ? maxDeg : Math.min(34.0, maxDeg * 1.15);
 }
 
 function stepAnalogSteering(currentSteer, rawLeft, rawRight, spdKmh, dt, carProfile, isReal) {
   const speedNorm = Math.min(1.0, Math.max(0.0, (Math.abs(spdKmh) - 30) / 210));
-  const baseRate = carProfile.steerRampRate * 1.15 * (1.0 - speedNorm * 0.26);
+  const baseRate = carProfile.steerRampRate * 1.22 * (1.0 - speedNorm * 0.18);
   let steer = currentSteer;
   if (rawLeft) {
     // Counter-steer agility boost when rapidly changing direction (e.g. chicanes / S-bends)
-    const rate = (steer > 0.03) ? baseRate * 1.95 : baseRate;
+    const rate = (steer > 0.03) ? baseRate * 2.35 : baseRate;
     steer = Math.max(-1.0, steer - rate * dt);
   } else if (rawRight) {
-    const rate = (steer < -0.03) ? baseRate * 1.95 : baseRate;
+    const rate = (steer < -0.03) ? baseRate * 2.35 : baseRate;
     steer = Math.min(1.0, steer + rate * dt);
   } else {
     // Damped Self-Aligning Torque: gentle return (~150-220ms half-life) allows smooth keyboard/touch tapping
@@ -2040,6 +2126,7 @@ function stepPhysics(dt) {
     simState.gear = dtSpec.maxGears;
   }
 
+  const chassisTraits = getCarChassisTraits(carProfile);
   if (simState.gear === -1) {
     // ----------------------------------------------------------------------
     // REVERSE GEAR DYNAMICS: Brake pedal = Reverse Gas, Gas pedal = Reverse Brake
@@ -2071,7 +2158,8 @@ function stepPhysics(dt) {
     simState.rpm = Math.round(dtSpec.idleRpm + normRpm * (dtSpec.redlineRpm - dtSpec.idleRpm));
     const revLimiterCut = (!simState.autoTransmission && simState.rpm > (dtSpec.redlineRpm - 20)) ? 0.10 : 1.0;
 
-    // Calibrated Power & Drag Model + Per-Chassis, Aero Traction, Tire & Car Setup Multipliers
+    // Calibrated Power & Drag Model + Per-Chassis Torque Curve, Aero Traction, Tire & Setup Multipliers
+    const torqueCurveMult = evalTorqueCurveMultiplier(chassisTraits, normRpm);
     const vEff = Math.max(vMs, 12.5);
     const powerMult = (carProfile.powerFactor || carProfile.accelFactor || 1.0) * (tireProfile.accelMult || 1.0) * setupMods.gearAccelMult;
     const launchMult = (carProfile.launchFactor || carProfile.accelFactor || 1.0) * (tireProfile.accelMult || 1.0) * setupMods.gearAccelMult;
@@ -2079,7 +2167,7 @@ function stepPhysics(dt) {
     const aeroTractionAccel = Math.max(0, dfRatio - 0.55) * 2.4;
     const maxMechanicalGripAccel = 8.25 * launchMult + aeroTractionAccel;
     const specificPower = 338.0 * powerMult;
-    const rawEngineAccel = Math.min(maxMechanicalGripAccel, specificPower / vEff);
+    const rawEngineAccel = Math.min(maxMechanicalGripAccel, specificPower / vEff) * torqueCurveMult;
 
     const aeroDragCoeff = (simState.inSlipstream ? 0.00046 : 0.000557) * dragMult;
     // RFC Module 2: Grass / Run-off rolling resistance increased by factor of 3
@@ -2087,14 +2175,28 @@ function stepPhysics(dt) {
     const corneringInducedDrag = Math.abs(simState.latG) * 0.38;
     const dragAccel = aeroDragCoeff * vMs * vMs + rollingResistance + corneringInducedDrag;
 
+    // Authentic ABS / Non-ABS Threshold Braking + Steering Unload Coupling
     const steerBiasGate = Math.abs(simState.steerInput) < 0.25 ? setupMods.lockupBonus : 0;
-    const lockupThreshold = (0.88 + Math.min(0.09, dfRatio * 0.045) + steerBiasGate) * (isWet ? 0.86 : 1.0);
-    simState.isBrakeLockup = (brk > lockupThreshold && simState.speedKmh > 45);
-    if (simState.isBrakeLockup && Math.random() < 0.08) simState.lockupCount++;
+    const steerUnload = Math.min(0.11, Math.max(0, Math.abs(simState.steerInput) - 0.15) * 0.14);
+    const wetBrakeMult = isWet ? 0.88 : 1.0;
+    let absModulation = 1.0;
+    if (chassisTraits.absMode === 'none') {
+      const lockupThreshold = (0.94 + Math.min(0.05, dfRatio * 0.025) - steerUnload + steerBiasGate) * wetBrakeMult;
+      simState.isBrakeLockup = (brk > lockupThreshold && simState.speedKmh > 45);
+      if (simState.isBrakeLockup && Math.random() < 0.08) simState.lockupCount++;
+    } else {
+      const absTrigger = (0.96 - steerUnload * 0.65 + steerBiasGate * 0.5) * wetBrakeMult;
+      const absActive = (brk > absTrigger && simState.speedKmh > 45);
+      simState.isBrakeLockup = (chassisTraits.absMode === 'street_abs' && isWet && absActive && Math.abs(simState.steerInput) > 0.35 && simState.speedKmh > 50);
+      if (absActive) {
+        absModulation = (chassisTraits.absMode === 'motorsport_abs') ? 0.96 : 0.89;
+      }
+    }
 
+    const lockupDecelBase = (chassisTraits.absMode === 'none') ? 14.8 : 15.8;
     const effectiveBrakeDecel = (simState.isBrakeLockup
-      ? 12.8 * effectiveGrip
-      : brk * 19.2 * effectiveGrip * (1.0 + aeroBrakeExtra)) * brakeMult;
+      ? lockupDecelBase * effectiveGrip
+      : brk * 19.2 * absModulation * effectiveGrip * (1.0 + aeroBrakeExtra)) * brakeMult;
 
     // High-RPM throttle lift-off turbo blow-off flutter & exhaust pop (strictly debounced)
     if (prevThr > 65 && simState.throttleInput <= 25 && simState.speedKmh > 115 && (simState._backfireCooldown || 0) <= 0) {
@@ -2146,22 +2248,35 @@ function stepPhysics(dt) {
   simState.tireLoads.rl = Math.round(Math.max(80, baseWeightKg * 0.26 - longShiftKg * 0.5 + latShiftKg * 0.5));
   simState.tireLoads.rr = Math.round(Math.max(80, baseWeightKg * 0.26 - longShiftKg * 0.5 - latShiftKg * 0.5));
 
-  // Realistic Tire Traction Circle & Smooth Load-Transfer Cornering Limit
-  const trailBlend = (brk > 0.04 && brk <= 0.84)
-    ? Math.min(1.0, (brk - 0.04) / 0.18) * (brk > 0.65 ? Math.max(0, 1.0 - (brk - 0.65) / 0.19) : 1.0)
+  // Realistic Tire Traction Circle & Layout-Differentiated Load Transfer
+  // Peak trail-braking nose bite centers cleanly on Spacebar (75% brake); heavy brake (>78%) compresses turn-in grip
+  const trailBlend = (brk > 0.04 && brk <= 0.90)
+    ? Math.min(1.0, (brk - 0.04) / 0.16) * (brk > 0.78 ? Math.max(0, 1.0 - (brk - 0.78) / 0.12) : 1.0)
     : 0;
-  const trailBrakeBonus = 1.0 + trailBlend * Math.max(0.02, 0.12 + setupMods.trailBonusDelta);
+  const baseTrailBonus = (chassisTraits.layout === 'RR') ? 0.19
+    : (chassisTraits.layout === 'MR' ? 0.15
+    : (chassisTraits.layout === 'OPEN_WHEEL' ? 0.14
+    : (chassisTraits.layout === 'AWD' ? 0.09
+    : (chassisTraits.layout === 'SUV' ? 0.07 : 0.12))));
+  const trailBrakeBonus = 1.0 + trailBlend * Math.max(0.02, baseTrailBonus + setupMods.trailBonusDelta);
 
-  // Smooth longitudinal-to-lateral weight transfer (replaces hard 0.78 step switch at 75% throttle)
+  // Smooth longitudinal-to-lateral weight transfer differentiated by drivetrain layout
   const thrLoad = Math.max(0, (thr - 0.35) / 0.65);
   const steerLoad = Math.min(1.0, Math.abs(simState.steerInput) / 0.55);
-  const chassisPowerPush = (carProfile.understeerCoeff || 0.001) * 75.0; // ~6.2% (911) to ~9.2% (AMG)
+  const chassisPowerPush = (chassisTraits.layout === 'AWD') ? 0.072
+    : (chassisTraits.layout === 'SUV' ? 0.115
+    : (chassisTraits.layout === 'RR' ? 0.048
+    : (chassisTraits.layout === 'MR' ? 0.055
+    : (chassisTraits.layout === 'OPEN_WHEEL' ? 0.042 : (carProfile.understeerCoeff || 0.001) * 72.0))));
   const throttleWeightTransfer = 1.0 - thrLoad * steerLoad * chassisPowerPush;
-  const lockupPenalty = simState.isBrakeLockup ? 0.30 : 1.0;
+
+  const heavyBrkExcess = Math.max(0, (brk - 0.78) / 0.22);
+  const heavyBrakeCircleMult = 1.0 - heavyBrkExcess * Math.min(1.0, Math.abs(simState.steerInput) / 0.45) * (chassisTraits.absMode === 'none' ? 0.28 : 0.16);
+  const lockupPenalty = simState.isBrakeLockup ? (chassisTraits.absMode === 'none' ? 0.62 : 0.78) : 1.0;
 
   const baseMuLat = ((isReal ? carProfile.baseMuLat : (carProfile.baseMuLat * 1.48)) + setupMods.aeroCornerBonus) * (tireProfile.peakMuG / 1.52);
   const aeroBonusG = Math.pow(Math.max(0, dfRatio), 0.88) * 1.15;
-  const maxLatG = (baseMuLat + aeroBonusG) * effectiveGrip * trailBrakeBonus * throttleWeightTransfer * lockupPenalty;
+  const maxLatG = (baseMuLat + aeroBonusG) * effectiveGrip * trailBrakeBonus * throttleWeightTransfer * heavyBrakeCircleMult * lockupPenalty;
   const maxLatAccelMs2 = maxLatG * 9.81;
 
   // Grip-Aware Progressive Steering Mapping (eliminates cubic S-curve deadzone & early 5G saturation)
@@ -2172,7 +2287,9 @@ function stepPhysics(dt) {
   const shapedNorm = absSteer * (1.0 - highSpeedBlend) + Math.pow(absSteer, 1.18) * highSpeedBlend;
   const frontWheelAngle = Math.sign(simState.steerInput) * shapedNorm * maxFrontWheelRad;
 
-  const understeerDamping = 1.0 + (carProfile.understeerCoeff || 0.001) * vMs * vMs;
+  // Blend understeer compliance softly at speed so low-mid corners feel direct without artificial push
+  const effUndersteerCoeff = (carProfile.understeerCoeff || 0.001) * (0.45 + 0.35 * smoothstepBand(95, 220, Math.abs(simState.speedKmh)));
+  const understeerDamping = 1.0 + effUndersteerCoeff * vMs * vMs;
   const rawLinearCurv = (Math.tan(frontWheelAngle) / carProfile.wheelbase) / understeerDamping;
   const rawFullLockCurv = (Math.tan(maxFrontWheelRad) / carProfile.wheelbase) / understeerDamping;
 
@@ -2233,8 +2350,31 @@ function stepPhysics(dt) {
     // Smooth speed-tapered turn-in agility (eliminates hard step discontinuity at 35 m/s = 126 km/h)
     const lowSpdBlend = 1.0 - smoothstepBand(75, 195, simState.speedKmh);
     const turnInBonus = ((vMs > 2.5) ? (1.0 + (carProfile.turnInAgility - 1.0) * lowSpdBlend) : 1.0) * setupMods.turnInMult;
-    targetYawRate = steerYaw * turnInBonus + straightCentering;
-    simState.driftAngle *= Math.pow(0.01, dt);
+
+    // MR / Open-Wheel crisp lift-off nose-tuck rotation strictly below 18% throttle (preserves 50% sweeps)
+    const isMidOrOpen = (chassisTraits.layout === 'MR' || chassisTraits.layout === 'OPEN_WHEEL');
+    const liftOffStrength = (!isReversing && isMidOrOpen)
+      ? (1.0 - smoothstepBand(0.01, 0.18, thr)) * smoothstepBand(48, 95, Math.abs(simState.speedKmh))
+      : 0;
+    const liftOffYawMult = 1.0 + liftOffStrength * 0.10 * Math.min(1.0, absSteer / 0.45);
+    targetYawRate = steerYaw * turnInBonus * liftOffYawMult + straightCentering;
+
+    // Controllable low/mid-speed RWD no-TC Power Oversteer (strictly 32..118 km/h; keeps >=118 km/h & GT3 planted)
+    if (!isReversing && !simState.isWrongWay && chassisTraits.tcMode === 'none' && simState.speedKmh > 32 && simState.speedKmh < 118) {
+      const overSpdEnv = smoothstepBand(32, 52, simState.speedKmh) * (1.0 - smoothstepBand(98, 118, simState.speedKmh));
+      const powerSlipDrive = overSpdEnv * Math.max(0, (thr - 0.62) / 0.38) * Math.min(1.0, absSteer / 0.35) * (isWet ? 1.45 : 1.0);
+      if (powerSlipDrive > 0.08) {
+        const overSign = Math.sign(simState.steerInput);
+        targetYawRate += overSign * powerSlipDrive * 0.28;
+        const targetOverDrift = -overSign * Math.min(0.16, powerSlipDrive * 0.14);
+        simState.driftAngle += (targetOverDrift - simState.driftAngle) * Math.min(1.0, 9.0 * dt);
+        if (Math.abs(simState.driftAngle) > 0.045) simState.isOversteer = true;
+      } else {
+        simState.driftAngle *= Math.pow(0.01, dt);
+      }
+    } else {
+      simState.driftAngle *= Math.pow(0.01, dt);
+    }
   } else {
     const arcadeAssist = forwardAlignFade * (trackNode.curvature * vMs * 0.48 - headingDiff * 0.95);
     const driftBoost = (!isReversing && simState.isDrifting) ? 1.35 : 1.0;
@@ -2365,7 +2505,11 @@ function stepPhysics(dt) {
   // Natural wrong-way detection (only when driving forward in drive gear at speed, not when reversing)
   simState.isWrongWay = (simState.gear !== -1 && simState.speedKmh > 20 && forwardDot < -0.3);
 
-  const ds = vMs_motion * Math.cos(relAngle) * dt;
+  // Curvilinear Frenet-Serret arc-length metric factor: ds * (1 - k * d) = forward world motion
+  // Uses exact local polyline frenetCurvature so outside entry (d * k < 0) never over-rotates track heading
+  const kFrenet = (trackNode.frenetCurvature !== undefined) ? trackNode.frenetCurvature : (trackNode.curvature || 0);
+  const frenetMetric = Math.max(0.55, Math.min(1.65, 1.0 - kFrenet * simState.d));
+  const ds = (vMs_motion * Math.cos(relAngle) * dt) / frenetMetric;
   const dd = vMs_motion * Math.sin(relAngle) * dt + (simState.colLatVel || 0) * dt;
   simState.colLatVel = (simState.colLatVel || 0) * Math.exp(-6.0 * dt);
   if (Math.abs(simState.colLatVel) < 0.02) simState.colLatVel = 0;
@@ -3422,7 +3566,9 @@ function stepAIRivals(dt) {
         + node.rightX * (ai.speedMs * Math.sin(hNowDiff) + ai.vLat * Math.cos(hNowDiff));
       const vzOut = node.dirZ * (ai.speedMs * Math.cos(hNowDiff) - ai.vLat * Math.sin(hNowDiff))
         + node.rightZ * (ai.speedMs * Math.sin(hNowDiff) + ai.vLat * Math.cos(hNowDiff));
-      ai.s += (vxOut * node.dirX + vzOut * node.dirZ) * dt;
+      const kAiFrenet = (node.frenetCurvature !== undefined) ? node.frenetCurvature : (node.curvature || 0);
+      const aiFrenet = Math.max(0.55, Math.min(1.65, 1.0 - kAiFrenet * ai.d));
+      ai.s += ((vxOut * node.dirX + vzOut * node.dirZ) * dt) / aiFrenet;
       ai.d = Math.max(-maxAiD, Math.min(maxAiD, ai.d + (vxOut * node.rightX + vzOut * node.rightZ) * dt));
     }
 
@@ -3446,6 +3592,8 @@ function stepAIRivals(dt) {
 
 window.CAR_HANDLING_PROFILES = CAR_HANDLING_PROFILES;
 window.getCurrentCarHandling = getCurrentCarHandling;
+window.getCarChassisTraits = getCarChassisTraits;
+window.evalTorqueCurveMultiplier = evalTorqueCurveMultiplier;
 window.getCarDrivetrainSpec = getCarDrivetrainSpec;
 window.getCarMaxGears = getCarMaxGears;
 window.TIRE_COMPOUNDS = TIRE_COMPOUNDS;

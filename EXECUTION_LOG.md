@@ -1189,3 +1189,35 @@ Script error. at module(main.js:START):0:0
 - `python scratch/verify_all_cars_and_garage.py`：**100% PASSED**（全 29 台 `.glb` 載入、33 台分類車庫、`CLASS_PRO_MULT` Monza 基準 `117.757 > 103.751 > 92.857 > 77.813 > 72.107s`、防洗榜隔離通過）
 - [`scratch/verify_vehicle_performance.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_vehicle_performance.py)：**100% PASSED**（實測 12 台代表車：X-Trail `0-100 7.14s / Vmax 184.8 / Spa 193.92s`；GT3 458 `0-100 3.54s / Vmax 303.5 / DF@250 646kgf / LatG@250 1.91G / Spa 138.14s`；LaFerrari `Vmax 351.7 / 0-200 5.56s / LatG@250 1.57G`；Senna GTR `DF@250 1013kgf / Spa 119.77s`；919 Evo `0-100 2.00s / 0-300 7.72s / Vmax 369.3 / DF@250 2146kgf / Spa 95.33s`；SF-26 F1 `8速 14,684rpm / 0-200 4.32s / 0-300 8.10s / Vmax 364.2 / DF@250 2532kgf / LatG@250 4.68G / BrkG 4.67G / Monza 69.73s / Spa 93.03s`）
 - [`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat) `--check`：**13 / 13 HTTP 200 OK**
+
+
+---
+
+## 🛠️ 2026-11-27｜駕駛體驗重構與全車系個性化／路線差異化實作（Phase A–D）
+
+### 1. 修改摘要與解決之根因
+1. **Phase A：物理底層與輸入操控根因修復**（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)、[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)）
+   - **曲線坐標系 Frenet-Serret `(1 - k * d)` 弧長修正**：在 [`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js) `sampleTrackAtS` 新增局部分段幾何曲率 `frenetCurvature`，並在 `stepPhysics`（`ds`）與 `stepAIRivals`（`ai.s`）套用 `ds / (1 - k * d)`（夾限 `0.55..1.65`），消除外線入彎時賽道座標參考系提前過轉造成的錯覺。
+   - **解除一刀切 `S` 鍵鎖死陷阱，區分 `ABS` 與「直線重煞 `S` ➔ 循跡入彎 `空白鍵`」**：依車種配賦 `absMode`（`motorsport_abs` / `street_abs` / `none`）；GT3 與賽道版 Hypercar 直線全踩 `S` 觸發高頻防鎖死調節（不再跌落 `12.8 m/s²` / `0.30x`），無 ABS 車款（F1、919 Evo、Furai、F40、Countach）具備 `0.94+` 直線門檻與轉向卸載鎖死機制（鎖死保留 `0.62` 側向餘裕），並將 `trailBlend` 峰值窗口擴展至 `75%` `空白鍵` 循跡煞車（`brk > 0.78` 才施加轉向擠壓折減 `heavyBrakeCircleMult`）。
+   - **消除推頭僵化與轉向反應遲滯**：微調 `getDynamicMaxSteerDeg`（`80–180 km/h` 提升至 `18.3°–14.6°`）、將 `stepAnalogSteering` 反打加權提升至 `2.35x` 並放寬車速衰減、改用速度漸進式 `effUndersteerCoeff` 減輕中低速無謂推頭。
+2. **Phase B：5 種底盤傳動性格與 4 種引擎扭矩曲線**（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)）
+   - 建立全 33 台車之 `CAR_CHASSIS_TRAITS_MAP`、`getCarChassisTraits` 與 `evalTorqueCurveMultiplier`：`gt3_flat`（GT3 線性基準）、`turbo_lag_classic`（F40/Zenvo 渦輪遲滯暴衝）、`na_screamer`（Countach/Huayra R/Essenza 萬轉高轉湧現）、`hybrid_instant`（F1/919/SF90 XX 油電瞬時扭力）。
+   - 依 `layout`（`RR`/`MR`/`FMR`/`AWD`/`OPEN_WHEEL`/`SUV`）區分 `trailBrakeBonus`（911 RR 最強 `+19%`）與出彎重心推頭係數；`MR`/`OPEN_WHEEL` 於 `< 18%` 油門觸發平滑收油指向（`liftOffYawMult`）；無 TC 後驅（`tcMode === 'none'`）於 `32–118 km/h` 區間重腳全油轉向呈現可控動力滑移。
+3. **Phase C：車種專屬最佳路線（`V-Line` vs `U-Line`）與即時 3D 導引線更新**（[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)、[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)、[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js)）
+   - 抽離 `computeDynamicOptimalLine(optSpec)` 依各車 `lineBias`（`0.00` GT3 標準外內外、`-0.35` F1/LMP1/SUV 高速大弧 `U-Line`、`+0.35/+0.85` 頂級超跑晚煞晚入彎 `V-Line`）即時解算最佳走線並連動 `getCornerLineCutFactor` 與 `generateProBenchmarkLap`。
+   - 於 [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js) 實作 `refreshTacticalRibbonForCurrentCar()` 原位刷新 `tacticalRibbonMesh` 與 `rubberMesh` 頂點及顏色緩衝；於 [`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js) 車庫面板 `#lbl-gar-chassis-note` 標註驅動形式、ABS/TC、扭矩曲線與建議路線策略。
+4. **Phase D：動態煞車點前瞻 HUD、緊湊重煞提示、廣角 FOV 與前饋音訊**（[`js/circuits.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/circuits.js)、[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)、[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)、[`js/audio.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/audio.js)）
+   - 新增 `getLookaheadCornerTargetKmh(s, currSpeedKmh)`（前瞻距離依速度動態延展至 `40–270m`）供應 `#hud-corner-limit`；恢復 `#alert-brake-now` 緊湊紅色 `HEAVY BRAKE · 重踩煞車 (S ➔ 空白鍵入彎)` 提示膠囊；擴大速度動態 FOV（`58° + min(22, speed/310*20)`）；將 [`js/audio.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/audio.js) 漸進輪胎磨擦音訊門檻自 `0.72` 提前至 `0.64`。
+
+### 2. 全數 11 項實機與回歸驗證結果（最終修改後一次連續通過）
+- `python scratch/check_syntax.py`：**8 / 8 JS 檔案全數 OK**
+- [`scratch/verify_driving_experience.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_driving_experience.py)：**100% PASSED**（Spa 極限髮夾彎 Frenet 世界位移比 `out=1.0021 / in=0.9961`；GT3 `290->90 km/h` 全煞 `137.1m / locked=false`；F1 90% 直煞無鎖死、100% 帶轉鎖死；911 `空白鍵 75% 2.088G` > `S 100% 1.475G` > `無煞車 1.749G` 且循跡增益高於 Aventador AWD；150 km/h 換向時間 `amggt3=0.46s / ferrari458=0.46s / f1=0.34s`；F40 `75 km/h` 動力甩尾 `drift=0.1361 rad / oversteer=true` 而 `AMG 75` 及 `F1 220` 保持穩定；LaFerrari 收油轉向率 `0.547 > 0.497`；F1 U-Line 與 LaFerrari V-Line 路線最大差異 `4.972m` 並即時更新 3D 導引帶頂點 `3.079m`；Monza `310 km/h` 前瞻速限 `115 km/h`、HUD `'heavy'` 膠囊正常顯示、`320 km/h FOV = 78.52°`、車庫風格標籤完整）
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**44 / 44 PASSED**（含完整 `index.html` 啟動無報錯）
+- `python scratch/verify_new_assets.py`：**100% PASSED**
+- `python scratch/test_all_upgrades.py`：**100% PASSED**
+- `python scratch/test_records_and_setup.py`：**100% PASSED**
+- `python scratch/verify_all_cars_and_garage.py`：**100% PASSED**（全數 29 個本地車款 GLB / 33 台車、分類車庫與 5 級排行榜）
+- [`scratch/verify_vehicle_performance.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_vehicle_performance.py)：**100% PASSED**（全數 12 台代表車實車性能階層維持完整：SF-26 F1 `0-100 2.14s / 0-200 4.28s / 0-300 8.18s / Vmax 364.2`、919 Evo `0-300 7.82s / Spa 94.86s`、GT3 458 `Spa 138.14s`、X-Trail `0-100 7.1s / Spa 193.02s`）
+- [`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat) `--check`：**13 / 13 HTTP 200 OK**

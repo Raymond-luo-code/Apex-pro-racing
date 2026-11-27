@@ -46,6 +46,7 @@ scene.add(dirLight.target);
 const circuitSceneryGroup = new THREE.Group();
 scene.add(circuitSceneryGroup);
 let tacticalRibbonMesh = null;
+let rubberMesh = null;
 
 // RFC Module 1: Dedicated Studio Environment for Vehicle Inspect Mode
 const studioGroup = new THREE.Group();
@@ -830,7 +831,71 @@ function applyWeatherVisuals() {
 }
 window.updateWeatherVisuals = applyWeatherVisuals;
 
+function refreshTacticalRibbonForCurrentCar() {
+  if (typeof trackNodes === 'undefined' || !trackNodes || trackNodes.length === 0) return;
+  if (rubberMesh && rubberMesh.geometry && rubberMesh.geometry.attributes && rubberMesh.geometry.attributes.position) {
+    const posAttr = rubberMesh.geometry.attributes.position;
+    const rubHalfW = 1.25;
+    for (let i = 0; i <= TRACK_SAMPLES; i++) {
+      const node = trackNodes[i % TRACK_SAMPLES];
+      const d = node.optimalD || 0;
+      const vBase = i * 2;
+      posAttr.setXYZ(vBase, node.x + node.rightX * (d - rubHalfW), node.y + 0.012, node.z + node.rightZ * (d - rubHalfW));
+      posAttr.setXYZ(vBase + 1, node.x + node.rightX * (d + rubHalfW), node.y + 0.012, node.z + node.rightZ * (d + rubHalfW));
+    }
+    posAttr.needsUpdate = true;
+    rubberMesh.geometry.computeBoundingSphere();
+  }
+  if (tacticalRibbonMesh && tacticalRibbonMesh.geometry && tacticalRibbonMesh.geometry.attributes) {
+    const posAttr = tacticalRibbonMesh.geometry.attributes.position;
+    const colAttr = tacticalRibbonMesh.geometry.attributes.color;
+    const ribHalfW = 1.05;
+    for (let i = 0; i <= TRACK_SAMPLES; i++) {
+      const node = trackNodes[i % TRACK_SAMPLES];
+      const nextLook = trackNodes[(i + 22) % TRACK_SAMPLES];
+      const d = node.optimalD || 0;
+      const vBase = i * 2;
+      if (posAttr) {
+        posAttr.setXYZ(vBase, node.x + node.rightX * (d - ribHalfW), node.y + 0.05, node.z + node.rightZ * (d - ribHalfW));
+        posAttr.setXYZ(vBase + 1, node.x + node.rightX * (d + ribHalfW), node.y + 0.05, node.z + node.rightZ * (d + ribHalfW));
+      }
+      if (colAttr) {
+        const curvNow = Math.abs(node.curvature);
+        const curvAhead = Math.abs(nextLook.curvature);
+        let rr = 0.06, rg = 0.82, rb = 0.50;
+        if (typeof proTelemetrySamples !== 'undefined' && proTelemetrySamples.length > 2 && typeof getProProfileAtDistance === 'function') {
+          const pNow = getProProfileAtDistance(node.s);
+          const pAhead = getProProfileAtDistance(node.s + 22);
+          const brkHint = Math.max(pNow.brake, pAhead.brake * 0.85);
+          if (brkHint > 60) {
+            rr = 0.95; rg = 0.16; rb = 0.22;
+          } else if (brkHint >= 26) {
+            rr = 0.96; rg = 0.62; rb = 0.04;
+          } else if (brkHint >= 10 || pNow.throttle < 88 || (curvAhead > 0.0028 && curvAhead > curvNow * 1.12)) {
+            rr = 0.22; rg = 0.74; rb = 0.97;
+          }
+        } else {
+          if (curvAhead > 0.0052 && curvAhead > curvNow * 1.1) {
+            rr = 0.95; rg = 0.16; rb = 0.22;
+          } else if (curvNow > 0.0035) {
+            rr = 0.96; rg = 0.62; rb = 0.04;
+          } else if (curvAhead > 0.0028) {
+            rr = 0.22; rg = 0.74; rb = 0.97;
+          }
+        }
+        colAttr.setXYZ(vBase, rr, rg, rb);
+        colAttr.setXYZ(vBase + 1, rr, rg, rb);
+      }
+    }
+    if (posAttr) posAttr.needsUpdate = true;
+    if (colAttr) colAttr.needsUpdate = true;
+    tacticalRibbonMesh.geometry.computeBoundingSphere();
+  }
+}
+
 function rebuild3DCircuitScene() {
+  tacticalRibbonMesh = null;
+  rubberMesh = null;
   while (circuitSceneryGroup.children.length > 0) {
     circuitSceneryGroup.remove(circuitSceneryGroup.children[0]);
   }
@@ -1448,7 +1513,7 @@ function rebuild3DCircuitScene() {
     rubberGeo.setAttribute('position', new THREE.Float32BufferAttribute(rubberPositions, 3));
     rubberGeo.setAttribute('uv', new THREE.Float32BufferAttribute(rubberUVs, 2));
     rubberGeo.setIndex(indices);
-    const rubberMesh = new THREE.Mesh(rubberGeo, new THREE.MeshBasicMaterial({
+    rubberMesh = new THREE.Mesh(rubberGeo, new THREE.MeshBasicMaterial({
       color: 0x000000,
       map: getRubberGradientTexture(),
       transparent: true,
@@ -4626,7 +4691,7 @@ function update3DSceneAndVisualFX(nowSec) {
 
   const targetFov = simState.inShowcaseMode
     ? 50
-    : (60 + (simState.speedKmh / 300) * 15 + (simState.isNosActive ? 6.5 : 0) + (simState.inSlipstream ? 3.0 : 0));
+    : (58 + Math.min(22, (simState.speedKmh / 310) * 20) + (simState.isNosActive ? 6.5 : 0) + (simState.inSlipstream ? 3.5 : 0));
   if (Math.abs(camera.fov - targetFov) > 0.1) {
     camera.fov += (targetFov - camera.fov) * 0.15;
     camera.updateProjectionMatrix();
@@ -4961,6 +5026,7 @@ window.headlightGroup = headlightGroup;
 window.proGhostMesh = proGhostMesh;
 window.pbGhostMesh = pbGhostMesh;
 window.rebuild3DCircuitScene = rebuild3DCircuitScene;
+window.refreshTacticalRibbonForCurrentCar = refreshTacticalRibbonForCurrentCar;
 window.createGT3CarMesh = createGT3CarMesh;
 window.update3DSceneAndVisualFX = update3DSceneAndVisualFX;
 window.spawnSkidMark = spawnSkidMark;

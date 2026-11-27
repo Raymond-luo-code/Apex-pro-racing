@@ -133,7 +133,7 @@ if (window.__apexTrace) window.__apexTrace('audio.js', 'START');
           const brkVal = (brakeInput != null) ? brakeInput : (typeof simState !== 'undefined' ? simState.brakeInput : 0);
           const scrubIntensity = (isDrifting || isUndersteer)
             ? 0.12
-            : (isLockup ? 0.09 : Math.max(0, (tireSlipRatio - 0.72) * 0.18));
+            : (isLockup ? 0.09 : Math.max(0, (tireSlipRatio - 0.64) * 0.22));
           const scrubCutoff = Math.min(750, Math.max(350,
             isDrifting ? 640 : (isUndersteer ? 580 : 350 + Math.min(1.3, tireSlipRatio) * 300)
           ));

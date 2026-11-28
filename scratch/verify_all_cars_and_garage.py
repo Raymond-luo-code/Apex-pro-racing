@@ -52,7 +52,7 @@ proc = subprocess.Popen(
     stderr=subprocess.DEVNULL,
 )
 
-ok = done_event.wait(timeout=180)
+ok = done_event.wait(timeout=360)
 proc.terminate()
 try:
     proc.wait(timeout=5)
@@ -61,37 +61,53 @@ except Exception:
 server.shutdown()
 
 assert ok and report_data is not None, "Timed out waiting for Chrome verify_all_cars_and_garage report"
-print("=== ALL 29 LOCAL CAR GLBs + CATEGORIZED GARAGE + 5-CLASS LEADERBOARD VERIFICATION ===")
+print("=== ALL 75 LOCAL CAR GLBs + 10-CLASS PI GARAGE + STRENGTH PROFILES VERIFICATION ===")
 print("Errors:", report_data.get("errors"))
 cars = report_data.get("cars", [])
 for c in cars:
     print(" ", json.dumps(c, ensure_ascii=False))
 print("Garage UI:", json.dumps(report_data.get("garageUi"), ensure_ascii=False))
+print("PI Profiles:", json.dumps(report_data.get("piProfiles"), ensure_ascii=False))
 print("Class Physics:", json.dumps(report_data.get("classPhysics"), ensure_ascii=False))
 print("Records Isolation:", json.dumps(report_data.get("recordsIsolation"), ensure_ascii=False))
 
 assert not report_data.get("errors"), f"Runtime errors detected: {report_data['errors']}"
-assert len(cars) == 29, f"Expected 29 local GLB cars verified, got {len(cars)}"
+assert len(cars) == 75, f"Expected 75 local GLB cars verified, got {len(cars)}"
 failed = [c for c in cars if not c.get("ok")]
 assert not failed, f"Failed car GLBs ({len(failed)}): {failed}"
 
 ui = report_data.get("garageUi", {})
-assert ui.get("catalogTotal") == 33 and ui.get("presetTotal") == 33, f"Expected 33 cars total, got {ui}"
-assert ui.get("initialTab") == "GT3" and ui.get("initialCount") == 8, f"Garage must open categorized in active class GT3 (8), got {ui}"
-assert ui.get("tabCounts") == {"STREET": 4, "GT3": 8, "HYPER": 14, "LMP1": 6, "F1": 1}, f"Tab counts mismatch: {ui}"
-assert ui.get("hyperRoadCount") == 7 and ui.get("hyperTrackCount") == 7, f"HYPER sub-filters mismatch: {ui}"
-assert ui.get("hyperFerrariIds") == ["ferrari_fxxk_evo", "ferrari_laferrari", "ferrari_sf90_xx"], f"Brand filter mismatch: {ui}"
-assert ui.get("allCount") == 33 and ui.get("searchF40") == ["ferrari_f40_lbw"], f"Search filter mismatch: {ui}"
+assert ui.get("catalogTotal") == 79 and ui.get("presetTotal") == 79, f"Expected 79 cars total, got {ui}"
+assert ui.get("initialTab") == "GT3" and ui.get("initialCount") == 14, f"Garage must open categorized in active class GT3 (14), got {ui}"
+assert ui.get("tabCounts") == {"D": 4, "C": 8, "B": 7, "GT3": 14, "A": 11, "S": 7, "R": 10, "LMH": 7, "X": 4, "F1": 7}, f"Tab counts mismatch: {ui}"
+assert ui.get("classCHothatch") == ["subaru_wrx_sti", "honda_civic_type_r"], f"C hothatch sub-filter mismatch: {ui}"
+assert ui.get("gt3JpIds") == ["acura_nsx_gt3_evo", "lexus_rc_f_gt3", "nissan_gtr_gt3"], f"GT3 JP sub-filter mismatch: {ui}"
+assert ui.get("classAHybridCount") == 6, f"A hybrid count mismatch: {ui}"
+assert ui.get("classSAero") == ["zenvo_tsrs", "amg_one", "aston_vulcan"], f"S aero sub-filter mismatch: {ui}"
+assert ui.get("lmhWecCount") == 4, f"LMH WEC count mismatch: {ui}"
+assert ui.get("f1Classic") == ["ferrari_f2004"], f"F1 classic sub-filter mismatch: {ui}"
+assert ui.get("allCount") == 79 and ui.get("piBadgesCount") == 79 and ui.get("strengthChipsCount") >= 79 and ui.get("hasPerfBox"), f"PI/Strength UI missing: {ui}"
+assert ui.get("searchF40") == ["ferrari_f40_lbw"], f"Search filter mismatch: {ui}"
 assert ui.get("searchValPreserved") == "F40" and ui.get("gridOpenAfterClick") is True, f"Search focus/grid toggle mismatch: {ui}"
+
+pp = report_data.get("piProfiles", {})
+assert pp.get("allValid") is True, f"Invalid PI/strength profile: {pp}"
+sp = pp.get("spreads", {})
+for tight_cls in ("C", "GT3", "A", "S", "LMH", "F1"):
+    assert sp.get(tight_cls, 999) <= 40, f"Class {tight_cls} PI spread too wide: {sp}"
+assert pp["vulcan"]["bestTrackType"] != pp["tourbillon"]["bestTrackType"], f"Vulcan vs Tourbillon must highlight distinct track strengths: {pp}"
+assert pp["gt3rs"]["bestTrackType"] != pp["mclarenF1"]["bestTrackType"], f"911 GT3 RS vs McLaren F1 must highlight distinct track strengths: {pp}"
 
 cp = report_data.get("classPhysics", {})
 est = cp.get("estMonza", {})
-assert est["STREET"] > est["GT3"] > est["HYPER"] > est["LMP1"] > est["F1"], f"Class pace ordering wrong: {est}"
-assert len(cp.get("aiF1", [])) == 3 and len(cp.get("aiStreet", [])) == 3, f"AI rosters incomplete: {cp}"
+assert est["D"] > est["C"] > est["B"] > est["GT3"] > est["A"] > est["S"] > est["R"] > est["LMH"] > est["X"] > est["F1"], f"10-class pace ordering wrong: {est}"
+assert len(cp.get("aiS", [])) == 3 and "amg_one" in cp["aiS"], f"Closest-PI S-class AI matching wrong: {cp}"
+assert len(cp.get("aiF1", [])) == 3 and all("f1_" in cid or cid == "ferrari_f2004" for cid in cp["aiF1"]), f"AI F1 must match real F1 peers: {cp}"
+assert cp.get("civicLayout") == "FF", f"Civic Type R layout must be FF: {cp}"
 
 ri = report_data.get("recordsIsolation", {})
 assert ri.get("spoofSanitized") == 2, f"Expected 2 spoof attempts sanitized, got {ri}"
-assert ri.get("streetCount") == 2 and ri.get("f1Count") == 2, f"Sanitized records missing from true classes: {ri}"
-assert ri.get("gt3Count") == 0 and ri.get("lmp1Count") == 0, f"Class pollution detected in GT3/LMP1: {ri}"
+assert ri.get("dCount") == 2 and ri.get("f1Count") == 2, f"Sanitized records missing from true classes: {ri}"
+assert ri.get("gt3Count") == 0 and ri.get("lmhCount") == 0, f"Class pollution detected in GT3/LMH: {ri}"
 
-print("\nALL 29 LOCAL CAR GLBs (33 TOTAL CARS), CATEGORIZED GARAGE & 5-CLASS LEADERBOARD VERIFIED 100%!")
+print("\nALL 75 LOCAL CAR GLBs (79 TOTAL CARS), 10-CLASS PI GARAGE & STRENGTH PROFILES VERIFIED 100%!")

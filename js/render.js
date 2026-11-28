@@ -2414,8 +2414,8 @@ const CAR_MODEL_PRESETS = [
     desc: 'F1 冠軍動力下放・1.6L V6 渦輪油電四馬達＋鯊魚鰭主動空力 GLB 模型',
     defaultPaint: '#94a3b8',
     urls: [
-      'assets/models/cars/amg 1.glb',
-      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/amg%201.glb'
+      'assets/models/cars/new_mercedes-amg_project_one.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/new_mercedes-amg_project_one.glb'
     ]
   },
   {
@@ -2554,8 +2554,8 @@ const CAR_MODEL_PRESETS = [
     desc: '聖殿級油電馬王・6.3L V12＋HY-KERS 主動式尾翼旗艦 Hypercar GLB 模型',
     defaultPaint: '#dc2626',
     urls: [
-      'assets/models/cars/2014_ferrari_laferrari.glb',
-      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/2014_ferrari_laferrari.glb'
+      'assets/models/cars/new_ferrari_laferrari.glb',
+      'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/new_ferrari_laferrari.glb'
     ]
   },
   {
@@ -2677,6 +2677,71 @@ const CAR_MODEL_PRESETS = [
     ]
   }
 ];
+
+(function appendExpandedCarPresets() {
+  const RAW = 'https://raw.githubusercontent.com/Raymond-luo-code/Apex-pro-racing/main/assets/models/cars/';
+  // [id, label, desc, paint, file, targetLength, extraOpts]
+  const extras = [
+    ['toyota_ae86', 'Toyota Corolla AE86 Trueno GT-Apex', '日系雙門輕量 FR 傳奇・4A-GE 130 HP 原廠高轉自吸 GLB 模型', '#f8fafc', 'toyota_corolla_ae86_trueno.glb', 4.20, { extraRotY: Math.PI }],
+    ['mazda_mx5', 'Mazda MX-5 Miata (ND2)', '日系極致輕量雙座敞篷・人馬一體 FR 經典小跑車 GLB 模型', '#dc2626', 'mazda_mx-5.glb', 3.92, { extraRotY: Math.PI }],
+    ['honda_civic_type_r', 'Honda Civic Type R (FL5)', '前驅 FF 最速傳說・2.0L VTEC 渦輪 329 HP 紐北刷圈鋼砲 GLB 模型', '#f8fafc', 'honda_civic_type_r.glb', 4.59],
+    ['subaru_wrx_sti', 'Subaru WRX STI Type RA', '水平對臥 EJ25 渦輪＋對稱全時四驅拉力鋼砲 GLB 模型', '#0284c7', 'subaru_wrx_sti.glb', 4.60],
+    ['mercedes_amg_c63', 'Mercedes-AMG C63 S Coupe', '阿法爾特巴赫 4.0L V8 雙渦輪・510 HP 暴躁前置後驅轎跑 GLB 模型', '#94a3b8', 'mercedes-benz_amg_c63.glb', 4.70],
+    ['dodge_challenger_srt', 'Dodge Challenger SRT Hellcat', '美式 6.2L 機械增壓 HEMI V8・717 HP 直線肌肉猛獸 GLB 模型', '#ef4444', 'dodge_challenger_srt.glb', 4.95, { extraRotY: Math.PI }],
+    ['porsche_959', 'Porsche 959 S Komfort', '80 年代 B 組技術結晶・雙渦輪水平對臥六缸四驅超跑 GLB 模型', '#cbd5e1', 'porsche_959.glb', null],
+    ['honda_nsx_r', 'Honda NSX-R (NA2)', '日本傳奇中置後驅平衡宗師・3.2L DOHC VTEC 自吸 GLB 模型', '#f8fafc', 'honda_nsx-r.glb', null],
+    ['toyota_supra_mk4', 'Toyota Supra RZ MK4 (A80)', '傳奇 2JZ-GTE 直六雙渦輪經典日系 GT 跑車 GLB 模型', '#f97316', 'toyota_supra_mk4__supra_1997__free_download.glb', null],
+    ['aston_vantage_59_amr', 'Aston Martin Vantage AMR 59', '致敬 1959 利曼冠軍・4.0L 雙渦輪 V8 英倫特仕跑車 GLB 模型', '#10b981', 'aston_martin_vantage_59_amr.glb', null],
+    ['nissan_gtr_nismo', 'Nissan GT-R NISMO (R35)', '戰神 VR38DETT 600 HP・ATTESA 四驅彈射加速利器 GLB 模型', '#cbd5e1', 'nissan_gt-r_nismo.glb', null],
+    ['ferrari_812_competizione', 'Ferrari 812 Competizione', '6.5L NA V12 9,500 rpm 限量終極前置躍馬超跑 GLB 模型', '#eab308', 'ferrari_812_competizione.glb', null, { extraRotY: Math.PI }],
+    ['mclaren_765lt', 'McLaren 765LT', '長尾輕量化 765 HP V8 雙渦輪・極致貼地街道旗艦 GLB 模型', '#f97316', 'mclaren_765lt.glb', null],
+    ['porsche_911_gt3_rs', 'Porsche 911 GT3 RS (992)', 'DRS 主動式巨翼 4.0L 水平對臥自吸・紐北街車之王 GLB 模型', '#f8fafc', 'porsche_911_gt3_rs_2.7_carrera_tribute_992.glb', null],
+    ['audi_r8_lms_evo', 'Audi R8 LMS GT3 Evo II', '5.2L V10 中置後驅耐力常勝軍・德系 GT3 EVO II GLB 模型', '#dc2626', 'audi_r8_lms_evo.glb', null],
+    ['acura_nsx_gt3_evo', 'Acura NSX GT3 Evo22', '日美混血 3.5L V6 雙渦輪中置架構・高轉向敏捷 GT3 GLB 模型', '#0284c7', 'acura_nsx_gt3_evo.glb', null],
+    ['lexus_rc_f_gt3', 'Lexus RC F GT3', '5.0L 2UR-GSE 自然進氣 V8・長軸穩重直線強悍 GT3 GLB 模型', '#1e293b', 'lexus_rc_f_gt3.glb', null],
+    ['nissan_gtr_gt3', 'Nissan GT-R NISMO GT3 (R35)', '3.8L VR38 雙渦輪前置 GT3・Super GT GT300 傳奇戰馬 GLB 模型', '#f8fafc', 'nissan_gt-r_nismo_gt3_r35.glb', null],
+    ['corvette_z06_gt3r', 'Chevrolet Corvette Z06 GT3.R', '美系中置 5.5L LT6 平面曲軸 V8・FIA 新世代 GT3.R GLB 模型', '#eab308', 'corvette_z06_gt3r.glb', null],
+    ['ford_mustang_gt3', 'Ford Mustang GT3', '5.4L Coyote NA V8 前置後驅・寬體重煞強勢 GT3 戰車 GLB 模型', '#0284c7', 'ford_mustang_gt3.glb', null, { extraRotY: Math.PI }],
+    ['porsche_918_spyder', 'Porsche 918 Spyder Weissach', '三大神車油電四驅標竿・4.6L V8 高轉配雙電機 GLB 模型', '#cbd5e1', 'porsche_918_spyder.glb', null],
+    ['bugatti_tourbillon', 'Bugatti Tourbillon V16 Hybrid', '8.3L NA V16＋三馬達 1,800 HP・445 km/h 新世代殿堂極速王 GLB 模型', '#0284c7', 'bugatti_tourbillon.glb', null],
+    ['rimac_nevera', 'Rimac Nevera EV', '四電機 1,914 HP 純電扭力矢量分配・直線破紀錄怪物 GLB 模型', '#0284c7', 'rimac_nevera.glb', null, { extraRotY: Math.PI }],
+    ['mclaren_speedtail', 'McLaren Speedtail', '水滴低風阻 403 km/h 三座油電 GT 極速機器 GLB 模型', '#94a3b8', 'mc_laren_speedtail.glb', 5.05],
+    ['bugatti_chiron_pur_sport', 'Bugatti Chiron Pur Sport', '短齒比＋固定碳纖尾翼強化過彎版 W16 四驅巨獸 GLB 模型', '#0284c7', 'bugatti_chiron_pur_sport_grand_prix_edition.glb', null],
+    ['bugatti_veyron_ss', 'Bugatti Veyron 16.4 Super Sport', '破紀錄 431 km/h W16 四渦輪時代經典極速王者 GLB 模型', '#f97316', 'bugatti_veyron_16.4_super_sport.glb', null, { extraRotY: Math.PI }],
+    ['koenigsegg_jesko_attack', 'Koenigsegg Jesko Attack', '瑞典九速 LST 光速變速＋1,600 HP 賽道極致空力超跑 GLB 模型', '#10b981', 'koenigsegg_jesko_attack.glb', null, { extraRotY: Math.PI }],
+    ['koenigsegg_one1', 'Koenigsegg One:1', '史上首款 1,360 HP / 1,360 kg 1:1 馬力重量比巨砲 GLB 模型', '#f8fafc', 'koenigsegg_one-1.glb', null],
+    ['koenigsegg_agera', 'Koenigsegg Agera R', '5.0L 雙渦輪 V8・北歐極速低風阻中置後驅傳奇 GLB 模型', '#ef4444', 'koenigsegg_agera.glb', null],
+    ['mclaren_f1', 'McLaren F1 Road Car (1994)', '6.1L BMW S70/2 V12 黃金引擎隔熱艙・純機械手排傳奇 GLB 模型', '#eab308', 'mclaren_f1.glb', null, { extraRotY: Math.PI, hideNodeRegex: /^Object_(2|23|32)$/i }],
+    ['bugatti_bolide', 'Bugatti Bolide Track Concept', 'W16 1,600 HP 碳鈦極輕量實驗室級純賽道機器 GLB 模型', '#0284c7', 'bugatti_bolide_concept.glb', null],
+    ['pagani_zonda_r', 'Pagani Zonda R Track', '紐北 6分47秒傳奇・6.0L AMG NA V12 純種碳鈦賽道機器 GLB 模型', '#1e293b', 'pagani_zonda_r.glb', null, { extraRotY: Math.PI }],
+    ['mclaren_f1_gtr_longtail', 'McLaren F1 GTR Longtail', '915kg 長尾空力 FIA GT1 耐力傳奇賽車 GLB 模型', '#f97316', 'mclaren_f1_gtr_longtail.glb', 4.88],
+    ['ferrari_499p', 'Ferrari 499P LMH', '利曼百年 24 小時大賽衛冕冠軍・V6 雙渦輪油電四驅原型賽車 GLB 模型', '#dc2626', 'ferrari_499p.glb', 4.95],
+    ['porsche_963', 'Porsche 963 LMDh', 'Penskes/WEC 戰將・4.6L V8 雙渦輪混動後驅原型賽車 GLB 模型', '#ef4444', 'porsche_963.glb', 4.95],
+    ['cadillac_v_seriesr', 'Cadillac V-Series.R LMDh', '高轉 5.5L NA V8 震耳聲浪＋混動 LMDh 美系耐力廠車 GLB 模型', '#eab308', 'cadillac_v_seriesr_2023.glb', 4.95],
+    ['mercedes_sauber_c9', 'Sauber Mercedes C9 Group C', '1989 利曼冠軍＋幕爾桑 400km/h 傳奇銀箭 C 組怪獸 GLB 模型', '#cbd5e1', 'mercedes_sauber_c9_gt_michelin_1987.glb', 4.80, { extraRotY: Math.PI }],
+    ['mclaren_ultimate_vgt', 'McLaren Ultimate Vision GT', '俯臥式戰鬥機座艙・1,150 PS 主動空力混動概念原型 GLB 模型', '#f97316', 'mclaren_ultimate_vision_gt.glb', null, { extraRotY: Math.PI }],
+    ['mclaren_x2', 'McLaren-Honda X2 Concept', '封閉座艙超低風阻電動原型概念極速戰車 GLB 模型', '#f8fafc', 'mclaren_x2.glb', 5.05],
+    ['mercedes_silver_lightning', 'Mercedes-Benz Silver Lightning', '未來銀箭純電矢量四驅地面效應原型概念車 GLB 模型', '#cbd5e1', 'mercedes-benz_silver_lightning_concept.glb', 4.85],
+    ['f1_2026_rb22', 'Red Bull Racing RB22 F1 (2026)', '2026 地面效應＋主動空力紅牛 1,000 HP 冠軍方程式 GLB 模型', '#0284c7', '2026_red_bull_racing_rb22.glb', 5.10],
+    ['f1_2026_w17', 'Mercedes-AMG W17 F1 (2026)', '2026 銀箭原廠動力單座混動 F1 賽車 GLB 模型', '#94a3b8', '2026_mercedes_w17.glb', 5.10, { extraRotY: Math.PI }],
+    ['f1_2026_r26', 'Audi F1 Team R26 (2026)', '四環品牌 2026 進軍 F1 首發混合動力原廠戰車 GLB 模型', '#cbd5e1', '2026_audi_r26.glb', 5.10, { extraRotY: Math.PI }],
+    ['f1_2026_mac26', 'Cadillac F1 MAC-26 (2026)', '美系新生力軍 2026 規格 F1 單座方程式 GLB 模型', '#1e293b', '2026_cadillac_mac-26.glb', 5.10, { extraRotY: Math.PI }],
+    ['f1_2025_mcl39', 'McLaren MCL39 F1 (2025)', '木瓜橘高下壓力雙連彎標竿・8 速混動一級方程式 GLB 模型', '#f97316', '2025_mclaren_mcl39.glb', 5.10],
+    ['ferrari_f2004', 'Ferrari F2004 V10 F1 (2004)', '605kg＋19,000 rpm 3.0L V10 自然進氣史上經典 F1 神車 GLB 模型', '#dc2626', 'ferrari_f2004.glb', 4.55]
+  ];
+  extras.forEach(([id, label, desc, defaultPaint, file, targetLength, extraOpts]) => {
+    const entry = {
+      id,
+      label,
+      desc,
+      defaultPaint,
+      urls: ['assets/models/cars/' + file, RAW + encodeURIComponent(file)]
+    };
+    if (targetLength) entry.targetLength = targetLength;
+    if (extraOpts) Object.assign(entry, extraOpts);
+    CAR_MODEL_PRESETS.push(entry);
+  });
+})();
 
 const carAssetState = {
   presetId: 'ferrari458',
@@ -3559,9 +3624,9 @@ function classifyHiFiMaterials(root) {
       role = 'light';
     } else if (/tire|tyre|rubber|tread/.test(mName) && !/brake|disk|disc|hub/.test(mName)) {
       role = 'tire';
-    } else if (/rim|alloy|^ext_rim/i.test(mName) || (/metal_gray/.test(mName) && /rim/.test(meshStr))) {
+    } else if (/(?:^|[^a-z])(rims?|alloy|ext_rim|rim_[a-z0-9_]+|rim[0-9]+)(?:$|[^a-z])/i.test(mName) || (/metal_gray/.test(mName) && /rim/.test(meshStr))) {
       role = 'rim';
-    } else if ((/^(body|paint|car_?paint|carpaint|livery|shell|carroserie|lack|ext_paint|body_paint|body_color|main_paint|car_body_mat)$/i.test(mName) || /car_?paint|body_?paint|body_?color|ext_?paint|livery|carpaint|paint_material|painta_material/.test(mName)) && !/carbon|caliper|calliper|int_|interior|wheel|rim|glass/.test(mName)) {
+    } else if ((/^(body|paint|car_?paint|carpaint|livery|shell|carroserie|lack|ext_paint|body_paint|body_color|main_paint|car_body_mat)$/i.test(mName) || /car_?paint|body_?paint|body_?color|ext_?paint|livery|carpaint|paint_material|painta_material/.test(mName)) && !/(?:^|[^a-z])(carbon|caliper|calliper|int|interior|wheel|rims?|glass)(?:$|[^a-z])/.test(mName)) {
       role = 'body';
     } else if (/detail|trim|interior|leather|seat|dash|carbon|plastic|chrome|metal|steel|iron|exhaust|grill|grille|mesh|badge|logo|emblem|yellow|black|dark|shadow|int_|underbody|chassis|carpet|mirror|caliper|calliper|disc|disk|brake/.test(mName)) {
       role = 'trim';
@@ -3729,7 +3794,7 @@ function applyHiFiTemplateToSlot(slot) {
   const inst = hifiSrc.template.clone(true);
   const cache = new Map();
   const tailMats = [];
-  const allowCastShadow = !isSoftwareWebGL && !slot.isGhost && (slot.kind === 'player' || !hifiSrc.stats || hifiSrc.stats.tris <= 180000);
+  const allowCastShadow = !isSoftwareWebGL && !slot.isGhost && (slot.kind === 'player' || !hifiSrc.stats || (hifiSrc.stats.tris <= 180000 && (hifiSrc.stats.meshes || 0) <= 300));
   inst.traverse(o => {
     if (!o.isMesh) return;
     o.frustumCulled = true;
@@ -3805,11 +3870,16 @@ function buildHiFiTemplate(targetPresetId) {
 }
 
 const CLASS_AI_ROSTERS = {
-  STREET: ['lamborghini_aventador', 'ferrari_f40_lbw', 'lamborghini_countach', 'nissan_xtrail'],
-  GT3: ['ferrari458', 'porsche911', 'amggt3', 'procedural', 'mclaren_650s_gt3', 'lamborghini_huracan_gt3', 'ferrari_296_gt3', 'ferrari_488_gt3'],
-  HYPER: ['aston_vulcan', 'mclaren_senna', 'zenvo_tsrs', 'pagani_huayra_r', 'ferrari_laferrari', 'mclaren_p1', 'mclaren_p1_gtr', 'ferrari_fxxk_evo', 'lamborghini_revuelto', 'lamborghini_sc20'],
-  LMP1: ['porsche_919_evo', 'amg_one', 'mazda_furai', 'alpine_vision', 'lamborghini_terzo', 'mazda_lm_vision'],
-  F1: ['f1_2026_sf26', 'porsche_919_evo', 'mazda_lm_vision', 'amg_one']
+  D: ['mazda_mx5', 'toyota_ae86', 'lamborghini_countach', 'nissan_xtrail'],
+  C: ['honda_civic_type_r', 'subaru_wrx_sti', 'honda_nsx_r', 'ferrari_f40_lbw', 'porsche_959', 'mercedes_amg_c63', 'dodge_challenger_srt', 'toyota_supra_mk4'],
+  B: ['porsche_911_gt3_rs', 'mclaren_765lt', 'ferrari_812_competizione', 'nissan_gtr_nismo', 'lamborghini_aventador', 'aston_vantage_59_amr', 'mclaren_f1'],
+  GT3: ['ferrari458', 'porsche911', 'amggt3', 'procedural', 'audi_r8_lms_evo', 'acura_nsx_gt3_evo', 'corvette_z06_gt3r', 'ford_mustang_gt3', 'lexus_rc_f_gt3', 'nissan_gtr_gt3'],
+  A: ['ferrari_laferrari', 'mclaren_p1', 'porsche_918_spyder', 'ferrari_sf90_xx', 'lamborghini_revuelto', 'koenigsegg_agera', 'bugatti_veyron_ss', 'mclaren_speedtail'],
+  S: ['aston_vulcan', 'amg_one', 'bugatti_chiron_pur_sport', 'zenvo_tsrs', 'rimac_nevera', 'bugatti_tourbillon', 'koenigsegg_one1'],
+  R: ['mclaren_senna', 'ferrari_fxxk_evo', 'pagani_huayra_r', 'koenigsegg_jesko_attack', 'pagani_zonda_r', 'mclaren_p1_gtr', 'lamborghini_essenza', 'alpine_vision', 'mazda_furai'],
+  LMH: ['ferrari_499p', 'porsche_963', 'cadillac_v_seriesr', 'bugatti_bolide', 'mercedes_sauber_c9', 'lamborghini_terzo', 'mercedes_silver_lightning'],
+  X: ['porsche_919_evo', 'mazda_lm_vision', 'mclaren_ultimate_vgt', 'mclaren_x2'],
+  F1: ['f1_2026_sf26', 'f1_2026_rb22', 'f1_2026_w17', 'f1_2026_r26', 'f1_2026_mac26', 'f1_2025_mcl39', 'ferrari_f2004']
 };
 
 function syncAIMultiCarModels(playerPresetId) {
@@ -3817,8 +3887,24 @@ function syncAIMultiCarModels(playerPresetId) {
   const pid = playerPresetId || carAssetState.presetId || 'procedural';
   const prof = (typeof CAR_HANDLING_PROFILES !== 'undefined' && CAR_HANDLING_PROFILES[pid]) ? CAR_HANDLING_PROFILES[pid] : null;
   const cls = (prof && prof.carClass) ? prof.carClass : 'GT3';
-  const pool = (CLASS_AI_ROSTERS[cls] || CLASS_AI_ROSTERS.GT3).filter(id => id !== pid);
+  const playerPi = (prof && typeof prof.pi === 'number') ? prof.pi : 600;
+  const catalog = (typeof CAR_CATALOG !== 'undefined' && Array.isArray(CAR_CATALOG)) ? CAR_CATALOG : null;
+  const playerCat = catalog ? catalog.find(c => c.id === pid) : null;
+  const playerSub = playerCat ? playerCat.subGroup : null;
+  let dynamicPool = [];
+  if (catalog) {
+    const clsCandidates = catalog.filter(c => c.carClass === cls && c.id !== pid);
+    clsCandidates.sort((a, b) => {
+      const pa = (CAR_HANDLING_PROFILES[a.id] && CAR_HANDLING_PROFILES[a.id].pi) || 600;
+      const pb = (CAR_HANDLING_PROFILES[b.id] && CAR_HANDLING_PROFILES[b.id].pi) || 600;
+      const diffA = Math.abs(pa - playerPi) - (playerSub && a.subGroup === playerSub ? 3 : 0);
+      const diffB = Math.abs(pb - playerPi) - (playerSub && b.subGroup === playerSub ? 3 : 0);
+      return diffA - diffB;
+    });
+    dynamicPool = clsCandidates.map(c => c.id);
+  }
   const fallbackPool = CLASS_AI_ROSTERS[cls] || CLASS_AI_ROSTERS.GT3;
+  const pool = dynamicPool.length ? dynamicPool : fallbackPool.filter(id => id !== pid);
   const aiPatterns = ['stripes', 'duotone', 'esports'];
   const aiAccents = ['#f8fafc', '#38bdf8', '#fbbf24'];
 

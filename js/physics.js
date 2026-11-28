@@ -128,8 +128,8 @@ const CAR_HANDLING_PROFILES = {
   },
   aston_vulcan: {
     name: 'ASTON MARTIN VULCAN AMR PRO',
-    carClass: 'HYPER',
-    classSpec: buildClassSpec('HYPER', 1.15, 1.32, 1.22, 1.08, 320, 1.105, 0.235, 1.60, 1350, 0.975),
+    carClass: 'TRACK',
+    classSpec: buildClassSpec('TRACK', 1.15, 1.32, 1.22, 1.08, 320, 1.105, 0.235, 1.60, 1350, 0.975),
     wheelbase: 2.79,
     maxSteerDeg: 22.8,
     baseMuLat: 1.60,
@@ -155,8 +155,8 @@ const CAR_HANDLING_PROFILES = {
   },
   mclaren_senna: {
     name: 'MCLAREN SENNA GTR-SPEC',
-    carClass: 'HYPER',
-    classSpec: buildClassSpec('HYPER', 1.17, 1.45, 1.30, 1.10, 330, 1.108, 0.210, 1.64, 1198, 0.985),
+    carClass: 'TRACK',
+    classSpec: buildClassSpec('TRACK', 1.17, 1.45, 1.30, 1.10, 330, 1.108, 0.210, 1.64, 1198, 0.985),
     wheelbase: 2.67,
     maxSteerDeg: 23.6,
     baseMuLat: 1.64,
@@ -182,8 +182,8 @@ const CAR_HANDLING_PROFILES = {
   },
   zenvo_tsrs: {
     name: 'ZENVO TSR-S ACTIVE WING',
-    carClass: 'HYPER',
-    classSpec: buildClassSpec('HYPER', 1.10, 1.52, 1.30, 1.04, 336, 1.102, 0.145, 1.54, 1495, 0.982),
+    carClass: 'TRACK',
+    classSpec: buildClassSpec('TRACK', 1.10, 1.52, 1.30, 1.04, 336, 1.102, 0.145, 1.54, 1495, 0.982),
     wheelbase: 2.72,
     maxSteerDeg: 22.8,
     baseMuLat: 1.54,
@@ -209,8 +209,8 @@ const CAR_HANDLING_PROFILES = {
   },
   pagani_huayra_r: {
     name: 'PAGANI HUAYRA R EVO ROADSTER',
-    carClass: 'HYPER',
-    classSpec: buildClassSpec('HYPER', 1.18, 1.65, 1.34, 1.12, 348, 1.078, 0.220, 1.65, 1060, 0.985),
+    carClass: 'TRACK',
+    classSpec: buildClassSpec('TRACK', 1.18, 1.65, 1.34, 1.12, 348, 1.078, 0.220, 1.65, 1060, 0.985),
     wheelbase: 2.79,
     maxSteerDeg: 23.5,
     baseMuLat: 1.65,
@@ -236,8 +236,8 @@ const CAR_HANDLING_PROFILES = {
   },
   amg_one: {
     name: 'MERCEDES-AMG ONE F1 E-HYBRID',
-    carClass: 'LMP1',
-    classSpec: buildClassSpec('LMP1', 1.10, 1.44, 1.40, 1.05, 352, 0.905, 0.145, 1.56, 1695, 0.988),
+    carClass: 'HYPER',
+    classSpec: buildClassSpec('HYPER', 1.10, 1.44, 1.40, 1.05, 352, 0.905, 0.145, 1.56, 1695, 0.988),
     wheelbase: 2.72,
     maxSteerDeg: 23.2,
     baseMuLat: 1.56,
@@ -288,11 +288,11 @@ const CAR_HANDLING_PROFILES = {
     pitchTone: 1.18,
     bodyRollMult: 0.42
   },
-  // --- STREET / CLASS A ---
+  // --- SPORT / CLASS C ---
   nissan_xtrail: {
     name: 'NISSAN X-TRAIL e-POWER SUV',
-    carClass: 'STREET',
-    classSpec: buildClassSpec('STREET', 0.56, 0.34, 0.52, 0.56, 185, 1.365, 0.004, 0.84, 1680, 0.992),
+    carClass: 'SPORT',
+    classSpec: buildClassSpec('SPORT', 0.56, 0.34, 0.52, 0.56, 185, 1.365, 0.004, 0.84, 1680, 0.992),
     wheelbase: 2.71,
     maxSteerDeg: 26.0,
     baseMuLat: 0.84,
@@ -502,11 +502,11 @@ const CAR_HANDLING_PROFILES = {
     pitchTone: 1.00,
     bodyRollMult: 0.96
   },
-  // --- HYPER / CLASS R ADDITIONS ---
+  // --- TRACK / CLASS R+ ADDITIONS ---
   mclaren_p1_gtr: {
     name: 'MCLAREN P1 GTR TRACK',
-    carClass: 'HYPER',
-    classSpec: buildClassSpec('HYPER', 1.15, 1.52, 1.34, 1.08, 342, 1.045, 0.165, 1.62, 1350, 0.985),
+    carClass: 'TRACK',
+    classSpec: buildClassSpec('TRACK', 1.15, 1.52, 1.34, 1.08, 342, 1.045, 0.165, 1.62, 1350, 0.985),
     wheelbase: 2.67,
     maxSteerDeg: 23.5,
     baseMuLat: 1.62,
@@ -532,8 +532,8 @@ const CAR_HANDLING_PROFILES = {
   },
   ferrari_fxxk_evo: {
     name: 'FERRARI FXX-K EVO',
-    carClass: 'HYPER',
-    classSpec: buildClassSpec('HYPER', 1.18, 1.62, 1.36, 1.11, 345, 1.088, 0.240, 1.64, 1255, 0.988),
+    carClass: 'TRACK',
+    classSpec: buildClassSpec('TRACK', 1.18, 1.62, 1.36, 1.11, 345, 1.088, 0.240, 1.64, 1255, 0.988),
     wheelbase: 2.65,
     maxSteerDeg: 23.6,
     baseMuLat: 1.64,
@@ -559,8 +559,8 @@ const CAR_HANDLING_PROFILES = {
   },
   lamborghini_essenza: {
     name: 'LAMBORGHINI ESSENZA SCV12',
-    carClass: 'HYPER',
-    classSpec: buildClassSpec('HYPER', 1.17, 1.38, 1.26, 1.09, 324, 1.115, 0.248, 1.63, 1280, 0.980),
+    carClass: 'TRACK',
+    classSpec: buildClassSpec('TRACK', 1.17, 1.38, 1.26, 1.09, 324, 1.115, 0.248, 1.63, 1280, 0.980),
     wheelbase: 2.71,
     maxSteerDeg: 23.4,
     baseMuLat: 1.63,
@@ -956,6 +956,114 @@ const CAR_CHASSIS_TRAITS_MAP = {
   f1_2026_sf26:          { layout: 'OPEN_WHEEL', absMode: 'none',    tcMode: 'none',         torqueCurve: 'hybrid_instant',    lineBias: -0.35, steerScale: 1.12 }
 };
 
+(function registerExpandedCarProfiles() {
+  const buildGears = (topKmh, gears, layout) => {
+    const out = [0];
+    const cap = topKmh + 6;
+    const firstRatio = gears <= 4 ? 0.34 : (layout === 'OPEN_WHEEL' ? 0.29 : 0.24);
+    for (let k = 1; k <= gears; k++) {
+      if (k === gears) { out.push(Math.round(cap)); continue; }
+      const f = (k - 1) / Math.max(1, gears - 1);
+      out.push(Math.round(cap * (firstRatio + (1 - firstRatio) * Math.pow(f, 0.90))));
+    }
+    return out;
+  };
+  // [id, name, carClass, topKmh, weightKg, gears, redline, layout, abs, tc, torque, lineBias, accel, launch, brake, muLat, df, drag, wb, extra]
+  const rows = [
+    // --- SPORT (6 new) ---
+    ['toyota_ae86', 'TOYOTA COROLLA AE86 TRUENO GT-APEX', 'SPORT', 195, 940, 5, 7800, 'FMR', 'none', 'none', 'na_screamer', -0.25, 0.44, 0.54, 0.64, 0.96, 0.008, 0.850, 2.40, { shiftCut: 0.14, roll: 1.38, pitch: 1.04 }],
+    ['mazda_mx5', 'MAZDA MX-5 MIATA (ND2)', 'SPORT', 220, 1050, 6, 7500, 'FMR', 'street_abs', 'none', 'na_screamer', -0.20, 0.54, 0.64, 0.70, 1.04, 0.012, 0.800, 2.31, { shiftCut: 0.12, roll: 1.30, pitch: 1.02 }],
+    ['honda_civic_type_r', 'HONDA CIVIC TYPE R (FL5)', 'SPORT', 275, 1430, 6, 7000, 'FF', 'street_abs', 'gt3_tc', 'gt3_flat', 0.15, 0.72, 0.76, 0.78, 1.12, 0.026, 0.760, 2.73, { shiftCut: 0.11, roll: 1.16, pitch: 0.96 }],
+    ['subaru_wrx_sti', 'SUBARU WRX STI TYPE RA', 'SPORT', 255, 1560, 6, 7000, 'AWD', 'street_abs', 'awd_vectored', 'turbo_lag_classic', 0.25, 0.71, 0.94, 0.75, 1.09, 0.022, 0.860, 2.65, { shiftCut: 0.11, roll: 1.24, pitch: 0.92 }],
+    ['mercedes_amg_c63', 'MERCEDES-AMG C63 S COUPE', 'SPORT', 290, 1730, 7, 7000, 'FMR', 'street_abs', 'gt3_tc', 'gt3_flat', 0.55, 0.86, 0.96, 0.76, 1.08, 0.020, 0.750, 2.84, { shiftCut: 0.06, roll: 1.26, pitch: 0.86 }],
+    ['dodge_challenger_srt', 'DODGE CHALLENGER SRT HELLCAT', 'SPORT', 315, 2015, 8, 6500, 'FMR', 'street_abs', 'none', 'hybrid_instant', 0.80, 0.96, 1.02, 0.70, 1.00, 0.016, 0.780, 2.95, { shiftCut: 0.065, roll: 1.42, pitch: 0.80 }],
+    // --- STREET (8 new) ---
+    ['porsche_959', 'PORSCHE 959 S KOMFORT', 'STREET', 317, 1450, 6, 7600, 'AWD', 'street_abs', 'awd_vectored', 'turbo_lag_classic', 0.65, 0.84, 1.04, 0.74, 1.08, 0.028, 0.680, 2.27, { shiftCut: 0.12, roll: 1.22, pitch: 1.00 }],
+    ['honda_nsx_r', 'HONDA NSX-R (NA2)', 'STREET', 275, 1230, 6, 8200, 'MR', 'street_abs', 'none', 'na_screamer', -0.10, 0.74, 0.84, 0.78, 1.16, 0.030, 0.720, 2.53, { shiftCut: 0.11, roll: 1.12, pitch: 1.08 }],
+    ['toyota_supra_mk4', 'TOYOTA SUPRA RZ MK4 (A80)', 'STREET', 285, 1510, 6, 7200, 'FMR', 'street_abs', 'none', 'turbo_lag_classic', 0.60, 0.76, 0.86, 0.73, 1.06, 0.022, 0.720, 2.55, { shiftCut: 0.12, roll: 1.24, pitch: 0.94 }],
+    ['aston_vantage_59_amr', 'ASTON MARTIN VANTAGE AMR 59', 'STREET', 314, 1530, 7, 7200, 'FMR', 'street_abs', 'gt3_tc', 'gt3_flat', 0.45, 0.96, 1.04, 0.82, 1.16, 0.042, 0.760, 2.70, { shiftCut: 0.06, roll: 1.12, pitch: 0.92 }],
+    ['nissan_gtr_nismo', 'NISSAN GT-R NISMO (R35)', 'STREET', 315, 1720, 6, 7100, 'AWD', 'street_abs', 'awd_vectored', 'gt3_flat', 0.55, 1.10, 1.44, 0.84, 1.22, 0.056, 0.820, 2.78, { shiftCut: 0.05, roll: 1.08, pitch: 0.95 }],
+    ['ferrari_812_competizione', 'FERRARI 812 COMPETIZIONE', 'STREET', 340, 1487, 7, 9500, 'FMR', 'street_abs', 'gt3_tc', 'na_screamer', 0.75, 1.26, 1.24, 0.86, 1.24, 0.068, 0.800, 2.72, { shiftCut: 0.045, roll: 1.02, pitch: 1.18 }],
+    ['mclaren_765lt', 'MCLAREN 765LT', 'STREET', 330, 1339, 7, 8500, 'MR', 'street_abs', 'gt3_tc', 'gt3_flat', 0.60, 1.30, 1.28, 0.88, 1.28, 0.075, 0.840, 2.67, { shiftCut: 0.045, roll: 0.96, pitch: 1.04 }],
+    ['porsche_911_gt3_rs', 'PORSCHE 911 GT3 RS (992)', 'STREET', 296, 1450, 7, 9000, 'RR', 'motorsport_abs', 'gt3_tc', 'na_screamer', -0.15, 1.06, 1.22, 0.95, 1.36, 0.145, 0.990, 2.46, { shiftCut: 0.045, roll: 0.88, pitch: 1.12 }],
+    // --- GT3 (6 new, strict BoP) ---
+    ['audi_r8_lms_evo', 'AUDI R8 LMS GT3 EVO II', 'GT3', 309, 1235, 6, 8600, 'MR', 'motorsport_abs', 'gt3_tc', 'na_screamer', 0.00, 1.035, 1.035, 1.02, 1.50, 0.138, 0.975, 2.65, { shiftCut: 0.08, roll: 0.98, pitch: 1.06 }],
+    ['acura_nsx_gt3_evo', 'ACURA NSX GT3 EVO22', 'GT3', 306, 1240, 6, 7800, 'MR', 'motorsport_abs', 'gt3_tc', 'gt3_flat', 0.00, 1.025, 1.025, 1.03, 1.51, 0.141, 0.985, 2.63, { shiftCut: 0.08, roll: 0.96, pitch: 0.98 }],
+    ['lexus_rc_f_gt3', 'LEXUS RC F GT3', 'GT3', 311, 1300, 6, 7600, 'FMR', 'motorsport_abs', 'gt3_tc', 'na_screamer', 0.00, 1.03, 1.03, 1.01, 1.45, 0.133, 0.962, 2.73, { shiftCut: 0.08, roll: 1.02, pitch: 0.92 }],
+    ['nissan_gtr_gt3', 'NISSAN GT-R NISMO GT3 (R35)', 'GT3', 312, 1285, 6, 7500, 'FMR', 'motorsport_abs', 'gt3_tc', 'gt3_flat', 0.00, 1.04, 1.04, 1.015, 1.44, 0.132, 0.958, 2.78, { shiftCut: 0.08, roll: 1.02, pitch: 0.90 }],
+    ['corvette_z06_gt3r', 'CHEVROLET CORVETTE Z06 GT3.R', 'GT3', 308, 1250, 6, 8600, 'MR', 'motorsport_abs', 'gt3_tc', 'na_screamer', 0.00, 1.035, 1.035, 1.025, 1.50, 0.139, 0.980, 2.72, { shiftCut: 0.08, roll: 0.97, pitch: 1.08 }],
+    ['ford_mustang_gt3', 'FORD MUSTANG GT3', 'GT3', 313, 1290, 6, 8000, 'FMR', 'motorsport_abs', 'gt3_tc', 'na_screamer', 0.00, 1.045, 1.045, 1.015, 1.44, 0.131, 0.952, 2.72, { shiftCut: 0.08, roll: 1.02, pitch: 0.90 }],
+    // --- HYPER (10 new road/hybrid/vmax) ---
+    ['porsche_918_spyder', 'PORSCHE 918 SPYDER WEISSACH', 'HYPER', 345, 1674, 7, 9150, 'AWD', 'street_abs', 'awd_vectored', 'hybrid_instant', 0.80, 1.40, 1.62, 0.96, 1.44, 0.095, 0.920, 2.73, { shiftCut: 0.04, roll: 0.92, pitch: 1.14 }],
+    ['bugatti_tourbillon', 'BUGATTI TOURBILLON V16 HYBRID', 'HYPER', 445, 1995, 8, 9000, 'AWD', 'street_abs', 'awd_vectored', 'hybrid_instant', 0.85, 1.78, 1.82, 0.96, 1.42, 0.112, 0.720, 2.74, { shiftCut: 0.035, roll: 0.94, pitch: 1.12 }],
+    ['rimac_nevera', 'RIMAC NEVERA EV', 'HYPER', 412, 2300, 4, 16000, 'AWD', 'street_abs', 'awd_vectored', 'hybrid_instant', 0.85, 1.92, 1.98, 0.90, 1.38, 0.092, 0.800, 2.74, { shiftCut: 0.015, roll: 1.02, pitch: 1.50 }],
+    ['mclaren_speedtail', 'MCLAREN SPEEDTAIL', 'HYPER', 403, 1430, 7, 8500, 'MR', 'street_abs', 'gt3_tc', 'hybrid_instant', 0.85, 1.56, 1.32, 0.92, 1.34, 0.068, 0.680, 2.75, { shiftCut: 0.04, roll: 0.96, pitch: 1.04 }],
+    ['bugatti_chiron_pur_sport', 'BUGATTI CHIRON PUR SPORT', 'HYPER', 350, 1945, 7, 6900, 'AWD', 'street_abs', 'awd_vectored', 'gt3_flat', 0.75, 1.68, 1.76, 0.96, 1.46, 0.125, 1.020, 2.71, { shiftCut: 0.045, roll: 0.94, pitch: 0.84 }],
+    ['bugatti_veyron_ss', 'BUGATTI VEYRON 16.4 SUPER SPORT', 'HYPER', 431, 1838, 7, 6500, 'AWD', 'street_abs', 'awd_vectored', 'gt3_flat', 0.85, 1.52, 1.62, 0.90, 1.34, 0.072, 0.660, 2.71, { shiftCut: 0.05, roll: 1.02, pitch: 0.82 }],
+    ['koenigsegg_jesko_attack', 'KOENIGSEGG JESKO ATTACK', 'HYPER', 365, 1420, 8, 8500, 'MR', 'motorsport_abs', 'gt3_tc', 'na_screamer', 0.55, 1.78, 1.46, 1.04, 1.54, 0.195, 1.040, 2.70, { shiftCut: 0.025, roll: 0.82, pitch: 1.08 }],
+    ['koenigsegg_one1', 'KOENIGSEGG ONE:1', 'HYPER', 400, 1360, 7, 8250, 'MR', 'street_abs', 'gt3_tc', 'turbo_lag_classic', 0.75, 1.68, 1.40, 1.00, 1.48, 0.145, 0.820, 2.66, { shiftCut: 0.04, roll: 0.88, pitch: 1.02 }],
+    ['koenigsegg_agera', 'KOENIGSEGG AGERA R', 'HYPER', 395, 1435, 7, 7500, 'MR', 'street_abs', 'none', 'turbo_lag_classic', 0.85, 1.54, 1.34, 0.95, 1.40, 0.095, 0.760, 2.66, { shiftCut: 0.045, roll: 0.96, pitch: 0.96 }],
+    ['mclaren_f1', 'MCLAREN F1 ROAD CAR (1994)', 'HYPER', 386, 1138, 6, 7500, 'MR', 'none', 'none', 'na_screamer', 0.85, 1.28, 1.16, 0.84, 1.24, 0.048, 0.640, 2.72, { shiftCut: 0.12, roll: 1.08, pitch: 1.08 }],
+    // --- TRACK (3 new track/GT1 hypercars) ---
+    ['bugatti_bolide', 'BUGATTI BOLIDE TRACK CONCEPT', 'TRACK', 380, 1450, 7, 7200, 'AWD', 'motorsport_abs', 'awd_vectored', 'gt3_flat', 0.20, 1.96, 1.78, 1.15, 1.72, 0.300, 1.080, 2.75, { shiftCut: 0.035, roll: 0.62, pitch: 0.92 }],
+    ['pagani_zonda_r', 'PAGANI ZONDA R TRACK', 'TRACK', 350, 1070, 6, 9000, 'MR', 'motorsport_abs', 'gt3_tc', 'na_screamer', 0.30, 1.52, 1.30, 1.10, 1.62, 0.215, 1.020, 2.78, { shiftCut: 0.045, roll: 0.72, pitch: 1.18 }],
+    ['mclaren_f1_gtr_longtail', 'MCLAREN F1 GTR LONGTAIL', 'TRACK', 330, 915, 6, 7500, 'MR', 'none', 'none', 'na_screamer', 0.25, 1.36, 1.24, 1.06, 1.56, 0.175, 0.980, 2.72, { shiftCut: 0.08, roll: 0.76, pitch: 1.06 }],
+    // --- LMP1 / WEC / VISION GT (7 new) ---
+    ['ferrari_499p', 'FERRARI 499P LMH', 'LMP1', 342, 1030, 7, 8500, 'AWD', 'motorsport_abs', 'awd_vectored', 'hybrid_instant', -0.35, 1.68, 1.58, 1.18, 1.78, 0.315, 1.160, 2.94, { shiftCut: 0.03, roll: 0.50, pitch: 1.12 }],
+    ['porsche_963', 'PORSCHE 963 LMDh', 'LMP1', 338, 1030, 7, 8200, 'MR', 'motorsport_abs', 'gt3_tc', 'hybrid_instant', -0.35, 1.65, 1.48, 1.19, 1.79, 0.320, 1.180, 2.95, { shiftCut: 0.03, roll: 0.50, pitch: 1.04 }],
+    ['cadillac_v_seriesr', 'CADILLAC V-SERIES.R LMDh', 'LMP1', 340, 1030, 7, 8800, 'MR', 'motorsport_abs', 'gt3_tc', 'na_screamer', -0.35, 1.66, 1.48, 1.18, 1.77, 0.310, 1.170, 2.95, { shiftCut: 0.03, roll: 0.50, pitch: 1.10 }],
+    ['mercedes_sauber_c9', 'SAUBER MERCEDES C9 GROUP C', 'LMP1', 398, 893, 5, 7200, 'MR', 'none', 'none', 'turbo_lag_classic', 0.05, 1.82, 1.44, 1.12, 1.70, 0.270, 0.880, 2.75, { shiftCut: 0.09, roll: 0.58, pitch: 0.92 }],
+    ['mclaren_ultimate_vgt', 'MCLAREN ULTIMATE VISION GT', 'LMP1', 368, 1000, 7, 9200, 'AWD', 'motorsport_abs', 'awd_vectored', 'hybrid_instant', -0.35, 2.04, 1.70, 1.20, 1.82, 0.360, 1.200, 2.82, { shiftCut: 0.025, roll: 0.46, pitch: 1.16 }],
+    ['mclaren_x2', 'MCLAREN-HONDA X2 CONCEPT', 'LMP1', 385, 820, 6, 16000, 'MR', 'motorsport_abs', 'gt3_tc', 'hybrid_instant', -0.35, 2.18, 1.75, 1.22, 1.86, 0.420, 1.220, 2.90, { shiftCut: 0.015, roll: 0.42, pitch: 1.52 }],
+    ['mercedes_silver_lightning', 'MERCEDES SILVER LIGHTNING', 'LMP1', 355, 1100, 4, 15000, 'AWD', 'motorsport_abs', 'awd_vectored', 'hybrid_instant', -0.35, 1.84, 1.66, 1.16, 1.74, 0.300, 1.120, 2.85, { shiftCut: 0.015, roll: 0.52, pitch: 1.44 }],
+    // --- F1 (6 new) ---
+    ['f1_2026_rb22', 'RED BULL RACING RB22 F1 (2026)', 'F1', 366, 768, 8, 15000, 'OPEN_WHEEL', 'none', 'none', 'hybrid_instant', -0.35, 2.44, 1.66, 1.24, 1.93, 0.538, 1.385, 3.40, { shiftCut: 0.015, roll: 0.35, pitch: 1.44 }],
+    ['f1_2026_w17', 'MERCEDES-AMG W17 F1 (2026)', 'F1', 368, 768, 8, 15000, 'OPEN_WHEEL', 'none', 'none', 'hybrid_instant', -0.35, 2.43, 1.65, 1.24, 1.91, 0.520, 1.372, 3.40, { shiftCut: 0.015, roll: 0.35, pitch: 1.40 }],
+    ['f1_2026_r26', 'AUDI F1 TEAM R26 (2026)', 'F1', 362, 768, 8, 15000, 'OPEN_WHEEL', 'none', 'none', 'hybrid_instant', -0.35, 2.42, 1.68, 1.24, 1.92, 0.522, 1.398, 3.40, { shiftCut: 0.015, roll: 0.35, pitch: 1.38 }],
+    ['f1_2026_mac26', 'CADILLAC F1 MAC-26 (2026)', 'F1', 365, 768, 8, 15000, 'OPEN_WHEEL', 'none', 'none', 'hybrid_instant', -0.35, 2.41, 1.65, 1.25, 1.91, 0.518, 1.385, 3.40, { shiftCut: 0.015, roll: 0.35, pitch: 1.39 }],
+    ['f1_2025_mcl39', 'MCLAREN MCL39 F1 (2025)', 'F1', 358, 800, 8, 15000, 'OPEN_WHEEL', 'none', 'none', 'hybrid_instant', -0.35, 2.40, 1.66, 1.25, 1.94, 0.545, 1.430, 3.40, { shiftCut: 0.015, roll: 0.35, pitch: 1.43 }],
+    ['ferrari_f2004', 'FERRARI F2004 V10 F1 (2004)', 'F1', 362, 605, 7, 19000, 'OPEN_WHEEL', 'none', 'none', 'na_screamer', -0.35, 2.38, 1.56, 1.24, 1.96, 0.485, 1.380, 3.05, { shiftCut: 0.020, roll: 0.36, pitch: 1.72 }]
+  ];
+
+  rows.forEach(r => {
+    const [id, name, carClass, topKmh, weightKg, gears, redline, layout, abs, tc, torque, lineBias, accel, launch, brake, muLat, df, drag, wb, ex] = r;
+    const cornerMult = carClass === 'GT3' ? 1.0 : Number(((muLat / 1.48) * (1 + Math.max(0, df - 0.135) * 0.65)).toFixed(2));
+    const shiftEff = carClass === 'F1' ? 0.995 : (carClass === 'LMP1' ? 0.990 : (carClass === 'TRACK' ? 0.985 : (carClass === 'HYPER' ? 0.982 : (carClass === 'GT3' ? 0.955 : 0.950))));
+    const steerScale = layout === 'OPEN_WHEEL' ? 1.12 : (carClass === 'LMP1' ? 1.13 : (layout === 'FF' ? 1.16 : 1.14));
+    const usCoeff = layout === 'OPEN_WHEEL' ? 0.00030 : (carClass === 'LMP1' ? 0.00050 : (layout === 'FF' ? 0.00145 : (carClass === 'SPORT' ? 0.00135 : (carClass === 'STREET' ? 0.00105 : 0.00086))));
+    const agility = layout === 'OPEN_WHEEL' ? 1.72 : (carClass === 'LMP1' ? 1.46 : (carClass === 'TRACK' ? 1.36 : (carClass === 'GT3' ? 1.17 : (carClass === 'HYPER' ? 1.24 : 1.02))));
+    const baseRamp = layout === 'OPEN_WHEEL' ? 3.42 : (carClass === 'LMP1' ? 3.10 : (carClass === 'TRACK' ? 2.94 : (carClass === 'HYPER' ? 2.82 : (carClass === 'GT3' ? 2.75 : 2.45))));
+    CAR_HANDLING_PROFILES[id] = {
+      name,
+      carClass,
+      classSpec: buildClassSpec(carClass, cornerMult, accel, launch, brake, topKmh, drag, df, muLat, weightKg, shiftEff, lineBias),
+      wheelbase: wb,
+      maxSteerDeg: layout === 'OPEN_WHEEL' ? 25.5 : (carClass === 'SPORT' ? 24.2 : 23.2),
+      baseMuLat: muLat,
+      understeerCoeff: usCoeff,
+      turnInAgility: agility,
+      highSpeedLockFactor: layout === 'OPEN_WHEEL' ? 0.44 : (carClass === 'LMP1' ? 0.38 : 0.33),
+      steerRampRate: baseRamp,
+      autoCenterDamping: layout === 'OPEN_WHEEL' ? 0.0045 : 0.0053,
+      powerFactor: accel,
+      launchFactor: launch,
+      accelFactor: accel,
+      aeroDragFactor: drag,
+      aeroDownforceCoeff: df,
+      brakeFactor: brake,
+      weightKg,
+      maxGears: gears,
+      gearSpeeds: carClass === 'GT3' ? undefined : buildGears(topKmh, gears, layout),
+      idleRpm: carClass === 'F1' ? 4000 : (carClass === 'LMP1' ? 1600 : 1100),
+      redlineRpm: redline,
+      shiftCutSec: ex.shiftCut || 0.06,
+      pitchTone: ex.pitch || 1.00,
+      bodyRollMult: ex.roll || 1.00
+    };
+    CAR_CHASSIS_TRAITS_MAP[id] = { layout, absMode: abs, tcMode: tc, torqueCurve: torque, lineBias, steerScale };
+  });
+})();
+
 Object.entries(CAR_CHASSIS_TRAITS_MAP).forEach(([cid, tr]) => {
   const cp = CAR_HANDLING_PROFILES[cid];
   if (!cp) return;
@@ -968,6 +1076,231 @@ Object.entries(CAR_CHASSIS_TRAITS_MAP).forEach(([cid, tr]) => {
   cp.steerRampRate = Number((cp.steerRampRate * (tr.steerScale || 1.12)).toFixed(3));
   if (cp.classSpec) cp.classSpec.lineBias = tr.lineBias;
 });
+
+const PI_CLASS_BANDS = {
+  D:   { id: 'D',   range: 'PI <=480',   label: 'D · 入門輕跑',   short: 'D',   color: '#2dd4bf' },
+  C:   { id: 'C',   range: 'PI 481-550', label: 'C · 鋼砲/經典',  short: 'C',   color: '#34d399' },
+  B:   { id: 'B',   range: 'PI 551-630', label: 'B · 現代超跑',   short: 'B',   color: '#a3e635' },
+  GT3: { id: 'GT3', range: 'PI 600-610', label: 'GT3 · 統規廠車', short: 'GT3', color: '#fb923c' },
+  A:   { id: 'A',   range: 'PI 631-680', label: 'A · 公路神車',   short: 'A',   color: '#c084fc' },
+  S:   { id: 'S',   range: 'PI 681-710', label: 'S · 終極神獸',   short: 'S',   color: '#e879f9' },
+  R:   { id: 'R',   range: 'PI 711-780', label: 'R · 賽道頂尖',   short: 'R',   color: '#f59e0b' },
+  LMH: { id: 'LMH', range: 'PI 781-840', label: 'LMH · 耐力原型', short: 'LMH', color: '#38bdf8' },
+  X:   { id: 'X',   range: 'PI 841-955', label: 'X · 終極原型',   short: 'X',   color: '#818cf8' },
+  F1:  { id: 'F1',  range: 'PI 956-999', label: 'F1 · 方程式',    short: 'F1',  color: '#f43f5e' }
+};
+
+const CAR_PI_AND_CLASS_TABLE = {
+  // D Class (PI <= 480)
+  nissan_xtrail: [366, 'D', 'daily'],
+  toyota_ae86: [415, 'D', 'daily'],
+  mazda_mx5: [460, 'D', 'daily'],
+  lamborghini_countach: [472, 'D', 'classic'],
+  // C Class (PI 481-550)
+  subaru_wrx_sti: [505, 'C', 'hothatch'],
+  toyota_supra_mk4: [507, 'C', 'classic'],
+  honda_civic_type_r: [511, 'C', 'hothatch'],
+  dodge_challenger_srt: [520, 'C', 'muscle'],
+  mercedes_amg_c63: [526, 'C', 'muscle'],
+  honda_nsx_r: [529, 'C', 'classic'],
+  porsche_959: [530, 'C', 'classic'],
+  ferrari_f40_lbw: [537, 'C', 'classic'],
+  // B Class (PI 551-630)
+  aston_vantage_59_amr: [559, 'B', 'gt'],
+  lamborghini_aventador: [587, 'B', 'supercar'],
+  nissan_gtr_nismo: [592, 'B', 'supercar'],
+  ferrari_812_competizione: [609, 'B', 'gt'],
+  mclaren_f1: [615, 'B', 'supercar'],
+  mclaren_765lt: [623, 'B', 'supercar'],
+  porsche_911_gt3_rs: [626, 'B', 'track_road'],
+  // GT3 Spec Class (PI 600-610)
+  procedural: [600, 'GT3', 'eu'],
+  ferrari458: [600, 'GT3', 'eu'],
+  porsche911: [600, 'GT3', 'eu'],
+  amggt3: [600, 'GT3', 'eu'],
+  ferrari_296_gt3: [600, 'GT3', 'eu'],
+  ferrari_488_gt3: [600, 'GT3', 'eu'],
+  lamborghini_huracan_gt3: [600, 'GT3', 'eu'],
+  mclaren_650s_gt3: [600, 'GT3', 'eu'],
+  acura_nsx_gt3_evo: [605, 'GT3', 'jp'],
+  lexus_rc_f_gt3: [605, 'GT3', 'jp'],
+  audi_r8_lms_evo: [606, 'GT3', 'eu'],
+  corvette_z06_gt3r: [606, 'GT3', 'us'],
+  nissan_gtr_gt3: [607, 'GT3', 'jp'],
+  ford_mustang_gt3: [608, 'GT3', 'us'],
+  // A Class (PI 631-680)
+  lamborghini_centenario: [634, 'A', 'vmax'],
+  lamborghini_sc20: [638, 'A', 'vmax'],
+  lamborghini_veneno: [643, 'A', 'vmax'],
+  lamborghini_revuelto: [647, 'A', 'hybrid'],
+  ferrari_laferrari: [654, 'A', 'hybrid'],
+  mclaren_speedtail: [659, 'A', 'hybrid'],
+  bugatti_veyron_ss: [663, 'A', 'vmax'],
+  porsche_918_spyder: [664, 'A', 'hybrid'],
+  mclaren_p1: [664, 'A', 'hybrid'],
+  ferrari_sf90_xx: [671, 'A', 'hybrid'],
+  koenigsegg_agera: [671, 'A', 'vmax'],
+  // S Class (PI 681-710)
+  zenvo_tsrs: [689, 'S', 'aero'],
+  bugatti_chiron_pur_sport: [692, 'S', 'vmax'],
+  amg_one: [695, 'S', 'aero'],
+  aston_vulcan: [697, 'S', 'aero'],
+  rimac_nevera: [698, 'S', 'vmax'],
+  bugatti_tourbillon: [704, 'S', 'vmax'],
+  koenigsegg_one1: [708, 'S', 'vmax'],
+  // R Class (PI 711-780)
+  mclaren_p1_gtr: [713, 'R', 'track'],
+  mclaren_f1_gtr_longtail: [714, 'R', 'gt1'],
+  lamborghini_essenza: [714, 'R', 'track'],
+  mclaren_senna: [721, 'R', 'track'],
+  koenigsegg_jesko_attack: [729, 'R', 'track'],
+  pagani_zonda_r: [739, 'R', 'gt1'],
+  ferrari_fxxk_evo: [746, 'R', 'track'],
+  alpine_vision: [749, 'R', 'proto'],
+  pagani_huayra_r: [754, 'R', 'track'],
+  mazda_furai: [774, 'R', 'proto'],
+  // LMH Class (PI 781-840)
+  cadillac_v_seriesr: [803, 'LMH', 'wec'],
+  porsche_963: [806, 'LMH', 'wec'],
+  bugatti_bolide: [807, 'LMH', 'concept'],
+  ferrari_499p: [811, 'LMH', 'wec'],
+  mercedes_silver_lightning: [820, 'LMH', 'concept'],
+  lamborghini_terzo: [821, 'LMH', 'concept'],
+  mercedes_sauber_c9: [827, 'LMH', 'wec'],
+  // X Class (PI 841-955)
+  mclaren_ultimate_vgt: [868, 'X', 'vgt'],
+  mazda_lm_vision: [876, 'X', 'vgt'],
+  mclaren_x2: [925, 'X', 'vgt'],
+  porsche_919_evo: [947, 'X', 'unlimited'],
+  // F1 Class (PI 956-999)
+  f1_2025_mcl39: [970, 'F1', 'modern'],
+  f1_2026_mac26: [973, 'F1', 'modern'],
+  f1_2026_r26: [975, 'F1', 'modern'],
+  f1_2026_sf26: [976, 'F1', 'modern'],
+  f1_2026_w17: [977, 'F1', 'modern'],
+  f1_2026_rb22: [983, 'F1', 'modern'],
+  ferrari_f2004: [995, 'F1', 'classic']
+};
+
+Object.entries(CAR_PI_AND_CLASS_TABLE).forEach(([cid, info]) => {
+  const cp = CAR_HANDLING_PROFILES[cid];
+  if (!cp) return;
+  cp.pi = info[0];
+  cp.carClass = info[1];
+  cp.subGroup = info[2];
+  if (cp.classSpec) cp.classSpec.carClass = info[1];
+});
+
+const CLASS_STAT_MEDIANS = (() => {
+  const buckets = {};
+  Object.keys(CAR_PI_AND_CLASS_TABLE).forEach(cid => {
+    const cp = CAR_HANDLING_PROFILES[cid];
+    if (!cp) return;
+    const cls = cp.carClass || 'GT3';
+    if (!buckets[cls]) buckets[cls] = [];
+    buckets[cls].push(cp);
+  });
+  const median = (arr) => {
+    const s = arr.slice().sort((a, b) => a - b);
+    return s.length ? s[Math.floor(s.length / 2)] : 1;
+  };
+  const out = {};
+  Object.entries(buckets).forEach(([cls, list]) => {
+    out[cls] = {
+      topSpeedKmh: median(list.map(c => (c.classSpec && c.classSpec.topSpeedKmh) || 305)),
+      accelFactor: median(list.map(c => c.accelFactor || 1.0)),
+      launchFactor: median(list.map(c => c.launchFactor || 1.0)),
+      baseMuLat: median(list.map(c => c.baseMuLat || 1.48)),
+      aeroDownforceCoeff: median(list.map(c => Math.max(0.01, c.aeroDownforceCoeff || 0.135))),
+      brakeFactor: median(list.map(c => c.brakeFactor || 1.0)),
+      weightKg: median(list.map(c => c.weightKg || 1250))
+    };
+  });
+  return out;
+})();
+
+const CAR_PERF_PROFILE_CACHE = {};
+
+function getCarPerformanceProfile(carId) {
+  const pid = carId || (typeof carAssetState !== 'undefined' && carAssetState ? carAssetState.presetId : 'procedural');
+  if (CAR_PERF_PROFILE_CACHE[pid]) return CAR_PERF_PROFILE_CACHE[pid];
+  const cp = CAR_HANDLING_PROFILES[pid] || CAR_HANDLING_PROFILES.procedural;
+  const cls = cp.carClass || 'GT3';
+  const band = PI_CLASS_BANDS[cls] || PI_CLASS_BANDS.GT3;
+  const med = CLASS_STAT_MEDIANS[cls] || CLASS_STAT_MEDIANS.GT3;
+  const top = (cp.classSpec && cp.classSpec.topSpeedKmh) || 305;
+  const acc = cp.accelFactor || 1.0;
+  const lch = cp.launchFactor || 1.0;
+  const mu = cp.baseMuLat || 1.48;
+  const df = cp.aeroDownforceCoeff || 0.135;
+  const brk = cp.brakeFactor || 1.0;
+  const wt = cp.weightKg || 1250;
+
+  const dTop = (top - med.topSpeedKmh) / Math.max(1, med.topSpeedKmh);
+  const dAcc = (acc - med.accelFactor) / Math.max(0.1, med.accelFactor);
+  const dLch = (lch - med.launchFactor) / Math.max(0.1, med.launchFactor);
+  const dMu = (mu - med.baseMuLat) / Math.max(0.1, med.baseMuLat);
+  const dDf = (df - med.aeroDownforceCoeff) / Math.max(0.02, med.aeroDownforceCoeff);
+  const dBrk = (brk - med.brakeFactor) / Math.max(0.1, med.brakeFactor);
+  const dWt = (med.weightKg - wt) / Math.max(200, med.weightKg);
+
+  const candidates = [
+    { tag: '🚀 極速霸主', score: dTop * 1.15 },
+    { tag: '🔥 狂暴加速', score: dAcc * 0.90 },
+    { tag: '⚡ 彈射起步', score: dLch * 0.95 },
+    { tag: '🌪 高空力下壓', score: dDf * 0.55 },
+    { tag: '🎯 彎道極限', score: dMu * 1.25 },
+    { tag: '🛑 重煞制動', score: dBrk * 1.00 },
+    { tag: '🪶 極致輕量', score: dWt * 0.85 }
+  ].sort((a, b) => b.score - a.score);
+
+  const strengthTags = [];
+  for (let i = 0; i < candidates.length && strengthTags.length < 2; i++) {
+    if (candidates[i].score >= 0.018) strengthTags.push(candidates[i].tag);
+  }
+  if (strengthTags.length === 0) {
+    strengthTags.push('⚖ 全能均衡');
+  } else if (strengthTags.length === 1 && candidates[1].score >= 0.008) {
+    strengthTags.push(candidates[1].tag);
+  }
+
+  let tradeoffTag = '✔ 操控均衡易上手';
+  if (cp.layout === 'SUV') tradeoffTag = '⚠ 高重心側傾大';
+  else if (cp.layout === 'FF') tradeoffTag = '⚠ 前驅重油易推頭';
+  else if (cp.absMode === 'none' && cp.tcMode === 'none') tradeoffTag = '⚠ 無 ABS/TC 考驗技術';
+  else if (dWt <= -0.11 || wt >= 1780) tradeoffTag = '⚠ 重車需早煞';
+  else if (dTop <= -0.055) tradeoffTag = '⚠ 直線尾速偏低';
+  else if (dMu <= -0.045 || dDf <= -0.30) tradeoffTag = '⚠ 彎道抓地偏弱';
+  else if (cp.tcMode === 'none') tradeoffTag = '⚠ 無 TC 出彎需控油';
+  else if (dLch <= -0.09) tradeoffTag = '⚠ 起步爆發偏溫和';
+
+  const balance = (dMu * 1.3 + dDf * 0.55 + dBrk * 0.8) - (dTop * 1.2 + dAcc * 0.6);
+  let bestTrackType = '⚖ 全能綜合適性（斯帕／紅牛環／COTA）';
+  if (balance >= 0.06) bestTrackType = '🌀 技術多彎優勢（鈴鹿／銀石／英特拉格斯）';
+  else if (balance <= -0.06) bestTrackType = '🛣 高速直道優勢（蒙札／斯帕）';
+
+  const pi = (typeof cp.pi === 'number')
+    ? cp.pi
+    : Math.max(350, Math.min(999, Math.round(600 + (mu - 1.48) * 140 + (acc - 1.0) * 110)));
+
+  const res = {
+    id: pid,
+    pi,
+    carClass: cls,
+    band,
+    subGroup: cp.subGroup || 'eu',
+    strengthTags,
+    tradeoffTag,
+    bestTrackType,
+    balanceScore: Number(balance.toFixed(3))
+  };
+  if (CAR_HANDLING_PROFILES[pid]) CAR_PERF_PROFILE_CACHE[pid] = res;
+  return res;
+}
+
+window.PI_CLASS_BANDS = PI_CLASS_BANDS;
+window.CAR_PI_AND_CLASS_TABLE = CAR_PI_AND_CLASS_TABLE;
+window.getCarPerformanceProfile = getCarPerformanceProfile;
 
 function getCarChassisTraits(carProfile) {
   const cp = carProfile || getCurrentCarHandling();
@@ -2271,18 +2604,20 @@ function stepPhysics(dt) {
   const baseTrailBonus = (chassisTraits.layout === 'RR') ? 0.19
     : (chassisTraits.layout === 'MR' ? 0.15
     : (chassisTraits.layout === 'OPEN_WHEEL' ? 0.14
+    : (chassisTraits.layout === 'FF' ? 0.13
     : (chassisTraits.layout === 'AWD' ? 0.09
-    : (chassisTraits.layout === 'SUV' ? 0.07 : 0.12))));
+    : (chassisTraits.layout === 'SUV' ? 0.07 : 0.12)))));
   const trailBrakeBonus = 1.0 + trailBlend * Math.max(0.02, baseTrailBonus + setupMods.trailBonusDelta);
 
   // Smooth longitudinal-to-lateral weight transfer differentiated by drivetrain layout
   const thrLoad = Math.max(0, (thr - 0.35) / 0.65);
   const steerLoad = Math.min(1.0, Math.abs(simState.steerInput) / 0.55);
-  const chassisPowerPush = (chassisTraits.layout === 'AWD') ? 0.072
+  const chassisPowerPush = (chassisTraits.layout === 'FF') ? 0.135
+    : (chassisTraits.layout === 'AWD' ? 0.072
     : (chassisTraits.layout === 'SUV' ? 0.115
     : (chassisTraits.layout === 'RR' ? 0.048
     : (chassisTraits.layout === 'MR' ? 0.055
-    : (chassisTraits.layout === 'OPEN_WHEEL' ? 0.042 : (carProfile.understeerCoeff || 0.001) * 72.0))));
+    : (chassisTraits.layout === 'OPEN_WHEEL' ? 0.042 : (carProfile.understeerCoeff || 0.001) * 72.0)))));
   const throttleWeightTransfer = 1.0 - thrLoad * steerLoad * chassisPowerPush;
 
   const heavyBrkExcess = Math.max(0, (brk - 0.78) / 0.22);

@@ -13,11 +13,16 @@ if (window.__apexTrace) window.__apexTrace('records.js', 'START');
   const LEGACY_MIGRATED_KEY = 'apexpro.records_migrated_v1';
 
   const CLASS_META = {
-    STREET: { id: 'STREET', label: 'STREET · CLASS A', shortLabel: 'STREET', color: '#34d399', bg: 'rgba(52,211,153,0.16)' },
-    GT3: { id: 'GT3', label: 'GT3 · CLASS S', shortLabel: 'GT3', color: '#fb923c', bg: 'rgba(251,146,60,0.16)' },
-    HYPER: { id: 'HYPER', label: 'HYPER · CLASS R', shortLabel: 'HYPER', color: '#c084fc', bg: 'rgba(192,132,252,0.16)' },
-    LMP1: { id: 'LMP1', label: 'LMP1 · CLASS X', shortLabel: 'LMP1', color: '#38bdf8', bg: 'rgba(56,189,248,0.16)' },
-    F1: { id: 'F1', label: 'F1 · CLASS F1', shortLabel: 'F1', color: '#f43f5e', bg: 'rgba(244,63,94,0.16)' },
+    D:   { id: 'D',   label: 'D · 入門輕跑',   shortLabel: 'D',   color: '#2dd4bf', bg: 'rgba(45,212,191,0.16)' },
+    C:   { id: 'C',   label: 'C · 鋼砲/經典',  shortLabel: 'C',   color: '#34d399', bg: 'rgba(52,211,153,0.16)' },
+    B:   { id: 'B',   label: 'B · 現代超跑',   shortLabel: 'B',   color: '#a3e635', bg: 'rgba(163,230,53,0.16)' },
+    GT3: { id: 'GT3', label: 'GT3 · 統規廠車', shortLabel: 'GT3', color: '#fb923c', bg: 'rgba(251,146,60,0.16)' },
+    A:   { id: 'A',   label: 'A · 公路神車',   shortLabel: 'A',   color: '#c084fc', bg: 'rgba(192,132,252,0.16)' },
+    S:   { id: 'S',   label: 'S · 終極神獸',   shortLabel: 'S',   color: '#e879f9', bg: 'rgba(232,121,249,0.16)' },
+    R:   { id: 'R',   label: 'R · 賽道頂尖',   shortLabel: 'R',   color: '#f59e0b', bg: 'rgba(245,158,11,0.16)' },
+    LMH: { id: 'LMH', label: 'LMH · 耐力原型', shortLabel: 'LMH', color: '#38bdf8', bg: 'rgba(56,189,248,0.16)' },
+    X:   { id: 'X',   label: 'X · 終極原型',   shortLabel: 'X',   color: '#818cf8', bg: 'rgba(129,140,248,0.16)' },
+    F1:  { id: 'F1',  label: 'F1 · 方程式',    shortLabel: 'F1',  color: '#f43f5e', bg: 'rgba(244,63,94,0.16)' },
     CUSTOM: { id: 'CUSTOM', label: 'CUSTOM · OPEN', shortLabel: 'CUSTOM', color: '#94a3b8', bg: 'rgba(148,163,184,0.16)' }
   };
 
@@ -355,7 +360,7 @@ if (window.__apexTrace) window.__apexTrace('records.js', 'START');
     if (typeof window !== 'undefined' && typeof window.estimateClassProLapTime === 'function' && cIdx >= 0) {
       proTime = window.estimateClassProLapTime(cIdx, carClass, weather);
     } else {
-      const CLASS_PRO_MULT = { STREET: 1.135, GT3: 1.0, HYPER: 0.895, LMP1: 0.750, F1: 0.695 };
+      const CLASS_PRO_MULT = { D: 1.275, C: 1.105, B: 1.005, GT3: 1.000, A: 0.925, S: 0.885, R: 0.855, LMH: 0.795, X: 0.725, F1: 0.675 };
       const clsMult = CLASS_PRO_MULT[carClass] || 1.0;
       const wetMult = (weather === 'wet') ? 1.125 : 1.0;
       proTime = proTime * clsMult * wetMult;

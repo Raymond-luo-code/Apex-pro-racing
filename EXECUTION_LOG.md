@@ -1268,3 +1268,41 @@ Script error. at module(main.js:START):0:0
   - `python scratch/test_proposal.py` (`ALL PROPOSAL TESTS PASSED: 44/44`)
   - `python scratch/verify_all_cars_and_garage.py` (all 29 `.glb` / 33 cars & 5-class physics/garage/leaderboard verified)
   - `.\launch_apex_desktop.bat --check` (`APEX DESKTOP SERVER SELF-CHECK PASSED 100%!`)
+
+### [2026-11-28] 79-Car Garage Expansion (+46 New GLBs), 7-Class Hierarchy Refinement & FF Physics
+- **7-Class Roster & Reclassifications (`js/circuits.js`, `js/records.js`, `index.html`, `js/physics.js`, `js/render.js`, `js/flow.js`)**:
+  - Replaced `amg_one` GLB with `new_mercedes-amg_project_one.glb` and `ferrari_laferrari` GLB with `new_ferrari_laferrari.glb` (preserving original physics).
+  - Imported all **46** additional local `.glb` vehicles in `assets/models/cars/` calibrated to real-world specs -> expanded roster from 33 to **79 total cars** (**75 local GLBs** + 4 builtin GT3s).
+  - Refined the class structure from 5 to **7 fair competitive classes** with sub-tier filters (`GARAGE_CLASS_META`):
+    - `SPORT` (`7` cars: `daily`, `hothatch`, `muscle`; relocated `nissan_xtrail` from `STREET`)
+    - `STREET` (`11` cars: `classic`, `supercar`)
+    - `GT3` (`14` cars: `eu`, `jp`, `us`; strict FIA GT3 BoP)
+    - `HYPER` (`18` cars: `hybrid`, `vmax`; relocated `amg_one` from `LMP1`)
+    - `TRACK` (`10` cars: `modern`, `gt1`; separated 7 track hypercars from `HYPER` + added Bolide / Zonda R / F1 GTR Longtail)
+    - `LMP1` (`12` cars: `wec`, `vision`)
+    - `F1` (`7` cars: `modern`, `classic`)
+- **Authentic Physics & Visual Normalization (`js/physics.js`, `js/render.js`)**:
+  - Added `FF` (Front-Wheel Drive) drivetrain handling for `honda_civic_type_r` (lift-off/trail-brake rotation `0.13`, throttle understeer weight transfer `0.135`) and UI label/tip in `js/flow.js`.
+  - Audited all 46 new GLBs in headless Chrome; applied `extraRotY: Math.PI` on 15 backward-facing models (including `mclaren_f1`), `hideNodeRegex: /^Object_(2|23|32)$/i` on `mclaren_f1` to strip studio backdrop planes, token-aware material role matching in `classifyHiFiMaterials` (`rim` / `paint_` collision fix for `Rimac_Nevera` & `Bugatti_Chiron`), high-mesh non-player shadow guard (`meshes <= 300`), and dynamic sub-group AI matching (`syncAIMultiCarModels`).
+- **Verification (All Exited 0)**:
+  - `python scratch/check_syntax.py` (9/9 JS OK)
+  - `python scratch/verify_all_cars_and_garage.py` (75/75 local GLBs & 79/79 catalog cars, 7-class garage UI/sub-filters, Monza PRO pace order `SPORT 136.95 > STREET 117.76 > GT3 103.75 > HYPER 94.41 > TRACK 88.71 > LMP1 77.81 > F1 72.11`, AI sub-tier matching, `FF` layout & 7-class leaderboard isolation)
+  - `python scratch/verify_vehicle_performance.py` (`ALL REAL-WORLD VEHICLE PERFORMANCE GAPS ACROSS 5 CLASSES VERIFIED 100%!`)
+  - `python scratch/verify_driving_experience.py` (all driving & chassis personality checks passed)
+  - `python scratch/test_proposal.py` (`44/44`)
+  - `python scratch/test_rfc_improvements.py` (`38 PASSED, 0 FAILED`)
+  - `python scratch/verify_multiplayer.py` (Part A + Part B dual-Chrome E2E passed)
+  - `.\launch_apex_desktop.bat --check` (`APEX DESKTOP SERVER SELF-CHECK PASSED 100%!`)
+
+### [2026-11-28] 10-Class PI Rating System (PI 366-995) & Multi-Dimensional Strength Profiles
+- **Physics-Benchmarked PI & 10 Tight Classes (`js/physics.js`, `js/circuits.js`, `js/records.js`, `js/render.js`)**:
+  - Assigned empirical **PI (366–995)** from Monza/Spa/Suzuka benchmark laps to all **79** cars via `PI_CLASS_BANDS` & `CAR_PI_AND_CLASS_TABLE`, splitting them into **10 balanced classes**:
+    `D` (4, PI <=480), `C` (8, PI 481-550), `B` (7, PI 551-630), `GT3` (14, PI 600-610), `A` (11, PI 631-680), `S` (7, PI 681-710), `R` (10, PI 711-780), `LMH` (7, PI 781-840), `X` (4, PI 841-955), `F1` (7, PI 956-999).
+  - Kept all vehicle physics parameters unchanged; updated `syncAIMultiCarModels` to match closest-PI opponents (`subGroup` tiebreak) within the player's class.
+- **Anti-Oversimplification Strength / Trade-Off / Track Badges (`js/physics.js`, `js/flow.js`, `index.html`)**:
+  - Implemented `getCarPerformanceProfile(carId)` computing relative deltas vs class medians to surface 1-2 `strengthTags` (`極速霸主`, `狂暴加速`, `彈射起步`, `高空力下壓`, `彎道極限`, `重煞制動`, `極致輕量`), a `tradeoffTag` (e.g. `重車需早煞`, `直線尾速偏低`, `無 ABS/TC 考驗技術`, `前驅重油易推頭`), and `bestTrackType` (Technical vs High-Speed vs All-Round).
+  - Rendered `.af-pi-badge` and `.af-strength-chip` on every `.af-car-card`, `#gar-perf-profile` in the Garage detail sidebar, strength-aware search filtering, PI-ascending card sorting, and 10-class pills across Records (`#rec-class-pills`) & Multiplayer.
+- **Verification (All Exited 0)**:
+  - `python scratch/check_syntax.py` (9/9 OK)
+  - `python scratch/verify_all_cars_and_garage.py` (75/75 GLBs, 79/79 cars, 10-class counts/PI spreads/strength differentiation & 10-class pace hierarchy + anti-pollution leaderboard isolation)
+  - `python scratch/verify_vehicle_performance.py`, `python scratch/verify_driving_experience.py`, `python scratch/test_proposal.py` (`44/44`), `python scratch/test_rfc_improvements.py` (`38/38`), `python scratch/verify_multiplayer.py` (Part A + Part B E2E), `.\launch_apex_desktop.bat --check`

@@ -9,7 +9,7 @@ const CAR_CATALOG = [
     id: 'procedural',
     carClass: 'GT3',
     brand: 'BMW',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'BMW M4 GT3 EVO // APEX WORKS',
     shortTag: '高精度 3D 模型 · 3.0L 雙渦輪直六',
@@ -24,7 +24,7 @@ const CAR_CATALOG = [
     id: 'ferrari458',
     carClass: 'GT3',
     brand: 'Ferrari',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'FERRARI 458 ITALIA GT3',
     shortTag: '高精度 3D 模型 · 4.5L V8 超跑',
@@ -39,7 +39,7 @@ const CAR_CATALOG = [
     id: 'porsche911',
     carClass: 'GT3',
     brand: 'Porsche',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'PORSCHE 911 GT3 R (992)',
     shortTag: '高精度 3D 模型 · 斯圖加特 RR 六缸',
@@ -54,7 +54,7 @@ const CAR_CATALOG = [
     id: 'amggt3',
     carClass: 'GT3',
     brand: 'Mercedes-AMG',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'MERCEDES-AMG GT3 EVO',
     shortTag: '高精度 3D 模型 · 前中置 6.2L V8',
@@ -69,7 +69,7 @@ const CAR_CATALOG = [
     id: 'ferrari_296_gt3',
     carClass: 'GT3',
     brand: 'Ferrari',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'FERRARI 296 GT3',
     shortTag: '本地高模 GLB · 3.0L V6 雙渦輪新世代',
@@ -84,7 +84,7 @@ const CAR_CATALOG = [
     id: 'ferrari_488_gt3',
     carClass: 'GT3',
     brand: 'Ferrari',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'FERRARI 488 GT3 EVO',
     shortTag: '本地高模 GLB · 3.9L V8 雙渦輪耐力王',
@@ -99,7 +99,7 @@ const CAR_CATALOG = [
     id: 'lamborghini_huracan_gt3',
     carClass: 'GT3',
     brand: 'Lamborghini',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'LAMBORGHINI HURACAN GT3 EVO2',
     shortTag: '本地高模 GLB · 5.2L V10 NA 蠻牛戦車',
@@ -114,7 +114,7 @@ const CAR_CATALOG = [
     id: 'mclaren_650s_gt3',
     carClass: 'GT3',
     brand: 'McLaren',
-    subGroup: 'gt3',
+    subGroup: 'eu',
     classLabel: 'GT3 · CLASS S',
     name: 'MCLAREN 650S GT3',
     shortTag: '本地高模 GLB · 3.8L V8 碳纖單體座艙',
@@ -125,13 +125,13 @@ const CAR_CATALOG = [
     defaultPaint: '#f97316',
     unlocked: true
   },
-  // --- HYPER / CLASS R ---
+  // --- TRACK / CLASS R+ ---
   {
     id: 'aston_vulcan',
-    carClass: 'HYPER',
+    carClass: 'TRACK',
     brand: 'Aston Martin',
-    subGroup: 'track',
-    classLabel: 'HYPER · CLASS R',
+    subGroup: 'modern',
+    classLabel: 'TRACK · CLASS R+',
     name: 'ASTON MARTIN VULCAN AMR PRO',
     shortTag: '本地高模 GLB · 7.0L V12 賽道限定',
     origin: '🇬🇧 英國蓋登 · 7.0L V12 NA · 前中置後驅 (FMR)',
@@ -143,10 +143,10 @@ const CAR_CATALOG = [
   },
   {
     id: 'mclaren_senna',
-    carClass: 'HYPER',
+    carClass: 'TRACK',
     brand: 'McLaren',
-    subGroup: 'track',
-    classLabel: 'HYPER · CLASS R',
+    subGroup: 'modern',
+    classLabel: 'TRACK · CLASS R+',
     name: 'MCLAREN SENNA GTR-SPEC',
     shortTag: '本地高模 GLB · 4.0L V8 極致空力',
     origin: '🇬🇧 沃金 MTC · 4.0L V8 雙渦輪 · 中置後驅 (MR)',
@@ -158,10 +158,10 @@ const CAR_CATALOG = [
   },
   {
     id: 'zenvo_tsrs',
-    carClass: 'HYPER',
+    carClass: 'TRACK',
     brand: 'Zenvo',
-    subGroup: 'track',
-    classLabel: 'HYPER · CLASS R',
+    subGroup: 'modern',
+    classLabel: 'TRACK · CLASS R+',
     name: 'ZENVO TSR-S ACTIVE WING',
     shortTag: '本地高模 GLB · 5.8L 主動傾角尾翼',
     origin: '🇩🇰 丹麥普雷斯特 · 5.8L V8 雙機械增壓 · 中置後驅 (MR)',
@@ -173,10 +173,10 @@ const CAR_CATALOG = [
   },
   {
     id: 'pagani_huayra_r',
-    carClass: 'HYPER',
+    carClass: 'TRACK',
     brand: 'Pagani',
-    subGroup: 'track',
-    classLabel: 'HYPER · CLASS R',
+    subGroup: 'modern',
+    classLabel: 'TRACK · CLASS R+',
     name: 'PAGANI HUAYRA R EVO ROADSTER',
     shortTag: '本地高模 GLB · HWA 6.0L V12 長尾',
     origin: '🇮🇹 摩德納 · 6.0L V12-R EVO · 中置後驅 (MR)',
@@ -188,10 +188,10 @@ const CAR_CATALOG = [
   },
   {
     id: 'mclaren_p1_gtr',
-    carClass: 'HYPER',
+    carClass: 'TRACK',
     brand: 'McLaren',
-    subGroup: 'track',
-    classLabel: 'HYPER · CLASS R',
+    subGroup: 'modern',
+    classLabel: 'TRACK · CLASS R+',
     name: 'MCLAREN P1 GTR TRACK',
     shortTag: '本地高模 GLB · 986 HP 油電賽道限定',
     origin: '🇬🇧 英國沃金 · 3.8L V8 + 電機 IPAS · 中置後驅 (MR)',
@@ -203,10 +203,10 @@ const CAR_CATALOG = [
   },
   {
     id: 'ferrari_fxxk_evo',
-    carClass: 'HYPER',
+    carClass: 'TRACK',
     brand: 'Ferrari',
-    subGroup: 'track',
-    classLabel: 'HYPER · CLASS R',
+    subGroup: 'modern',
+    classLabel: 'TRACK · CLASS R+',
     name: 'FERRARI FXX-K EVO',
     shortTag: '本地高模 GLB · 1,036 HP XX 賽道研發',
     origin: '🇮🇹 馬拉內羅 XX 實驗計畫 · 6.3L V12 HY-KERS · 中置後驅',
@@ -218,10 +218,10 @@ const CAR_CATALOG = [
   },
   {
     id: 'lamborghini_essenza',
-    carClass: 'HYPER',
+    carClass: 'TRACK',
     brand: 'Lamborghini',
-    subGroup: 'track',
-    classLabel: 'HYPER · CLASS R',
+    subGroup: 'modern',
+    classLabel: 'TRACK · CLASS R+',
     name: 'LAMBORGHINI ESSENZA SCV12',
     shortTag: '本地高模 GLB · 最強自然進氣 V12',
     origin: '🇮🇹 Squadra Corse · 6.5L V12 NA · 中置後驅 (MR)',
@@ -235,7 +235,7 @@ const CAR_CATALOG = [
     id: 'ferrari_laferrari',
     carClass: 'HYPER',
     brand: 'Ferrari',
-    subGroup: 'road',
+    subGroup: 'hybrid',
     classLabel: 'HYPER · CLASS R',
     name: 'FERRARI LAFERRARI',
     shortTag: '本地高模 GLB · 950 HP 油電馬王旗艦',
@@ -250,7 +250,7 @@ const CAR_CATALOG = [
     id: 'mclaren_p1',
     carClass: 'HYPER',
     brand: 'McLaren',
-    subGroup: 'road',
+    subGroup: 'hybrid',
     classLabel: 'HYPER · CLASS R',
     name: 'MCLAREN P1',
     shortTag: '本地高模 GLB · 903 HP IPAS 油電神車',
@@ -265,7 +265,7 @@ const CAR_CATALOG = [
     id: 'ferrari_sf90_xx',
     carClass: 'HYPER',
     brand: 'Ferrari',
-    subGroup: 'road',
+    subGroup: 'hybrid',
     classLabel: 'HYPER · CLASS R',
     name: 'FERRARI SF90 XX STRADALE',
     shortTag: '本地高模 GLB · 1,016 HP 街車化 XX',
@@ -280,7 +280,7 @@ const CAR_CATALOG = [
     id: 'lamborghini_revuelto',
     carClass: 'HYPER',
     brand: 'Lamborghini',
-    subGroup: 'road',
+    subGroup: 'hybrid',
     classLabel: 'HYPER · CLASS R',
     name: 'LAMBORGHINI REVUELTO V12 HYBRID',
     shortTag: '本地高模 GLB · 1,001 HP 旗艦 HPEV 大牛',
@@ -295,7 +295,7 @@ const CAR_CATALOG = [
     id: 'lamborghini_centenario',
     carClass: 'HYPER',
     brand: 'Lamborghini',
-    subGroup: 'road',
+    subGroup: 'vmax',
     classLabel: 'HYPER · CLASS R',
     name: 'LAMBORGHINI CENTENARIO LP 770-4',
     shortTag: '本地高模 GLB · 百年紀念碳纖旗艦',
@@ -310,7 +310,7 @@ const CAR_CATALOG = [
     id: 'lamborghini_veneno',
     carClass: 'HYPER',
     brand: 'Lamborghini',
-    subGroup: 'road',
+    subGroup: 'vmax',
     classLabel: 'HYPER · CLASS R',
     name: 'LAMBORGHINI VENENO',
     shortTag: '本地高模 GLB · 極罕原型車空力外型',
@@ -325,7 +325,7 @@ const CAR_CATALOG = [
     id: 'lamborghini_sc20',
     carClass: 'HYPER',
     brand: 'Lamborghini',
-    subGroup: 'road',
+    subGroup: 'vmax',
     classLabel: 'HYPER · CLASS R',
     name: 'LAMBORGHINI SC20 SQUADRA CORSE',
     shortTag: '本地高模 GLB · 全球唯一無前檔風玻璃 Barchetta',
@@ -339,14 +339,14 @@ const CAR_CATALOG = [
   // --- LMP1 / VISION GT / CLASS X ---
   {
     id: 'amg_one',
-    carClass: 'LMP1',
+    carClass: 'HYPER',
     brand: 'Mercedes-AMG',
-    subGroup: 'prototype',
-    classLabel: 'LMP1 · CLASS X',
+    subGroup: 'hybrid',
+    classLabel: 'HYPER · CLASS R',
     name: 'MERCEDES-AMG ONE F1 E-HYBRID',
     shortTag: '本地高模 GLB · F1 1.6T V6 11,000rpm 油電四驅',
     origin: '🇩🇪 阿法爾特巴赫 / 布里克斯沃斯 · F1 PU106 混合動力 · 四驅',
-    desc: '直接移植 F1 世界冠軍動力單元的紐北量產王者！11,000 rpm F1 V6 引擎配四電機，352 km/h 極速與主動空力可擊敗所有公路超跑，但 1,695kg 車重仍明顯重於純種 LMP1 原型車。',
+    desc: '直接移植 F1 世界冠軍動力單元的紐北量產王者！11,000 rpm F1 V6 引擎配四電機，352 km/h 極速與主動空力可擊敗所有公路超跑，歸入 HYPER 公路神車組可公平對決三神車。',
     specs: { topSpeed: '352 km/h', accel: '2.7 s', power: '1,063 HP', weight: '1,695 kg' },
     bars: { speed: 92, accel: 90, handling: 77, braking: 75 },
     defaultPaint: '#94a3b8',
@@ -356,7 +356,7 @@ const CAR_CATALOG = [
     id: 'porsche_919_evo',
     carClass: 'LMP1',
     brand: 'Porsche',
-    subGroup: 'prototype',
+    subGroup: 'wec',
     classLabel: 'LMP1 · CLASS X',
     name: 'PORSCHE 919 HYBRID EVO LMP1',
     shortTag: '本地高模 GLB · 斯帕 / 紐北終極無限制原型車',
@@ -371,7 +371,7 @@ const CAR_CATALOG = [
     id: 'mazda_furai',
     carClass: 'LMP1',
     brand: 'Mazda',
-    subGroup: 'prototype',
+    subGroup: 'vision',
     classLabel: 'LMP1 · CLASS X',
     name: 'MAZDA FURAI CONCEPT PROTOTYPE',
     shortTag: '本地高模 GLB · 675kg 三轉子利曼原型底盤',
@@ -432,7 +432,7 @@ const CAR_CATALOG = [
     id: 'lamborghini_aventador',
     carClass: 'STREET',
     brand: 'Lamborghini',
-    subGroup: 'road',
+    subGroup: 'supercar',
     classLabel: 'STREET · CLASS A',
     name: 'LAMBORGHINI AVENTADOR LP 700-4',
     shortTag: '本地高模 GLB · 6.5L V12 四驅超跑',
@@ -475,14 +475,14 @@ const CAR_CATALOG = [
   },
   {
     id: 'nissan_xtrail',
-    carClass: 'STREET',
+    carClass: 'SPORT',
     brand: 'Nissan',
-    subGroup: 'suv',
-    classLabel: 'STREET · CLASS A',
+    subGroup: 'daily',
+    classLabel: 'SPORT · CLASS C',
     name: 'NISSAN X-TRAIL e-POWER SUV',
     shortTag: '本地高模 GLB · 家用休旅下場趣味挑戰',
     origin: '🇯🇵 日本橫濱 · 1.5L VC-Turbo e-POWER 雙馬達電驅 SUV',
-    desc: '真正比照原廠數據的家用休旅！0-100 需約 7.3 秒、185 km/h 極速封頂、零空力下壓力加上 1.68 噸高重心大幅側傾 (~0.85G 彎道)，開它跑蒙札更能襯托 GT3 與 F1 賽車的恐怖性能差距！',
+    desc: '真正比照原廠數據的家用休旅！0-100 需約 7.3 秒、185 km/h 極速封頂、零空力下壓力加上 1.68 噸高重心大幅側傾 (~0.85G 彎道)，現在獨立於日常 SPORT 組與入門跑車同場競逐！',
     specs: { topSpeed: '185 km/h', accel: '7.3 s', power: '213 HP', weight: '1,680 kg' },
     bars: { speed: 20, accel: 24, handling: 22, braking: 24 },
     defaultPaint: '#cbd5e1',
@@ -493,7 +493,7 @@ const CAR_CATALOG = [
     id: 'f1_2026_sf26',
     carClass: 'F1',
     brand: 'Ferrari',
-    subGroup: 'f1',
+    subGroup: 'modern',
     classLabel: 'F1 · CLASS F1',
     name: 'SCUDERIA FERRARI SF-26 F1 (2026)',
     shortTag: '本地高模 GLB · 15,000rpm 8速 一級方程式',
@@ -505,6 +505,105 @@ const CAR_CATALOG = [
     unlocked: true
   }
 ];
+
+(function appendExpandedCatalogEntries() {
+  const CLASS_LABELS = {
+    SPORT: 'SPORT · CLASS C',
+    STREET: 'STREET · CLASS A',
+    GT3: 'GT3 · CLASS S',
+    HYPER: 'HYPER · CLASS R',
+    TRACK: 'TRACK · CLASS R+',
+    LMP1: 'LMP1 · CLASS X',
+    F1: 'F1 · CLASS F1'
+  };
+  // [id, carClass, subGroup, brand, name, shortTag, origin, desc, topSpeed, accel, power, weight, bars, paint]
+  const extras = [
+    // --- SPORT (6) ---
+    ['toyota_ae86', 'SPORT', 'daily', 'Toyota', 'TOYOTA COROLLA AE86 TRUENO GT-APEX', '本地高模 GLB · 940kg 輕量 FR 傳奇', '🇯🇵 日本豐田 · 1.6L 4A-GEU DOHC 16V · 前置後驅 (FR)', '無電子輔助、僅 940 kg 的極致輕量化駕駛教室！靠純粹動能走線與降檔補油在技術連續彎追回馬力落差。', '195 km/h', '8.2 s', '130 HP', '940 kg', [24, 22, 34, 30], '#f8fafc'],
+    ['mazda_mx5', 'SPORT', 'daily', 'Mazda', 'MAZDA MX-5 MIATA (ND2)', '本地高模 GLB · 1,050kg 50:50 FR 小跑', '🇯🇵 廣島 Mazda · 2.0L Skyactiv-G NA · 六速手排 FR', '人馬一體配重代表！精準入彎與線性自然進氣高轉銜接，極適合練習循跡煞車與出彎銜接。', '220 km/h', '6.5 s', '181 HP', '1,050 kg', [32, 34, 42, 36], '#dc2626'],
+    ['honda_civic_type_r', 'SPORT', 'hothatch', 'Honda', 'HONDA CIVIC TYPE R (FL5)', '本地高模 GLB · 前驅 FF 最速鋼砲', '🇯🇵 日本本田 · 2.0L K20C1 VTEC 渦輪 · 前置前驅 (FF)', '遊戲首台正統 FF 前驅廠鋼砲！收油與輕點煞車即可犀利帶入車頭，但彎中過早全油會出現前輪動力推頭。', '275 km/h', '5.4 s', '329 HP', '1,430 kg', [58, 52, 50, 48], '#f8fafc'],
+    ['subaru_wrx_sti', 'SPORT', 'hothatch', 'Subaru', 'SUBARU WRX STI TYPE RA', '本地高模 GLB · 水平對臥＋對稱 AWD', '🇯🇵 日本富士重工 · 2.5L EJ25 渦輪 · 全時四驅 (AWD)', '低重心水平對臥渦輪搭配高牽引力對稱四驅，出彎全油穩定且起步迅猛，適合複雜高低速混合賽道。', '255 km/h', '4.8 s', '310 HP', '1,560 kg', [52, 62, 46, 44], '#0284c7'],
+    ['mercedes_amg_c63', 'SPORT', 'muscle', 'Mercedes-AMG', 'MERCEDES-AMG C63 S COUPE', '本地高模 GLB · 4.0L V8 雙渦輪轎跑', '🇩🇪 阿法爾特巴赫 · 4.0L M177 V8 Biturbo · 前置後驅', '飽滿低中轉 V8 雙渦輪扭力與寬體穩重姿態，直線速度壓制一般鋼砲，需留意 1,730kg 煞車點。', '290 km/h', '3.9 s', '510 HP', '1,730 kg', [66, 70, 44, 45], '#94a3b8'],
+    ['dodge_challenger_srt', 'SPORT', 'muscle', 'Dodge', 'DODGE CHALLENGER SRT HELLCAT', '本地高模 GLB · 717 HP 地獄貓美式肌肉', '🇺🇸 美國底特律 · 6.2L 機械增壓 HEMI V8 · 前置後驅', '無與倫比的直線怒吼與暴躁後輪扭矩！2 噸車重考驗極早煞車與標準晩彎心 V-Line 走法。', '315 km/h', '3.7 s', '717 HP', '2,015 kg', [76, 72, 34, 34], '#ef4444'],
+    // --- STREET (8) ---
+    ['porsche_959', 'STREET', 'classic', 'Porsche', 'PORSCHE 959 S KOMFORT', '本地高模 GLB · 80 年代 B 組四驅雙渦輪科技標竿', '🇩🇪 斯圖加特 · 2.85L 水平對臥六缸雙渦輪 · 電控 AWD', '當年地表最快量產車之一！經典渦輪延遲與後偏四驅特性讓它與 Countach、F40 展開跨世紀較量。', '317 km/h', '3.7 s', '450 HP', '1,450 kg', [76, 70, 46, 44], '#cbd5e1'],
+    ['honda_nsx_r', 'STREET', 'classic', 'Honda', 'HONDA NSX-R (NA2)', '本地高模 GLB · 1,230kg 鈴鹿調校純 NA 中置神車', '🇯🇵 日本栃木 · 3.2L C32B DOHC VTEC V6 · 中置後驅', '極速不如大馬力對手，但輕量化碳纖引擎蓋與純中置平衡在技術彎角具備越級追擊實力。', '275 km/h', '4.7 s', '290 HP', '1,230 kg', [60, 58, 56, 52], '#f8fafc'],
+    ['toyota_supra_mk4', 'STREET', 'classic', 'Toyota', 'TOYOTA SUPRA RZ MK4 (A80)', '本地高模 GLB · 2JZ-GTE 序列雙渦輪傳奇', '🇯🇵 日本愛知 · 3.0L 2JZ-GTE 直六雙渦輪 · 前置後驅', '經典 2JZ 中高轉雙渦輪爆發曲線搭配圓潤低風阻 GT 車身，大直線尾速與穩定巡航兼備。', '285 km/h', '4.6 s', '326 HP', '1,510 kg', [64, 62, 44, 44], '#f97316'],
+    ['aston_vantage_59_amr', 'STREET', 'supercar', 'Aston Martin', 'ASTON MARTIN VANTAGE AMR 59', '本地高模 GLB · 510 HP 英倫前置 V8 雙渦輪特仕', '🇬🇧 英國蓋登 · 4.0L V8 雙渦輪 · 前中置後驅 (FMR)', '靈活短軸前置佈局結合英倫 GT 底盤調校，中速彎節奏穩健優雅，極適合長距離跑山與賽道。', '314 km/h', '3.6 s', '510 HP', '1,530 kg', [75, 74, 54, 54], '#10b981'],
+    ['nissan_gtr_nismo', 'STREET', 'supercar', 'Nissan', 'NISSAN GT-R NISMO (R35)', '本地高模 GLB · 東瀛戰神 600 HP AWD 彈射器', '🇯🇵 栃木 / NISMO · 3.8L VR38DETT V6 雙渦輪 · AWD', 'ATTESA E-TS 四輪驅動帶來幾乎同組最快的起跑與出彎推力，重煞進彎需適度保留前輪荷載。', '315 km/h', '2.7 s', '600 HP', '1,720 kg', [76, 86, 56, 56], '#cbd5e1'],
+    ['ferrari_812_competizione', 'STREET', 'supercar', 'Ferrari', 'FERRARI 812 COMPETIZIONE', '本地高模 GLB · 9,500 rpm 830 HP 前置 NA V12 藝術品', '🇮🇹 馬拉內羅 · 6.5L F140HB NA V12 · 前中置後驅', '9,500轉高亢 NA V12 輸出加上 340 km/h 極速，修長車頭具備強烈 V-Line 滑移與出彎激情。', '340 km/h', '2.85 s', '830 HP', '1,487 kg', [87, 87, 58, 58], '#eab308'],
+    ['mclaren_765lt', 'STREET', 'supercar', 'McLaren', 'MCLAREN 765LT', '本地高模 GLB · 1,339kg 輕量化中置 765 HP 長尾猛獸', '🇬🇧 英國沃金 · 4.0L M840T V8 雙渦輪 · 中置後驅', '極輕碳纖車身讓 765 匹馬力揮灑得淋漓盡致，中後段再加速與中高速彎反應位居 STREET 頂點。', '330 km/h', '2.8 s', '765 HP', '1,339 kg', [84, 89, 62, 62], '#f97316'],
+    ['porsche_911_gt3_rs', 'STREET', 'supercar', 'Porsche', 'PORSCHE 911 GT3 RS (992)', '本地高模 GLB · 860 kgf 主動 DRS 巨翼・紐北街車彎道王', '🇩🇪 斯圖加特 · 4.0L NA 水平對臥六缸 9,000 rpm · RR', '雖極速僅 296 km/h，卻擁有街道組壓倒性的真實賽車級下壓力與 9,000 rpm RR 循跡過彎實力！', '296 km/h', '3.2 s', '525 HP', '1,450 kg', [70, 82, 70, 70], '#f8fafc'],
+    // --- GT3 (6, strict BoP) ---
+    ['audi_r8_lms_evo', 'GT3', 'eu', 'Audi', 'AUDI R8 LMS GT3 EVO II', '本地高模 GLB · 5.2L V10 中置耐力常勝軍', '🇩🇪 英戈爾施塔特 · 5.2L V10 NA · 中置後驅 (MR)', '與 Huracan GT3 共享血統的德系中置猛將，EVO II 頂置進氣導管兼顧線性輸出與彎中平衡。', '309 km/h', '3.3 s', '585 HP', '1,235 kg', [74, 80, 75, 72], '#dc2626'],
+    ['acura_nsx_gt3_evo', 'GT3', 'jp', 'Honda/Acura', 'ACURA NSX GT3 EVO22', '本地高模 GLB · 3.5L V6 雙渦輪輕巧中置 GT3', '🇯🇵🇺🇸 Honda Performance · 3.5L V6 Biturbo · MR', '取消量產版前軸電機並大幅強化空力與入彎靈活度，連續 S 彎變向在 GT3 組別屬頂尖水準。', '306 km/h', '3.4 s', '550 HP', '1,240 kg', [72, 79, 76, 72], '#0284c7'],
+    ['lexus_rc_f_gt3', 'GT3', 'jp', 'Lexus', 'LEXUS RC F GT3', '本地高模 GLB · 5.0L 自然進氣 V8 日系前置 GT3', '🇯🇵 豐田 GAZOO · 5.0L 2UR-GSE V8 · 前中置後驅 (FMR)', '大排量自然進氣 V8 搭配長軸寬體底盤，高速穩定度與直線尾速突出、長距離保護輪胎優異。', '311 km/h', '3.4 s', '540 HP', '1,300 kg', [74, 79, 73, 71], '#1e293b'],
+    ['nissan_gtr_gt3', 'GT3', 'jp', 'Nissan', 'NISSAN GT-R NISMO GT3 (R35)', '本地高模 GLB · 3.8L V6 雙渦輪日系重裝 GT3', '🇯🇵 橫濱 NISMO · 3.8L VR38DETT GT3 · 前中置後驅', '前中置重心後移改造後的純後驅戰馬！扭力充沛且高速直道極強，堪稱東洋版 AMG GT3。', '312 km/h', '3.4 s', '550 HP', '1,285 kg', [75, 80, 72, 71], '#f8fafc'],
+    ['corvette_z06_gt3r', 'GT3', 'us', 'Chevrolet', 'CHEVROLET CORVETTE Z06 GT3.R', '本地高模 GLB · 5.5L 平面曲軸 V8 中置新世代 GT3', '🇺🇸 Pratt Miller · 5.5L LT6 NA V8 · 中置後驅 (MR)', 'Corvette 史上首款全新中置量產架構 GT3！高亢 8,600 rpm 平面曲軸 V8 配優異底盤剛性，全能無短板。', '308 km/h', '3.3 s', '570 HP', '1,250 kg', [73, 80, 75, 72], '#eab308'],
+    ['ford_mustang_gt3', 'GT3', 'us', 'Ford', 'FORD MUSTANG GT3', '本地高模 GLB · 5.4L Coyote NA V8 美系前置巨獸', '🇺🇸 Multimatic · 5.4L Coyote V8 · 前中置後驅 (FMR)', 'Multimatic 與 M-Sport 聯合研發，擁有全 GT3 組最高直線終速與渾厚自然進氣美式聲浪。', '313 km/h', '3.3 s', '580 HP', '1,290 kg', [75, 80, 72, 71], '#0284c7'],
+    // --- HYPER (10) ---
+    ['porsche_918_spyder', 'HYPER', 'hybrid', 'Porsche', 'PORSCHE 918 SPYDER WEISSACH', '本地高模 GLB · 三大神車唯一四驅高轉 V8 油電', '🇩🇪 魏薩赫 · 4.6L V8 9,150rpm + 雙電機 · 四驅', '集齊「三大神車」最後拼圖！四驅起步與低速出彎牽引力最強，適合混合技術型賽道。', '345 km/h', '2.6 s', '887 HP', '1,674 kg', [89, 93, 68, 66], '#cbd5e1'],
+    ['bugatti_tourbillon', 'HYPER', 'hybrid', 'Bugatti', 'BUGATTI TOURBILLON V16 HYBRID', '本地高模 GLB · 8.3L NA V16＋三馬達 1,800 HP', '🇫🇷 法國莫爾塞姆 · 8.3L V16 + 三電機 · 全輪驅動', '捨棄渦輪改搭 9,000rpm 自然進氣 V16 與強悍三電驅動，445 km/h 極速表現為當代 Hypercar 新標竿。', '445 km/h', '2.0 s', '1,800 HP', '1,995 kg', [100, 99, 66, 66], '#0284c7'],
+    ['rimac_nevera', 'HYPER', 'hybrid', 'Rimac', 'RIMAC NEVERA EV', '本地高模 GLB · 1,914 HP 四馬達純電加速王者', '🇭🇷 克羅埃西亞 · 四輪獨立電機矢量分配 · AWD', '毫無換檔頓挫的 1,914 匹瞬時純電彈射！0-200 加速稱霸全公路組，2.3 噸車重需要極早重煞。', '412 km/h', '1.85 s', '1,914 HP', '2,300 kg', [97, 100, 62, 60], '#0284c7'],
+    ['mclaren_speedtail', 'HYPER', 'hybrid', 'McLaren', 'MCLAREN SPEEDTAIL', '本地高模 GLB · 403 km/h 超低風阻水滴三座神車', '🇬🇧 英國沃金 · 4.0L V8 雙渦輪油電 · 中置後驅', '長達 5.1 公尺的流線型無尾翼設計專注極致低風阻加速，蒙札直線表現堪稱奇蹟。', '403 km/h', '2.9 s', '1,055 HP', '1,430 kg', [98, 91, 61, 62], '#94a3b8'],
+    ['bugatti_chiron_pur_sport', 'HYPER', 'vmax', 'Bugatti', 'BUGATTI CHIRON PUR SPORT', '本地高模 GLB · 短齒比＋固定巨翼彎道強化 Chiron', '🇫🇷 莫爾塞姆 · 8.0L W16 四渦輪 · 全輪驅動', '捨棄 420km/h 尾速換來激進密齒比與固定式 1.9m 碳纖尾翼，過彎與中段出彎加速大幅提升。', '350 km/h', '2.3 s', '1,500 HP', '1,945 kg', [92, 95, 70, 68], '#0284c7'],
+    ['bugatti_veyron_ss', 'HYPER', 'vmax', 'Bugatti', 'BUGATTI VEYRON 16.4 SUPER SPORT', '本地高模 GLB · 431 km/h 世代傳奇四渦輪極速王', '🇫🇷 莫爾塞姆 · 8.0L W16 四渦輪 · 全輪驅動', '定義 21 世紀 400 km/h 門檻的里程碑巨獸，極低風阻高速直道吞噬能力極強。', '431 km/h', '2.5 s', '1,200 HP', '1,838 kg', [99, 92, 60, 60], '#f97316'],
+    ['koenigsegg_jesko_attack', 'HYPER', 'vmax', 'Koenigsegg', 'KOENIGSEGG JESKO ATTACK', '本地高模 GLB · 1,600 HP + 1,400 kgf 高空力瑞典猛獸', '🇸🇪 瑞典恩厄爾霍爾姆 · 5.0L V8 雙渦輪 + 9速 LST', '將 1,600 匹馬力與雙層大尾翼完美融合的頂尖公路神獸！兼具極快換檔與高速彎貼地極限。', '365 km/h', '2.5 s', '1,600 HP', '1,420 kg', [95, 96, 75, 74], '#10b981'],
+    ['koenigsegg_one1', 'HYPER', 'vmax', 'Koenigsegg', 'KOENIGSEGG ONE:1', '本地高模 GLB · 1:1 馬力重量比 1,360 HP / 1,360 kg', '🇸🇪 瑞典恩厄爾霍爾姆 · 5.0L V8 雙渦輪 · 中置後驅', '史上第一台實現 1 MW 對 1,360kg 的極端 Megacar！主動作動尾翼與猛爆中段推力直追 TRACK 組。', '400 km/h', '2.7 s', '1,360 HP', '1,360 kg', [97, 94, 72, 71], '#f8fafc'],
+    ['koenigsegg_agera', 'HYPER', 'vmax', 'Koenigsegg', 'KOENIGSEGG AGERA R', '本地高模 GLB · 1,140 HP 純後驅 V-Max 飛彈', '🇸🇪 瑞典恩厄爾霍爾姆 · 5.0L V8 雙渦輪 · 中置後驅', '無 TC 控制下的雙渦輪 1,140 匹純後驅考驗！需要極細膩油門控管，換來幾乎 400km/h 的驚人尾速。', '395 km/h', '2.8 s', '1,140 HP', '1,435 kg', [96, 91, 65, 65], '#ef4444'],
+    ['mclaren_f1', 'HYPER', 'vmax', 'McLaren', 'MCLAREN F1 ROAD CAR (1994)', '本地高模 GLB · 三座中置 6.1L V12 自然進氣傳奇', '🇬🇧 英國沃金 · BMW S70/2 6.1L V12 · 六速手排 MR', '僅 1,138kg、無 ABS/TC、純自然進氣 V12 與 386 km/h 史上最傳奇的機械純粹超級跑車。', '386 km/h', '3.2 s', '627 HP', '1,138 kg', [95, 84, 58, 56], '#eab308'],
+    // --- TRACK (3) ---
+    ['bugatti_bolide', 'TRACK', 'modern', 'Bugatti', 'BUGATTI BOLIDE TRACK CONCEPT', '本地高模 GLB · 1,600 HP W16 極致碳纖賽道怪物', '🇫🇷 莫爾塞姆 Motorsport · 8.0L W16 四渦輪 · AWD', '以 1,450kg 承載 W16 與高下壓力空力套件的賽道狂獸，在 TRACK 組與 FXX-K Evo 正面對決！', '380 km/h', '2.17 s', '1,600 HP', '1,450 kg', [96, 98, 86, 85], '#0284c7'],
+    ['pagani_zonda_r', 'TRACK', 'gt1', 'Pagani', 'PAGANI ZONDA R TRACK', '本地高模 GLB · 6.0L AMG NA V12 紐北破紀錄神作', '🇮🇹 摩德納 · 6.0L M120 V12 NA · 1,070kg 中置後驅', '最純粹的碳鈦單體殼＋9,000 rpm NA V12 狂哮，與 McLaren F1 GTR 領銜經典賽道神獸組。', '350 km/h', '2.7 s', '750 HP', '1,070 kg', [89, 89, 84, 82], '#1e293b'],
+    ['mclaren_f1_gtr_longtail', 'TRACK', 'gt1', 'McLaren', 'MCLAREN F1 GTR LONGTAIL', '本地高模 GLB · 915kg 利曼 FIA GT1 長尾經典賽車', '🇬🇧 英國沃金 GT1 · BMW 6.0L V12 NA · 915kg 無電控 MR', '無 ABS/TC 搭配僅 915kg 極輕量化長尾空力，需靠精準循跡煞車感受 90 年代 GT1 純粹操控魅力。', '330 km/h', '3.0 s', '600 HP', '915 kg', [83, 86, 81, 79], '#f97316'],
+    // --- LMP1 / WEC / VISION GT (7) ---
+    ['ferrari_499p', 'LMP1', 'wec', 'Ferrari', 'FERRARI 499P LMH', '本地高模 GLB · 利曼 24 小時大賽衛冕冠軍紅軍 LMH', '🇮🇹 馬拉內羅 WEC · 3.0L V6 雙渦輪 + 前軸 ERS · AWD', '現役利曼 Hypercar 冠軍標竿！高效率地面效應與前軸四驅輔助帶來極度平衡的長距離耐力戰力。', '342 km/h', '2.7 s', '680 HP', '1,030 kg', [87, 92, 91, 90], '#dc2626'],
+    ['porsche_963', 'LMP1', 'wec', 'Porsche', 'PORSCHE 963 LMDh', '本地高模 GLB · Penske WEC/IMSA 冠軍 4.6L V8 混動後驅', '🇩🇪 魏薩赫 / Multimatic · 4.6L V8 雙渦輪 LMDh · 後驅', '純後驅架構賦予極輕車頭慣性與極犀利入彎反應，於技術型與中高速複合彎角極具優勢。', '338 km/h', '2.8 s', '680 HP', '1,030 kg', [85, 91, 92, 91], '#ef4444'],
+    ['cadillac_v_seriesr', 'LMP1', 'wec', 'Cadillac', 'CADILLAC V-SERIES.R LMDh', '本地高模 GLB · 5.5L 自然進氣 V8 美系 LMDh 怒吼', '🇺🇸 通用賽車 / Dallara · 5.5L NA DOHC V8 · 後驅', '全場最獨特的低沉高轉 NA V8 聲浪！出彎扭矩飽滿直接，正面對決 Ferrari 499P 與 Porsche 963。', '340 km/h', '2.8 s', '680 HP', '1,030 kg', [86, 91, 91, 90], '#eab308'],
+    ['mercedes_sauber_c9', 'LMP1', 'wec', 'Mercedes-Benz', 'SAUBER MERCEDES C9 GROUP C', '本地高模 GLB · 1989 利曼冠軍 400km/h C 組經典怪獸', '🇩🇪🇨🇭 Sauber / AMG · 5.0L M119 V8 雙渦輪 · 893kg 無電控', '僅 893kg 配雙渦輪暴衝與近 400 km/h 直道尾速，無 ABS/TC 的 C 組暴力美學極富挑戰性。', '398 km/h', '2.8 s', '760 HP', '893 kg', [97, 92, 86, 84], '#cbd5e1'],
+    ['mclaren_ultimate_vgt', 'LMP1', 'vision', 'McLaren', 'MCLAREN ULTIMATE VISION GT', '本地高模 GLB · 俯臥式戰機座艙 1,150 PS VGT 原型', '🇬🇧 英國沃金 Design · 4.0L V8 + 雙電機四驅 · 1,000kg', '以戰鬥機視野與極低重心打造的概念超跑，主動作動翼面與 1,150 匹四驅直接媲美 919 Evo！', '368 km/h', '2.2 s', '1,150 HP', '1,000 kg', [96, 97, 95, 94], '#f97316'],
+    ['mclaren_x2', 'LMP1', 'vision', 'McLaren', 'MCLAREN-HONDA X2 CONCEPT', '本地高模 GLB · 820kg 封閉單座電動地面效應原型', '🇬🇧🇯🇵 未來方程式探索計畫 · 純電封閉座艙 · 820kg', '兼具 F1 級極高空力與 820kg 超輕車體的終極電動單座，過彎極限直逼四輪軌道列車。', '385 km/h', '2.0 s', '1,200 HP', '820 kg', [98, 99, 97, 96], '#f8fafc'],
+    ['mercedes_silver_lightning', 'LMP1', 'vision', 'Mercedes-Benz', 'MERCEDES-BENZ SILVER LIGHTNING', '本地高模 GLB · 全能輪轂矢量純電銀箭概念原型', '🇩🇪 斯圖加特 Advanced Design · 未來地面效應純電四驅', '全透明碳纖空力車殼搭配瞬時 900 HP 四輪電控，高速穩定度與出彎抓地極為順暢。', '355 km/h', '2.3 s', '900 HP', '1,100 kg', [91, 95, 92, 90], '#cbd5e1'],
+    // --- F1 (6) ---
+    ['f1_2026_rb22', 'F1', 'modern', 'Red Bull', 'RED BULL RACING RB22 F1 (2026)', '本地高模 GLB · 紅牛 2026 地面效應高效率旗艦 F1', '🇦🇹🇬🇧 米爾頓凱恩斯 · 2026 Red Bull Ford 混合動力 · 768kg', '極致地面效應空力效率與頂尖高速彎極限，中高速 S 彎變向與直線極速同樣犀利。', '366 km/h', '2.25 s', '1,000+ HP', '768 kg', [98, 99, 100, 100], '#0284c7'],
+    ['f1_2026_w17', 'F1', 'modern', 'Mercedes-AMG', 'MERCEDES-AMG W17 F1 (2026)', '本地高模 GLB · 銀箭原廠動力高尾速 F1 單座戰車', '🇩🇪🇬🇧 布拉克利 / 布里克斯沃斯 · Mercedes HPP 2026 PU · 768kg', '優異的低阻空力效率與強大混動直道尾速（368 km/h），在蒙札與斯帕極具長直線超車優勢。', '368 km/h', '2.3 s', '1,000+ HP', '768 kg', [99, 99, 99, 100], '#94a3b8'],
+    ['f1_2026_r26', 'F1', 'modern', 'Audi', 'AUDI F1 TEAM R26 (2026)', '本地高模 GLB · 四環廠隊首發低轉高牽引 F1 賽車', '🇩🇪🇨🇭 諾伊堡 / 欣維爾 · Audi Formula Racing PU · 768kg', '穩健出彎機械牽引力搭配 MGU-K 瞬時扭矩分配，低速髮夾彎加速極為乾脆。', '362 km/h', '2.25 s', '1,000+ HP', '768 kg', [97, 99, 99, 100], '#cbd5e1'],
+    ['f1_2026_mac26', 'F1', 'modern', 'Cadillac', 'CADILLAC F1 MAC-26 (2026)', '本地高模 GLB · 美系 2026 新規全能單座 F1 賽車', '🇺🇸🇬🇧 凱迪拉克 / 銀石 F1 分部 · 2026 混合動力 · 768kg', '重煞入彎極端穩定且對路緣石包容度高，技術型多彎賽道表現穩健搶眼。', '365 km/h', '2.3 s', '1,000+ HP', '768 kg', [98, 98, 99, 100], '#1e293b'],
+    ['f1_2025_mcl39', 'F1', 'modern', 'McLaren', 'MCLAREN MCL39 F1 (2025)', '本地高模 GLB · 木瓜橘極致高下壓力連彎殺手 F1', '🇬🇧 英國沃金 MTC · 2025 巔峰地面效應底盤 · 800kg', '同組最高下壓力設定之一！雖然直道風阻稍大（358 km/h），但在鈴鹿與銀石高速連彎宛如貼地飛行。', '358 km/h', '2.3 s', '1,000+ HP', '800 kg', [95, 99, 100, 100], '#f97316'],
+    ['ferrari_f2004', 'F1', 'classic', 'Ferrari', 'FERRARI F2004 V10 F1 (2004)', '本地高模 GLB · 605kg＋19,000 rpm 經典 V10 史上最速戰馬', '🇮🇹 馬拉內羅 · 3.0L Tipo 053 V10 NA 900HP · 605kg 7速', '605 公斤羽毛級車身與 19,000 rpm 高頻天籟！低速機械抓地與靈活軸距壓過現代 F1，僅缺低轉電機助推。', '362 km/h', '2.4 s', '900 HP', '605 kg', [97, 96, 100, 100], '#dc2626']
+  ];
+  extras.forEach(([id, carClass, subGroup, brand, name, shortTag, origin, desc, topSpeed, accel, power, weight, bars, defaultPaint]) => {
+    CAR_CATALOG.push({
+      id,
+      carClass,
+      brand,
+      subGroup,
+      classLabel: CLASS_LABELS[carClass] || (carClass + ' · CLASS S'),
+      name,
+      shortTag,
+      origin,
+      desc,
+      specs: { topSpeed, accel, power, weight },
+      bars: { speed: bars[0], accel: bars[1], handling: bars[2], braking: bars[3] },
+      defaultPaint,
+      unlocked: true
+    });
+  });
+
+  if (typeof window !== 'undefined' && window.CAR_PI_AND_CLASS_TABLE) {
+    const tbl = window.CAR_PI_AND_CLASS_TABLE;
+    const bands = window.PI_CLASS_BANDS || {};
+    CAR_CATALOG.forEach(c => {
+      const info = tbl[c.id];
+      if (!info) return;
+      c.pi = info[0];
+      c.carClass = info[1];
+      c.subGroup = info[2];
+      const b = bands[info[1]];
+      c.classLabel = b ? `${b.label} · ${b.range}` : `${info[1]} · PI ${info[0]}`;
+    });
+  }
+})();
 
 const PAINT_SWATCHES = [
   { hex: '#ef4444', name: '競速緋紅' },
@@ -523,12 +622,17 @@ const RIM_SWATCHES = [
 ];
 
 const GARAGE_CLASS_META = [
-  { id: 'STREET', label: '街車/經典 STREET', short: 'STREET', icon: '🟢', color: '#34d399', subOptions: [{ id: 'all', label: '全部街車' }, { id: 'classic', label: '🏛 經典傳奇' }, { id: 'road', label: '🛣 街道旗艦' }, { id: 'suv', label: '🚙 日常 SUV' }] },
-  { id: 'GT3', label: 'GT3 統規賽車', short: 'GT3', icon: '🟠', color: '#fb923c', subOptions: [] },
-  { id: 'HYPER', label: '頂級超跑 HYPER', short: 'HYPER', icon: '🟣', color: '#c084fc', subOptions: [{ id: 'all', label: '全部超跑' }, { id: 'track', label: '🏁 賽道版 Hypercar' }, { id: 'road', label: '🛣 街道旗艦 Hypercar' }] },
-  { id: 'LMP1', label: '原型/Vision GT', short: 'LMP1', icon: '🔵', color: '#38bdf8', subOptions: [{ id: 'all', label: '全部原型車' }, { id: 'prototype', label: '🏎 耐力原型 Prototype' }, { id: 'vision', label: '✨ Vision GT / 未來概念' }] },
-  { id: 'F1', label: 'F1 方程式', short: 'F1', icon: '🔴', color: '#f43f5e', subOptions: [] },
-  { id: 'all', label: '全部車庫', short: 'ALL', icon: '🌍', color: '#94a3b8', subOptions: [] }
+  { id: 'D',   label: 'D 入門輕跑',   short: 'D',   icon: '🩵', color: '#2dd4bf', subOptions: [{ id: 'all', label: '全部 D 級' }, { id: 'daily', label: '🚙 日常 / 入門 FR' }, { id: 'classic', label: '🏛 經典街跑' }] },
+  { id: 'C',   label: 'C 鋼砲/經典',  short: 'C',   icon: '🟢', color: '#34d399', subOptions: [{ id: 'all', label: '全部 C 級' }, { id: 'hothatch', label: '🔥 鋼砲 / 四驅' }, { id: 'classic', label: '🏛 80-90s 經典' }, { id: 'muscle', label: '💪 雙門性能 / 肌肉' }] },
+  { id: 'B',   label: 'B 現代超跑',   short: 'B',   icon: '💚', color: '#a3e635', subOptions: [{ id: 'all', label: '全部 B 級' }, { id: 'supercar', label: '🏎 超級跑車' }, { id: 'gt', label: '🛡 前置 V8/V12' }, { id: 'track_road', label: '🌪 街車空力王' }] },
+  { id: 'GT3', label: 'GT3 統規',     short: 'GT3', icon: '🟠', color: '#fb923c', subOptions: [{ id: 'all', label: '全部 GT3' }, { id: 'eu', label: '🇪🇺 歐系廠隊' }, { id: 'jp', label: '🇯🇵 日系 GT3' }, { id: 'us', label: '🇺🇸 美系 V8' }] },
+  { id: 'A',   label: 'A 公路神車',   short: 'A',   icon: '🟣', color: '#c084fc', subOptions: [{ id: 'all', label: '全部 A 級' }, { id: 'hybrid', label: '⚡ 油電神車' }, { id: 'vmax', label: '🚀 極速旗艦' }] },
+  { id: 'S',   label: 'S 終極神獸',   short: 'S',   icon: '💜', color: '#e879f9', subOptions: [{ id: 'all', label: '全部 S 級' }, { id: 'aero', label: '🌪 空力彎道' }, { id: 'vmax', label: '🚀 極速猛獸' }] },
+  { id: 'R',   label: 'R 賽道頂尖',   short: 'R',   icon: '🟡', color: '#f59e0b', subOptions: [{ id: 'all', label: '全部 R 級' }, { id: 'track', label: '🏁 現代賽道版' }, { id: 'gt1', label: '🏆 經典 GT1' }, { id: 'proto', label: '✨ 輕量原型' }] },
+  { id: 'LMH', label: 'LMH 耐力原型', short: 'LMH', icon: '🔵', color: '#38bdf8', subOptions: [{ id: 'all', label: '全部 LMH' }, { id: 'wec', label: '🏆 WEC / Group C' }, { id: 'concept', label: '✨ 概念 / 無限制' }] },
+  { id: 'X',   label: 'X 終極原型',   short: 'X',   icon: '🔷', color: '#818cf8', subOptions: [{ id: 'all', label: '全部 X 級' }, { id: 'vgt', label: '✨ Vision GT' }, { id: 'unlimited', label: '👑 破紀錄神獸' }] },
+  { id: 'F1',  label: 'F1 方程式',    short: 'F1',  icon: '🔴', color: '#f43f5e', subOptions: [{ id: 'all', label: '全部 F1' }, { id: 'modern', label: '⚡ 2025-2026 混動' }, { id: 'classic', label: '🔊 V10 經典世代' }] },
+  { id: 'all', label: '全部車庫',     short: 'ALL', icon: '🌍', color: '#94a3b8', subOptions: [] }
 ];
 
 function getClassAccentColor(carClass) {
@@ -558,6 +662,7 @@ function getCarDrivingStyleMeta(carId) {
     ? getCarChassisTraits(cp)
     : { layout: 'FMR', absMode: 'motorsport_abs', tcMode: 'gt3_tc', torqueCurve: 'gt3_flat', lineBias: 0.0 };
   const layoutLabels = {
+    FF: '前輪驅動 FF',
     RR: '後置後驅 RR',
     MR: '中置後驅 MR',
     FMR: '前中置後驅 FMR',
@@ -582,8 +687,10 @@ function getCarDrivingStyleMeta(carId) {
     hybrid_instant: '油電瞬時扭力'
   };
   const bias = tr.lineBias || 0;
-  let lineTag = 'GT3 標準外內外';
-  let tip = '適用 空白鍵 (75%) 循跡煞車穩定帶入彎心';
+  let lineTag = tr.layout === 'FF' ? '前驅節奏線（收油帶頭）' : 'GT3 標準外內外';
+  let tip = tr.layout === 'FF'
+    ? '收油／輕煞帶入車頭，出彎等方向回正再全油防前輪推頭'
+    : '適用 空白鍵 (75%) 循跡煞車穩定帶入彎心';
   if (bias <= -0.2) {
     lineTag = tr.layout === 'SUV' ? '保守滑行大弧線' : 'U-Line 高速大弧線';
     tip = tr.layout === 'SUV' ? '早煞車減速、避免急打方向推頭' : '大空力高速彎吃滿寬弧線，盡早滾油門出彎';
@@ -947,6 +1054,24 @@ function renderGarageScreen() {
   if (origEl) origEl.textContent = meta.origin;
   if (descEl) descEl.textContent = meta.desc;
 
+  const perfProfEl = document.getElementById('gar-perf-profile');
+  if (perfProfEl && typeof getCarPerformanceProfile === 'function') {
+    const pf = getCarPerformanceProfile(carAssetState.presetId);
+    const accCol = getClassAccentColor(pf.carClass);
+    perfProfEl.innerHTML = `
+      <div class="af-perf-pi-row">
+        <span class="af-perf-pi-num" style="--pi-accent:${accCol};"><small>PI</small>${pf.pi}</span>
+        <span style="font-size:11px;font-weight:800;color:${accCol};">${pf.carClass} 級 · ${pf.band ? pf.band.range : ''}</span>
+      </div>
+      <div class="af-strength-chips">
+        ${pf.strengthTags.map(t => `<span class="af-strength-chip">${t}</span>`).join('')}
+        <span class="af-tradeoff-chip">${pf.tradeoffTag}</span>
+      </div>
+      <div class="af-perf-track-note">${pf.bestTrackType}</div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:3px;">同級距 PI 接近但性格迥異，請依賽道特性搭配強項選車</div>
+    `;
+  }
+
   if (specGrid) {
     const specs = [
       { k: '最高極速 TOP SPEED', v: meta.specs.topSpeed },
@@ -1218,11 +1343,14 @@ function renderGarageScreen() {
   const filteredCars = subPool.filter(c => {
     if (flowState.garageBrandFilter !== 'all' && c.brand !== flowState.garageBrandFilter) return false;
     if (!q) return true;
+    const pf = (typeof getCarPerformanceProfile === 'function') ? getCarPerformanceProfile(c.id) : null;
+    const pfStr = pf ? (pf.strengthTags.join(' ') + ' ' + pf.tradeoffTag + ' ' + pf.bestTrackType + ' pi ' + pf.pi).toLowerCase() : '';
     return (
       (c.name || '').toLowerCase().includes(q) ||
       (c.brand || '').toLowerCase().includes(q) ||
       (c.shortTag || '').toLowerCase().includes(q) ||
-      (c.id || '').toLowerCase().includes(q)
+      (c.id || '').toLowerCase().includes(q) ||
+      pfStr.includes(q)
     );
   });
 
@@ -1232,7 +1360,7 @@ function renderGarageScreen() {
               <div class="af-gar-cls-row">
                 <div class="af-gar-cls-tabs" id="gar-cat-tabs-wrap"></div>
                 <div class="af-gar-actions">
-                  <input id="input-gar-search" class="af-gar-search" type="search" placeholder="🔎 搜尋車廠 / 車型..." autocomplete="off">
+                  <input id="input-gar-search" class="af-gar-search" type="search" placeholder="🔎 搜尋車廠 / 車型 / 強項..." autocomplete="off">
                   <span id="lbl-gar-match-count" style="font-size:11px;color:#94a3b8;font-variant-numeric:tabular-nums;padding:0 4px;"></span>
                   <button type="button" id="btn-gar-scroll-l" class="af-pill-btn" title="向左捲動">◀</button>
                   <button type="button" id="btn-gar-scroll-r" class="af-pill-btn" title="向右捲動">▶</button>
@@ -1318,22 +1446,31 @@ function renderGarageCarGridOnly(precomputedList, totalInClass) {
     filteredCars = subPool.filter(c => {
       if (flowState.garageBrandFilter !== 'all' && c.brand !== flowState.garageBrandFilter) return false;
       if (!q) return true;
-      return (c.name || '').toLowerCase().includes(q) || (c.brand || '').toLowerCase().includes(q) || (c.shortTag || '').toLowerCase().includes(q) || (c.id || '').toLowerCase().includes(q);
+      const pf = (typeof getCarPerformanceProfile === 'function') ? getCarPerformanceProfile(c.id) : null;
+      const pfStr = pf ? (pf.strengthTags.join(' ') + ' ' + pf.tradeoffTag + ' ' + pf.bestTrackType + ' pi ' + pf.pi).toLowerCase() : '';
+      return (c.name || '').toLowerCase().includes(q) || (c.brand || '').toLowerCase().includes(q) || (c.shortTag || '').toLowerCase().includes(q) || (c.id || '').toLowerCase().includes(q) || pfStr.includes(q);
     });
   }
+  const sortedCars = filteredCars.slice().sort((a, b) => {
+    const pa = (typeof a.pi === 'number') ? a.pi : ((typeof getCarPerformanceProfile === 'function') ? getCarPerformanceProfile(a.id).pi : 600);
+    const pb = (typeof b.pi === 'number') ? b.pi : ((typeof getCarPerformanceProfile === 'function') ? getCarPerformanceProfile(b.id).pi : 600);
+    return pa - pb;
+  });
   const matchLbl = document.getElementById('lbl-gar-match-count');
   if (matchLbl) {
-    matchLbl.textContent = `顯示 ${filteredCars.length} / ${poolTotal} 台`;
+    matchLbl.textContent = `顯示 ${sortedCars.length} / ${poolTotal} 台`;
   }
   if (stripEl) {
-    const cards = filteredCars.map(c => {
+    const cards = sortedCars.map(c => {
       const active = (c.id === carAssetState.presetId);
       const accCol = getClassAccentColor(c.carClass);
+      const pf = (typeof getCarPerformanceProfile === 'function') ? getCarPerformanceProfile(c.id) : { pi: c.pi || 600, strengthTags: ['⚖ 全能均衡'] };
       const cls = ['af-car-card', active ? 'is-active' : '', !c.unlocked ? 'is-locked' : ''].filter(Boolean).join(' ');
       return `<button type="button" class="${cls}" data-car-id="${c.id}" style="--car-accent:${accCol};">
-              <div class="c"><span>${c.carClass}</span><span class="brand-tag">${c.brand || 'CUSTOM'}</span></div>
+              <div class="c"><span>${c.carClass}</span><span class="af-pi-badge">PI ${pf.pi}</span><span class="brand-tag">${c.brand || 'CUSTOM'}</span></div>
               <div class="n" title="${c.name}">${c.name}</div>
               <div class="m-specs"><span>⚡ ${c.specs.topSpeed}</span><span>🐎 ${c.specs.power}</span></div>
+              <div class="af-strength-chips">${pf.strengthTags.map(t => `<span class="af-strength-chip">${t}</span>`).join('')}</div>
               <div class="t">${active && c.unlocked ? '✔ 目前座駕 · ' : ''}${c.shortTag}</div>
             </button>`;
     });
@@ -2428,7 +2565,7 @@ function renderMultiplayerScreen() {
   const shareUrl = getShareableGameUrl(snap);
   const wsUrl = snap.serverUrl || snap.autoDiscoveredUrl || 'ws://127.0.0.1:8766';
   const activeMeta = getActiveCarMeta();
-  const classTabs = ['STREET', 'GT3', 'HYPER', 'LMP1', 'F1'];
+  const classTabs = ['D', 'C', 'B', 'GT3', 'A', 'S', 'R', 'LMH', 'X', 'F1'];
   const room = snap.room;
 
   if (!room) {

@@ -1,46 +1,96 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Verify All 29 Car GLBs, Categorized Garage &amp; 5-Class Physics/Records</title></head>
+<head><meta charset="utf-8"><title>Verify All 75 Car GLBs, 10-Class PI Garage &amp; Strength Profiles</title></head>
 <body>
 <iframe id="app" src="/index.html" style="width:1280px;height:720px;"></iframe>
 <pre id="status">BOOTING</pre>
 <script>
 const LOCAL_CARS = [
-  // 6 existing local GLBs
-  { id: 'aston_vulcan', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'mclaren_senna', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'zenvo_tsrs', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'pagani_huayra_r', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'amg_one', carClass: 'LMP1', expectWheels: 4, maxH: 1.45 },
-  { id: 'porsche_919_evo', carClass: 'LMP1', expectWheels: 4, maxH: 1.45 },
-  // 4 STREET new
-  { id: 'nissan_xtrail', carClass: 'STREET', expectWheels: 4, maxH: 1.75 },
-  { id: 'lamborghini_countach', carClass: 'STREET', expectWheels: 4, maxH: 1.45 },
-  { id: 'ferrari_f40_lbw', carClass: 'STREET', expectWheels: 4, maxH: 1.45 },
-  { id: 'lamborghini_aventador', carClass: 'STREET', expectWheels: 4, maxH: 1.45 },
-  // 4 GT3 new
+  // D Class
+  { id: 'nissan_xtrail', carClass: 'D', expectWheels: 4, maxH: 1.75 },
+  { id: 'toyota_ae86', carClass: 'D', expectWheels: 0, maxH: 1.45 },
+  { id: 'mazda_mx5', carClass: 'D', expectWheels: 4, maxH: 1.50 },
+  { id: 'lamborghini_countach', carClass: 'D', expectWheels: 4, maxH: 1.45 },
+  // C Class
+  { id: 'subaru_wrx_sti', carClass: 'C', expectWheels: 4, maxH: 1.60 },
+  { id: 'toyota_supra_mk4', carClass: 'C', expectWheels: 0, maxH: 1.45 },
+  { id: 'honda_civic_type_r', carClass: 'C', expectWheels: 4, maxH: 1.55 },
+  { id: 'dodge_challenger_srt', carClass: 'C', expectWheels: 0, maxH: 1.50 },
+  { id: 'mercedes_amg_c63', carClass: 'C', expectWheels: 4, maxH: 1.50 },
+  { id: 'honda_nsx_r', carClass: 'C', expectWheels: 0, maxH: 1.45 },
+  { id: 'porsche_959', carClass: 'C', expectWheels: 4, maxH: 1.50 },
+  { id: 'ferrari_f40_lbw', carClass: 'C', expectWheels: 4, maxH: 1.45 },
+  // B Class
+  { id: 'aston_vantage_59_amr', carClass: 'B', expectWheels: 4, maxH: 1.45 },
+  { id: 'lamborghini_aventador', carClass: 'B', expectWheels: 4, maxH: 1.45 },
+  { id: 'nissan_gtr_nismo', carClass: 'B', expectWheels: 4, maxH: 1.50 },
+  { id: 'ferrari_812_competizione', carClass: 'B', expectWheels: 4, maxH: 1.45 },
+  { id: 'mclaren_f1', carClass: 'B', expectWheels: 4, maxH: 1.45 },
+  { id: 'mclaren_765lt', carClass: 'B', expectWheels: 4, maxH: 1.45 },
+  { id: 'porsche_911_gt3_rs', carClass: 'B', expectWheels: 4, maxH: 1.50 },
+  // GT3 Class
   { id: 'ferrari_296_gt3', carClass: 'GT3', expectWheels: 0, maxH: 1.50 },
   { id: 'ferrari_488_gt3', carClass: 'GT3', expectWheels: 0, maxH: 1.50 },
   { id: 'lamborghini_huracan_gt3', carClass: 'GT3', expectWheels: 4, maxH: 1.60 },
   { id: 'mclaren_650s_gt3', carClass: 'GT3', expectWheels: 4, maxH: 1.60 },
-  // 10 HYPER new
-  { id: 'mclaren_p1_gtr', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'ferrari_fxxk_evo', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'lamborghini_essenza', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'ferrari_laferrari', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'mclaren_p1', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'ferrari_sf90_xx', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'lamborghini_revuelto', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'lamborghini_centenario', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'lamborghini_veneno', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  { id: 'lamborghini_sc20', carClass: 'HYPER', expectWheels: 4, maxH: 1.45 },
-  // 4 LMP1 / Vision GT new
-  { id: 'lamborghini_terzo', carClass: 'LMP1', expectWheels: 4, maxH: 1.45 },
-  { id: 'alpine_vision', carClass: 'LMP1', expectWheels: 4, maxH: 1.45 },
-  { id: 'mazda_furai', carClass: 'LMP1', expectWheels: 4, maxH: 1.45 },
-  { id: 'mazda_lm_vision', carClass: 'LMP1', expectWheels: 4, maxH: 1.45 },
-  // 1 F1 new
-  { id: 'f1_2026_sf26', carClass: 'F1', expectWheels: 4, maxH: 1.45 }
+  { id: 'audi_r8_lms_evo', carClass: 'GT3', expectWheels: 4, maxH: 1.80 },
+  { id: 'acura_nsx_gt3_evo', carClass: 'GT3', expectWheels: 4, maxH: 1.45 },
+  { id: 'lexus_rc_f_gt3', carClass: 'GT3', expectWheels: 4, maxH: 1.65 },
+  { id: 'nissan_gtr_gt3', carClass: 'GT3', expectWheels: 4, maxH: 1.55 },
+  { id: 'corvette_z06_gt3r', carClass: 'GT3', expectWheels: 4, maxH: 1.50 },
+  { id: 'ford_mustang_gt3', carClass: 'GT3', expectWheels: 0, maxH: 1.50 },
+  // A Class
+  { id: 'lamborghini_centenario', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'lamborghini_sc20', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'lamborghini_veneno', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'lamborghini_revuelto', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'ferrari_laferrari', carClass: 'A', expectWheels: 0, maxH: 1.45 },
+  { id: 'mclaren_speedtail', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'bugatti_veyron_ss', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'porsche_918_spyder', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'mclaren_p1', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'ferrari_sf90_xx', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  { id: 'koenigsegg_agera', carClass: 'A', expectWheels: 4, maxH: 1.45 },
+  // S Class
+  { id: 'zenvo_tsrs', carClass: 'S', expectWheels: 4, maxH: 1.45 },
+  { id: 'bugatti_chiron_pur_sport', carClass: 'S', expectWheels: 4, maxH: 1.45 },
+  { id: 'amg_one', carClass: 'S', expectWheels: 4, maxH: 1.45 },
+  { id: 'aston_vulcan', carClass: 'S', expectWheels: 4, maxH: 1.45 },
+  { id: 'rimac_nevera', carClass: 'S', expectWheels: 4, maxH: 1.45 },
+  { id: 'bugatti_tourbillon', carClass: 'S', expectWheels: 4, maxH: 1.45 },
+  { id: 'koenigsegg_one1', carClass: 'S', expectWheels: 4, maxH: 1.45 },
+  // R Class
+  { id: 'mclaren_p1_gtr', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'mclaren_f1_gtr_longtail', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'lamborghini_essenza', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'mclaren_senna', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'koenigsegg_jesko_attack', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'pagani_zonda_r', carClass: 'R', expectWheels: 0, maxH: 1.45 },
+  { id: 'ferrari_fxxk_evo', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'alpine_vision', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'pagani_huayra_r', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  { id: 'mazda_furai', carClass: 'R', expectWheels: 4, maxH: 1.45 },
+  // LMH Class
+  { id: 'cadillac_v_seriesr', carClass: 'LMH', expectWheels: 4, maxH: 1.45 },
+  { id: 'porsche_963', carClass: 'LMH', expectWheels: 4, maxH: 1.45 },
+  { id: 'bugatti_bolide', carClass: 'LMH', expectWheels: 4, maxH: 1.45 },
+  { id: 'ferrari_499p', carClass: 'LMH', expectWheels: 4, maxH: 1.45 },
+  { id: 'mercedes_silver_lightning', carClass: 'LMH', expectWheels: 4, maxH: 1.45 },
+  { id: 'lamborghini_terzo', carClass: 'LMH', expectWheels: 4, maxH: 1.45 },
+  { id: 'mercedes_sauber_c9', carClass: 'LMH', expectWheels: 0, maxH: 1.50 },
+  // X Class
+  { id: 'mclaren_ultimate_vgt', carClass: 'X', expectWheels: 0, maxH: 1.45 },
+  { id: 'mazda_lm_vision', carClass: 'X', expectWheels: 4, maxH: 1.45 },
+  { id: 'mclaren_x2', carClass: 'X', expectWheels: 4, maxH: 1.45 },
+  { id: 'porsche_919_evo', carClass: 'X', expectWheels: 4, maxH: 1.45 },
+  // F1 Class
+  { id: 'f1_2025_mcl39', carClass: 'F1', expectWheels: 4, maxH: 1.45 },
+  { id: 'f1_2026_mac26', carClass: 'F1', expectWheels: 4, maxH: 1.45 },
+  { id: 'f1_2026_r26', carClass: 'F1', expectWheels: 4, maxH: 1.45 },
+  { id: 'f1_2026_sf26', carClass: 'F1', expectWheels: 4, maxH: 1.45 },
+  { id: 'f1_2026_w17', carClass: 'F1', expectWheels: 4, maxH: 1.45 },
+  { id: 'f1_2026_rb22', carClass: 'F1', expectWheels: 4, maxH: 1.45 },
+  { id: 'ferrari_f2004', carClass: 'F1', expectWheels: 4, maxH: 1.45 }
 ];
 
 function waitUntil(fn, timeoutMs = 25000) {
@@ -71,8 +121,8 @@ function measureFrontRearSilhouette(THREE, root) {
       v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
       if (v.y < minY) minY = v.y;
       if (v.y > maxY) maxY = v.y;
-      if (v.x > 1.35 && v.y > frontMaxY) frontMaxY = v.y;
-      if (v.x < -1.35 && v.y > rearMaxY) rearMaxY = v.y;
+      if (v.x > 1.25 && v.y > frontMaxY) frontMaxY = v.y;
+      if (v.x < -1.25 && v.y > rearMaxY) rearMaxY = v.y;
     }
   });
   return {
@@ -84,7 +134,7 @@ function measureFrontRearSilhouette(THREE, root) {
 }
 
 (async () => {
-  const report = { errors: [], cars: [], garageUi: {}, classPhysics: {}, recordsIsolation: {} };
+  const report = { errors: [], cars: [], garageUi: {}, piProfiles: {}, classPhysics: {}, recordsIsolation: {} };
   try {
     const frame = document.getElementById('app');
     const win = await waitUntil(() => {
@@ -93,7 +143,7 @@ function measureFrontRearSilhouette(THREE, root) {
         w && w.THREE && w.CIRCUITS && w.CAR_MODEL_PRESETS && w.CAR_CATALOG &&
         w.carAssetState && w.loadVehicleFromURLs && w.openGarageScreen &&
         w.ApexRecords && w.estimateClassProLapTime && w.rebuildProBenchmarkForCurrentCar &&
-        w.syncAIMultiCarModels && w.selectCircuit
+        w.syncAIMultiCarModels && w.selectCircuit && w.getCarChassisTraits && w.getCarPerformanceProfile
       ) ? w : null;
     }, 30000);
     const doc = frame.contentDocument;
@@ -109,9 +159,7 @@ function measureFrontRearSilhouette(THREE, root) {
     win.carAssetState.loadSeq++;
     win.carAssetState.loading = false;
 
-    // ------------------------------------------------------------------
-    // 1. Load & verify ALL 29 local car GLBs through real loader + normalizer + rigHiFiWheels
-    // ------------------------------------------------------------------
+    // 1. Load & verify ALL 75 local car GLBs
     for (const spec of LOCAL_CARS) {
       const preset = win.CAR_MODEL_PRESETS.find(p => p.id === spec.id);
       if (!preset) {
@@ -130,7 +178,7 @@ function measureFrontRearSilhouette(THREE, root) {
           }
         });
         const sil = measureFrontRearSilhouette(win.THREE, win.carAssetState.template);
-        const dimsOk = st.dims.length >= 4.55 && st.dims.length <= 5.20 &&
+        const dimsOk = st.dims.length >= 3.85 && st.dims.length <= 5.20 &&
                        st.dims.width >= 1.55 && st.dims.width <= 2.45 &&
                        st.dims.height >= 0.85 && st.dims.height <= spec.maxH;
         const groundOk = Math.abs(sil.minY) <= 0.05;
@@ -155,9 +203,7 @@ function measureFrontRearSilhouette(THREE, root) {
       }
     }
 
-    // ------------------------------------------------------------------
-    // 2. Categorized Garage UI & Filters Verification (33 total, strictly grouped)
-    // ------------------------------------------------------------------
+    // 2. Refined 10-Class PI Garage UI & Strength Filters Verification (79 total)
     win.carAssetState.presetId = 'ferrari458';
     win.carAssetState.loadedPresetId = 'ferrari458';
     win.openGarageScreen('home');
@@ -167,23 +213,43 @@ function measureFrontRearSilhouette(THREE, root) {
     const initialTab = win.flowState.garageClassTab;
     const initialIds = getVisibleIds();
 
+    const CLASSES_10 = ['D', 'C', 'B', 'GT3', 'A', 'S', 'R', 'LMH', 'X', 'F1'];
     const byTab = {};
-    for (const cls of ['STREET', 'GT3', 'HYPER', 'LMP1', 'F1']) {
+    for (const cls of CLASSES_10) {
       doc.querySelector(`[data-gar-class="${cls}"]`).click();
       byTab[cls] = getVisibleIds();
     }
 
-    doc.querySelector('[data-gar-class="HYPER"]').click();
-    doc.querySelector('[data-gar-sub="road"]').click();
-    const hyperRoad = getVisibleIds();
-    doc.querySelector('[data-gar-sub="track"]').click();
-    const hyperTrack = getVisibleIds();
-    doc.querySelector('[data-gar-sub="all"]').click();
-    doc.querySelector('[data-gar-brand="Ferrari"]').click();
-    const hyperFerrari = getVisibleIds();
+    doc.querySelector('[data-gar-class="C"]').click();
+    doc.querySelector('[data-gar-sub="hothatch"]').click();
+    const classCHothatch = getVisibleIds();
+
+    doc.querySelector('[data-gar-class="GT3"]').click();
+    doc.querySelector('[data-gar-sub="jp"]').click();
+    const gt3Jp = getVisibleIds();
+
+    doc.querySelector('[data-gar-class="A"]').click();
+    doc.querySelector('[data-gar-sub="hybrid"]').click();
+    const classAHybrid = getVisibleIds();
+
+    doc.querySelector('[data-gar-class="S"]').click();
+    doc.querySelector('[data-gar-sub="aero"]').click();
+    const classSAero = getVisibleIds();
+
+    doc.querySelector('[data-gar-class="LMH"]').click();
+    doc.querySelector('[data-gar-sub="wec"]').click();
+    const lmhWec = getVisibleIds();
+
+    doc.querySelector('[data-gar-class="F1"]').click();
+    doc.querySelector('[data-gar-sub="classic"]').click();
+    const f1Classic = getVisibleIds();
 
     doc.querySelector('[data-gar-class="all"]').click();
     const allCount = getVisibleIds().length;
+    const piBadgesCount = doc.querySelectorAll('#gar-car-strip .af-pi-badge').length;
+    const strengthChipsCount = doc.querySelectorAll('#gar-car-strip .af-strength-chip').length;
+    const perfBoxHtml = (doc.getElementById('gar-perf-profile') || {}).innerHTML || '';
+
     const searchInp = doc.getElementById('input-gar-search');
     searchInp.value = 'F40';
     searchInp.dispatchEvent(new win.Event('input', { bubbles: true }));
@@ -200,32 +266,53 @@ function measureFrontRearSilhouette(THREE, root) {
       initialTab,
       initialCount: initialIds.length,
       tabCounts: Object.fromEntries(Object.entries(byTab).map(([k, v]) => [k, v.length])),
-      hyperRoadCount: hyperRoad.length,
-      hyperTrackCount: hyperTrack.length,
-      hyperFerrariIds: hyperFerrari,
+      classCHothatch,
+      gt3JpIds: gt3Jp,
+      classAHybridCount: classAHybrid.length,
+      classSAero,
+      lmhWecCount: lmhWec.length,
+      f1Classic,
       allCount,
+      piBadgesCount,
+      strengthChipsCount,
+      hasPerfBox: perfBoxHtml.includes('af-perf-pi-num') && perfBoxHtml.includes('af-tradeoff-chip'),
       searchF40,
       searchValPreserved,
       gridOpenAfterClick
     };
 
-    // ------------------------------------------------------------------
-    // 3. 5-Class Physics & PRO Benchmark Ordering + AI Rosters + Anti-Pollution Records
-    // ------------------------------------------------------------------
+    // 2B. Verify PI & Strength/Trade-off/Track differentiation on all 79 cars
+    const allProfs = win.CAR_CATALOG.map(c => win.getCarPerformanceProfile(c.id));
+    const spreads = {};
+    for (const cls of CLASSES_10) {
+      const pis = allProfs.filter(p => p.carClass === cls).map(p => p.pi);
+      spreads[cls] = Math.max(...pis) - Math.min(...pis);
+    }
+    report.piProfiles = {
+      allValid: allProfs.every(p => p.pi >= 350 && p.pi <= 999 && Array.isArray(p.strengthTags) && p.strengthTags.length >= 1 && !!p.tradeoffTag && !!p.bestTrackType),
+      spreads,
+      vulcan: win.getCarPerformanceProfile('aston_vulcan'),
+      tourbillon: win.getCarPerformanceProfile('bugatti_tourbillon'),
+      gt3rs: win.getCarPerformanceProfile('porsche_911_gt3_rs'),
+      mclarenF1: win.getCarPerformanceProfile('mclaren_f1')
+    };
+
+    // 3. 10-Class Physics, FF Traits, Closest-PI AI Matching & Leaderboard Isolation
     win.selectCircuit(0); // Monza
     const estMonza = {};
-    for (const cls of ['STREET', 'GT3', 'HYPER', 'LMP1', 'F1']) {
+    for (const cls of CLASSES_10) {
       estMonza[cls] = win.estimateClassProLapTime(0, cls, 'dry');
     }
+    const aiS = (() => {
+      win.syncAIMultiCarModels('aston_vulcan');
+      return (win.aiCars || []).map(a => a.assignedPresetId);
+    })();
     const aiF1 = (() => {
       win.syncAIMultiCarModels('f1_2026_sf26');
       return (win.aiCars || []).map(a => a.assignedPresetId);
     })();
-    const aiStreet = (() => {
-      win.syncAIMultiCarModels('nissan_xtrail');
-      return (win.aiCars || []).map(a => a.assignedPresetId);
-    })();
-    report.classPhysics = { estMonza, aiF1, aiStreet };
+    const civicTraits = win.getCarChassisTraits(win.CAR_HANDLING_PROFILES.honda_civic_type_r);
+    report.classPhysics = { estMonza, aiS, aiF1, civicLayout: civicTraits.layout };
 
     await win.ApexRecords.ready();
     win.ApexRecords.clearAllForTesting();
@@ -235,7 +322,7 @@ function measureFrontRearSilhouette(THREE, root) {
     win.ApexRecords.recordCompletedLap({
       circuitId: 'monza', circuitName: 'Monza', trackLengthM: lenM,
       edition: 'realistic', mode: 'time_attack',
-      car: { presetId: 'nissan_xtrail', carName: 'NISSAN X-TRAIL', carClass: 'STREET' },
+      car: { presetId: 'nissan_xtrail', carName: 'NISSAN X-TRAIL', carClass: 'D' },
       setup: { tireCompound: 'medium', transmission: 'AT' },
       conditions: { weather: 'dry', surfaceState: 'fast' },
       timing: { lapTime: 132.450, isValidLap: true, topSpeedKmh: 205 }
@@ -248,7 +335,6 @@ function measureFrontRearSilhouette(THREE, root) {
       conditions: { weather: 'dry', surfaceState: 'fast' },
       timing: { lapTime: 78.120, isValidLap: true, topSpeedKmh: 372 }
     });
-    // Class spoofing import test for F1 & STREET
     const spoofRes = win.ApexRecords.importRecordsJSON(JSON.stringify({
       schema: 'apex-pro-records-v1',
       records: [
@@ -259,23 +345,23 @@ function measureFrontRearSilhouette(THREE, root) {
           conditions: { weather: 'dry' }, timing: { lapTime: 77.500, isValidLap: true }
         },
         {
-          id: 'spoof_suv_as_lmp1', recordedAt: '2026-11-22T22:01:00Z', driverName: 'SPOOF_SUV',
+          id: 'spoof_suv_as_lmh', recordedAt: '2026-11-22T22:01:00Z', driverName: 'SPOOF_SUV',
           circuitId: 'monza', edition: 'realistic',
-          car: { presetId: 'nissan_xtrail', carName: 'FAKE LMP1 SUV', carClass: 'LMP1' },
+          car: { presetId: 'nissan_xtrail', carName: 'FAKE LMH SUV', carClass: 'LMH' },
           conditions: { weather: 'dry' }, timing: { lapTime: 135.000, isValidLap: true }
         }
       ]
     }));
-    const bStreet = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'STREET', edition: 'realistic', weather: 'dry', dedupeMode: 'all' });
+    const bD = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'D', edition: 'realistic', weather: 'dry', dedupeMode: 'all' });
     const bGt3 = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'GT3', edition: 'realistic', weather: 'dry', dedupeMode: 'all' });
-    const bLmp1 = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'LMP1', edition: 'realistic', weather: 'dry', dedupeMode: 'all' });
+    const bLmh = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'LMH', edition: 'realistic', weather: 'dry', dedupeMode: 'all' });
     const bF1 = win.ApexRecords.getClassLeaderboard({ circuitId: 'monza', carClass: 'F1', edition: 'realistic', weather: 'dry', dedupeMode: 'all' });
 
     report.recordsIsolation = {
       spoofSanitized: spoofRes.sanitizedClasses,
-      streetCount: bStreet.entries.length,
+      dCount: bD.entries.length,
       gt3Count: bGt3.entries.length,
-      lmp1Count: bLmp1.entries.length,
+      lmhCount: bLmh.entries.length,
       f1Count: bF1.entries.length
     };
 

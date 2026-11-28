@@ -1941,7 +1941,7 @@ window.rebuildProBenchmarkForCurrentCar = function rebuildProBenchmarkForCurrent
 window.estimateClassProLapTime = function estimateClassProLapTime(circuitIdx, carClass, weather) {
   const c = CIRCUITS[circuitIdx] || CIRCUITS[0];
   const baseTime = (c && (c._baseGt3ProLapTime || c.proLapTime)) ? (c._baseGt3ProLapTime || c.proLapTime) : 95.0;
-  const CLASS_PRO_MULT = { STREET: 1.135, GT3: 1.0, HYPER: 0.895, LMP1: 0.750, F1: 0.695 };
+  const CLASS_PRO_MULT = { D: 1.275, C: 1.105, B: 1.005, GT3: 1.000, A: 0.925, S: 0.885, R: 0.855, LMH: 0.795, X: 0.725, F1: 0.675 };
   const clsMult = CLASS_PRO_MULT[carClass] || 1.0;
   const wetMult = (weather === 'wet') ? 1.125 : 1.0;
   return Number((baseTime * clsMult * wetMult).toFixed(3));

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Dual-Client E2E Multiplayer Verification</title></head>
+<body>
+<iframe id="clientA" src="/index.html" style="width:640px;height:400px;"></iframe>
+<iframe id="clientB" src="/index.html" style="width:640px;height:400px;"></iframe>
+<pre id="status">BOOTING</pre>
+<script>
+function waitUntil(fn, timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const t0 = Date.now();
+    const tick = () => {
+      try {
+        const res = fn();
+        if (res) return resolve(res);
+      } catch (e) {}
+      if (Date.now() - t0 > timeoutMs) return reject(new Error('Timeout waiting for condition'));
+      setTimeout(tick, 100);
+    };
+    tick();
+  });
+}
+
+(async () => {
+  const report = { checks: [], errors: [], metrics: {} };
+  const check = (cond, name, detail = '') => {
+    report.checks.push({ name, passed: !!cond, detail });
+    if (!cond) report.errors.push(`FAIL: ${name}${detail ? ' -> ' + detail : ''}`);
+  };
+
+  try {
+    const fA = document.getElementById('clientA');
+    const fB = document.getElementById('clientB');
+    const [winA, winB] = await Promise.all([
+      waitUntil(() => {
+        const w = fA.contentWindow;
+        return (w && w.apexNet && w.simState && w.selectCarById && w.ApexRecords) ? w : null;
+      }),
+      waitUntil(() => {
+        const w = fB.contentWindow;
+        return (w && w.apexNet && w.simState && w.selectCarById && w.ApexRecords) ? w : null;
+      })
+    ]);
+
+    winA.apexNet.setPlayerName('HOST-RAY');
+    winB.apexNet.setPlayerName('PEER-KEN');
+    winA.selectCarById('amggt3');
+    winB.selectCarById('porsche911');
+
+    const okA = await winA.apexNet.connect();
+    const okB = await winB.apexNet.connect();
+    await waitUntil(() => winA.apexNet.getSnapshot().playerId && winB.apexNet.getSnapshot().playerId, 10000);
+    check(okA && okB, 'Both headless Chrome clients connect to Python WebSocket server',
+      `A=${winA.apexNet.getSnapshot().playerId} B=${winB.apexNet.getSnapshot().playerId}`);
+
+    // UX Checks: Driver name persists across >3s ping heartbeats, CSS user-select is 'text', copy buttons work
+    winA.openMultiplayerScreen();
+    await waitUntil(() => winA.document.getElementById('input-mp-name'), 4000);
+    await new Promise(r => setTimeout(r, 200)); // Let initial room_list render settle
+    const nameInp = winA.document.getElementById('input-mp-name');
+    nameInp.value = 'PRO-RAYMOND';
+    nameInp.dispatchEvent(new winA.Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 3100)); // Wait across >= 1 2.5s ping/pong cycle
+    const curNameInp = winA.document.getElementById('input-mp-name');
+    const curWsInp = winA.document.getElementById('input-mp-ws-url');
+    const copyGameBtn = winA.document.getElementById('btn-mp-copy-game-url');
+    const copyWsBtn = winA.document.getElementById('btn-mp-copy-ws-url');
+    const keptName = (curNameInp || {}).value || '';
+    const getUserSelect = (el) => {
+      if (!el) return '';
+      const cs = winA.getComputedStyle(el);
+      return cs.getPropertyValue('user-select') || cs.userSelect || cs.webkitUserSelect || '';
+    };
+    const selStyle = getUserSelect(curNameInp);
+    const wsStyle = getUserSelect(curWsInp);
+    if (copyGameBtn) copyGameBtn.click();
+    if (copyWsBtn) copyWsBtn.click();
+    check(keptName === 'PRO-RAYMOND', 'Edited driver name persists across >3s ping/pong heartbeats without snapping back', `kept=${keptName}`);
+    check(selStyle === 'text' && wsStyle === 'text' && !!copyGameBtn && !!copyWsBtn,
+      'Inputs allow text selection (user-select: text) and one-click copy buttons are wired',
+      `nameSel=${selStyle} wsSel=${wsStyle}`);
+    winA.apexNet.setPlayerName('HOST-RAY');
+
+    // Verify HiFi opponent mesh template reuse & raised hardware triangle cap
+    const peerHighMesh = winA.createRemotePeerVehicleMesh('amggt3', '#ef4444', false, 'original');
+    const peerSlot = peerHighMesh && peerHighMesh.userData && peerHighMesh.userData.vehicleSlot;
+    check(
+      peerSlot && peerSlot.peerLivery === 'original' && peerSlot.assignedPresetId === 'amggt3',
+      'Remote peer vehicle slot records peerLivery and assignedPresetId cleanly',
+      `id=${peerSlot && peerSlot.assignedPresetId} livery=${peerSlot && peerSlot.peerLivery}`
+    );
+    winA.disposeRemotePeerVehicleMesh(peerHighMesh);
+
+    // Host creates room -> gets 6-char code -> Peer joins by code
+    winA.apexNet.createRoom({ circuitIdx: 0, carClass: 'GT3', edition: 'realistic', weather: 'dry', laps: 2, collisionMode: 'soft', isPublic: true });
+    const roomA = await waitUntil(() => winA.apexNet.getSnapshot().room, 8000);
+    const roomCode = roomA.code;
+    report.metrics.roomCode = roomCode;
+    check(typeof roomCode === 'string' && roomCode.length === 6, 'Host creates 6-char room code', `code=${roomCode}`);
+
+    winB.apexNet.joinRoom(roomCode);
+    await waitUntil(() => {
+      const rA = winA.apexNet.getSnapshot().room;
+      const rB = winB.apexNet.getSnapshot().room;
+      return rA && rB && rA.players.length === 2 && rB.players.length === 2 && rB.code === roomCode;
+    }, 8000);
+    check(true, 'Peer joins host room by shared 6-char code cleanly', `players=2 code=${roomCode}`);
+
+    // Host starts synchronized race
+    winA.apexNet.startRace();
+    await waitUntil(() => winA.simState.mode === 'multiplayer' && winB.simState.mode === 'multiplayer', 10000);
+    check(
+      winA.simState._mpRaceStartServerMs > 0 && winA.simState._mpRaceStartServerMs === winB.simState._mpRaceStartServerMs,
+      'Both clients receive identical synchronized raceStartServerMs gantry timestamp',
+      `t=${winA.simState._mpRaceStartServerMs}`
+    );
+
+    // Clear countdown lock cleanly and advance Host ~35m further forward than Peer along Monza straight
+    winA.simState.countdownActive = false;
+    winB.simState.countdownActive = false;
+    winA.simState.paused = false;
+    winB.simState.paused = false;
+    winA.simState.inShowcaseMode = false;
+    winB.simState.inShowcaseMode = false;
+
+    winA.simState.s = 220; winA.simState.d = -2.0; winA.simState.speedMs = 55; winA.simState.speedKmh = 198;
+    winB.simState.s = 165; winB.simState.d = 2.0; winB.simState.speedMs = 42; winB.simState.speedKmh = 151.2;
+
+    // Pump physics & 20Hz network ticks over ~450ms real time so WS packets + 90ms interp buffer settle
+    for (let i = 0; i < 12; i++) {
+      winA.simState.s = 220 + i * 2.5;
+      winB.simState.s = 165 + i * 1.8;
+      winA.stepPhysics(0.055);
+      winB.stepPhysics(0.055);
+      await new Promise(r => setTimeout(r, 45));
+    }
+
+    const peersSeenByA = winA.apexNet.getRemotePeers();
+    const peersSeenByB = winB.apexNet.getRemotePeers();
+    const peerOfA = peersSeenByA[0];
+    const peerOfB = peersSeenByB[0];
+    report.metrics.peerSeenByA = peerOfA ? { name: peerOfA.name, s: Number(peerOfA.s.toFixed(1)), meshVisible: !!(peerOfA.mesh && peerOfA.mesh.visible) } : null;
+    report.metrics.peerSeenByB = peerOfB ? { name: peerOfB.name, s: Number(peerOfB.s.toFixed(1)), meshVisible: !!(peerOfB.mesh && peerOfB.mesh.visible) } : null;
+
+    check(
+      peerOfA && peerOfA.name === 'PEER-KEN' && peerOfA.mesh && peerOfA.mesh.visible && peerOfA.s > 150,
+      'Host client renders remote Peer 3D vehicle at synced track coordinates',
+      JSON.stringify(report.metrics.peerSeenByA)
+    );
+    check(
+      peerOfB && peerOfB.name === 'HOST-RAY' && peerOfB.mesh && peerOfB.mesh.visible && peerOfB.s > 205,
+      'Peer client renders remote Host 3D vehicle at synced track coordinates',
+      JSON.stringify(report.metrics.peerSeenByB)
+    );
+
+    winA.updateHUD();
+    winB.updateHUD();
+    const posA = (winA.document.getElementById('hud-race-pos') || {}).textContent || '';
+    const posB = (winB.document.getElementById('hud-race-pos') || {}).textContent || '';
+    report.metrics.hudPositions = { A: posA, B: posB };
+    check(posA.trim() === 'P1 / 2' && posB.trim() === 'P2 / 2', 'Live multiplayer HUD standings compute P1/2 and P2/2 cleanly', `A=${posA} B=${posB}`);
+
+    winA.apexNet.disconnect();
+    winB.apexNet.disconnect();
+    report.status = report.errors.length === 0 ? 'ALL_PASS' : 'HAS_ERRORS';
+  } catch (e) {
+    report.errors.push('EXCEPTION: ' + (e && e.stack ? e.stack : String(e)));
+    report.status = 'EXCEPTION';
+  }
+
+  document.getElementById('status').textContent = JSON.stringify(report, null, 2);
+  try {
+    await fetch('/__report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report)
+    });
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

@@ -3602,7 +3602,8 @@ function convertMaterialForSlot(src, slot, cache) {
     });
   } else if (role === 'body') {
     const hasLiveryTex = !!src.map;
-    const useOriginalTex = (carAssetState.livery === 'original') && hasLiveryTex && slot.kind === 'player';
+    const isOrigSlot = (slot.kind === 'player') ? (carAssetState.livery === 'original') : (slot.peerLivery !== 'team');
+    const useOriginalTex = isOrigSlot && hasLiveryTex;
     const patName = slot.kind === 'player' ? (carAssetState.liveryPattern || 'solid') : (slot.liveryPattern || 'solid');
     const patAccent = slot.kind === 'player' ? (carAssetState.accentHex || '#f8fafc') : (slot.accentHex || '#f8fafc');
     const slotHexCss = '#' + new THREE.Color(slot.color).getHexString();
@@ -3693,9 +3694,16 @@ const aiModelTemplateCache = {};
 const aiModelLoadingSet = new Set();
 
 function resolveSlotHiFiSource(slot) {
-  if (slot.kind === 'ai' && slot.assignedPresetId) {
+  if (slot.kind === 'ai') {
+    if (!slot.assignedPresetId) return { template: null, stats: null };
     const cachedAi = aiModelTemplateCache[slot.assignedPresetId];
     if (cachedAi && cachedAi.template) return cachedAi;
+    if (carAssetState.loadedPresetId === slot.assignedPresetId && carAssetState.template) {
+      const reused = { template: carAssetState.template, stats: carAssetState.stats };
+      aiModelTemplateCache[slot.assignedPresetId] = reused;
+      return reused;
+    }
+    return { template: null, stats: null };
   }
   return { template: carAssetState.template, stats: carAssetState.stats };
 }
@@ -3703,7 +3711,7 @@ function resolveSlotHiFiSource(slot) {
 function applyHiFiTemplateToSlot(slot) {
   disposeSlotHiFi(slot);
   const hifiSrc = resolveSlotHiFiSource(slot);
-  const isHeavyNonPlayer = slot.kind !== 'player' && (isSoftwareWebGL || (hifiSrc.stats && hifiSrc.stats.tris > 350000));
+  const isHeavyNonPlayer = slot.kind !== 'player' && (isSoftwareWebGL || (hifiSrc.stats && hifiSrc.stats.tris > 1250000));
   const enabled = !!hifiSrc.template && carAssetState.scope[slot.kind] !== false && !isHeavyNonPlayer;
   slot.procedural.visible = !enabled;
   slot.rig = enabled ? null : slot.proceduralRig;
@@ -3721,10 +3729,11 @@ function applyHiFiTemplateToSlot(slot) {
   const inst = hifiSrc.template.clone(true);
   const cache = new Map();
   const tailMats = [];
+  const allowCastShadow = !isSoftwareWebGL && !slot.isGhost && (slot.kind === 'player' || !hifiSrc.stats || hifiSrc.stats.tris <= 180000);
   inst.traverse(o => {
     if (!o.isMesh) return;
     o.frustumCulled = true;
-    if (!isSoftwareWebGL && !slot.isGhost) o.castShadow = true;
+    if (allowCastShadow) o.castShadow = true;
     o.material = Array.isArray(o.material)
       ? o.material.map(m => convertMaterialForSlot(m, slot, cache))
       : convertMaterialForSlot(o.material, slot, cache);
@@ -3862,6 +3871,69 @@ function syncAIMultiCarModels(playerPresetId) {
   });
 }
 window.syncAIMultiCarModels = syncAIMultiCarModels;
+
+function createRemotePeerVehicleMesh(presetId, paintHex, isGhostMode, livery) {
+  const pid = presetId || 'procedural';
+  const colorInt = parseInt(String(paintHex || '#38bdf8').replace('#', ''), 16) || 0x38bdf8;
+  const mesh = createGT3CarMesh(colorInt, !!isGhostMode, isGhostMode ? 0.62 : 1.0, 'ai', pid);
+  const slot = mesh && mesh.userData && mesh.userData.vehicleSlot;
+  if (slot) {
+    slot.assignedPresetId = pid;
+    slot.chassisStyle = pid;
+    slot.peerLivery = livery || 'original';
+    slot.liveryPattern = 'stripes';
+    slot.accentHex = '#f8fafc';
+    if (slot.procedural) {
+      slot.group.remove(slot.procedural);
+      disposeObjectDeep(slot.procedural);
+    }
+    const body = buildProceduralBody(colorInt, !!isGhostMode, isGhostMode ? 0.62 : 1.0, pid, '#18181b', 'stripes', '#f8fafc');
+    slot.group.add(body);
+    slot.procedural = body;
+    slot.proceduralRig = collectWheelRig(body);
+    applyHiFiTemplateToSlot(slot);
+
+    if (!isSoftwareWebGL && !aiModelTemplateCache[pid] && !aiModelLoadingSet.has(pid)) {
+      const pObj = CAR_MODEL_PRESETS.find(p => p.id === pid && p.urls && p.urls.length);
+      if (pObj) {
+        const localOnly = pObj.urls.filter(u => !/^https?:\/\//i.test(u));
+        const pickUrls = (typeof window !== 'undefined' && window.location && window.location.protocol !== 'file:' && localOnly.length) ? localOnly : pObj.urls;
+        if (pickUrls && pickUrls.length) {
+          aiModelLoadingSet.add(pid);
+          try {
+            const loader = createGLTFLoader();
+            loader.load(pickUrls[0], (gltf) => {
+              aiModelLoadingSet.delete(pid);
+              try {
+                const sc = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
+                if (!sc) return;
+                aiModelTemplateCache[pid] = buildHiFiAssetsFromScene(sc, pid);
+                vehicleSlots.forEach(s => { if (s.kind === 'ai' && s.assignedPresetId === pid) applyHiFiTemplateToSlot(s); });
+              } catch (e) { /* keep procedural fallback */ }
+            }, undefined, () => { aiModelLoadingSet.delete(pid); });
+          } catch (e) { aiModelLoadingSet.delete(pid); }
+        }
+      }
+    }
+  }
+  mesh.visible = false;
+  scene.add(mesh);
+  return mesh;
+}
+
+function disposeRemotePeerVehicleMesh(mesh) {
+  if (!mesh) return;
+  const slot = mesh.userData && mesh.userData.vehicleSlot;
+  if (slot) {
+    const idx = vehicleSlots.indexOf(slot);
+    if (idx !== -1) vehicleSlots.splice(idx, 1);
+  }
+  if (mesh.parent) mesh.parent.remove(mesh);
+  disposeObjectDeep(mesh);
+}
+
+window.createRemotePeerVehicleMesh = createRemotePeerVehicleMesh;
+window.disposeRemotePeerVehicleMesh = disposeRemotePeerVehicleMesh;
 
 function disposeObjectDeep(obj) {
   if (!obj) return;
@@ -5008,6 +5080,35 @@ function drawScreenVisualFX(nowSec) {
           fxCtx.font = '700 10px "JetBrains Mono", monospace';
           fxCtx.textAlign = 'center';
           fxCtx.fillText(`${ai.name} · ${ai.stateLabel}`, sx + 2, sy - 6);
+        }
+      }
+    });
+  } else if (simState.mode === 'multiplayer' && typeof window !== 'undefined' && window.apexNet && typeof window.apexNet.getRemotePeers === 'function') {
+    const mpPeers = window.apexNet.getRemotePeers();
+    mpPeers.forEach(peer => {
+      if (!peer.mesh || !peer.mesh.visible) return;
+      const pos = peer.mesh.position.clone();
+      pos.y += 2.1;
+      pos.project(camera);
+      if (pos.z > 0 && pos.z < 1) {
+        const sx = (pos.x * 0.5 + 0.5) * w;
+        const sy = (-pos.y * 0.5 + 0.5) * h;
+        if (sx > 60 && sx < w - 60 && sy > 60 && sy < h - 80) {
+          const accentHex = peer.paintHex || '#38bdf8';
+          fxCtx.fillStyle = 'rgba(11, 15, 25, 0.84)';
+          fxCtx.fillRect(sx - 78, sy - 22, 156, 22);
+          fxCtx.strokeStyle = accentHex;
+          fxCtx.lineWidth = 1.4;
+          fxCtx.strokeRect(sx - 78, sy - 22, 156, 22);
+
+          fxCtx.fillStyle = accentHex;
+          fxCtx.fillRect(sx - 78, sy - 22, 4, 22);
+
+          fxCtx.fillStyle = '#e0f2fe';
+          fxCtx.font = '700 10px "JetBrains Mono", monospace';
+          fxCtx.textAlign = 'center';
+          const kmh = Math.round((peer.speedMs || 0) * 3.6);
+          fxCtx.fillText(`${peer.name} · ${kmh} KM/H`, sx + 2, sy - 8);
         }
       }
     });

@@ -1221,3 +1221,50 @@ Script error. at module(main.js:START):0:0
 - `python scratch/verify_all_cars_and_garage.py`：**100% PASSED**（全數 29 個本地車款 GLB / 33 台車、分類車庫與 5 級排行榜）
 - [`scratch/verify_vehicle_performance.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_vehicle_performance.py)：**100% PASSED**（全數 12 台代表車實車性能階層維持完整：SF-26 F1 `0-100 2.14s / 0-200 4.28s / 0-300 8.18s / Vmax 364.2`、919 Evo `0-300 7.82s / Spa 94.86s`、GT3 458 `Spa 138.14s`、X-Trail `0-100 7.1s / Spa 193.02s`）
 - [`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat) `--check`：**13 / 13 HTTP 200 OK**
+
+
+---
+
+## 🌐 2026-11-28｜本機／區網多人對戰系統實作（零依賴 Python WebSocket ＋ 雙入口大廳）
+
+### 1. 架構與實作內容
+1. **零依賴純 Python 3.12 WebSocket 伺服器與 LAN 主機整合**（[`apex_mp_server.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/apex_mp_server.py)、[`apex_desktop_app.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/apex_desktop_app.py)、[`launch_apex_lan_host.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_lan_host.bat)）
+   - 以 Python 標準庫 `asyncio` 實作 RFC 6455 WebSocket 伺服器，免安裝任何第三方套件（支援 HTTP Upgrade、Mask 解碼、Fragmentation、Ping/Pong 心跳及最多 8 人多房間管理）。
+   - **同時支援「快速配對」與「6 碼私人房間代碼＋公開房大廳」**：`quick_match` 依組別（`carClass`）與物理版自動配對同級等候中房間；`create_room` / `join_room` 產生 6 碼不混淆房號讓好友直接加入；`list_rooms` 顯示所有等待中之公開房。
+   - 擴充 [`apex_desktop_app.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/apex_desktop_app.py) 支援 `--lan` 旗標（綁定 `0.0.0.0` 並透過 `GET /__mp_info.json` 提供自動 WS 連接埠探索），另增 [`launch_apex_lan_host.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_lan_host.bat) 讓同 Wi-Fi / 區網玩家開網頁即可連線。
+2. **前端多人引擎與遠端 3D 實車同步**（[`js/net.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/net.js)、[`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js)）
+   - [`js/net.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/net.js) 實作 `window.apexNet`：自動連線探索、RTT 與伺服器時鐘校正、`setPlayerName` 單分頁名稱覆寫、20 Hz `(s, d, heading, speed)` 賽道曲線座標廣播、90ms 環狀緩衝圓周內插、`<= 120ms` 邊界外推與可選「柔和橫向排斥 / 幽靈無碰撞」模式。
+   - [`js/render.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/render.js) 新增 `createRemotePeerVehicleMesh`、`disposeRemotePeerVehicleMesh` 及 `multiplayer` 模式 3D 車頂即時名牌與尾燈同步。
+3. **發車燈同步、HUD／小地圖與大廳／待機室 UI**（[`js/physics.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/physics.js)、[`js/main.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/main.js)、[`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js)、[`index.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/index.html)）
+   - 主頁新增「🌐 區網多人」按鈕與 `#scr-multiplayer`（支援一鍵快速配對、建立 6 碼房間、輸入代碼加入、公開房列表、即時換車／烤漆、準備檢查與房主開賽）。
+   - 起跑紅燈依 `raceStartServerMs` 與伺服時鐘同步熄燈（錯位排位 `_gridBaseS` 避免誤判偷跑），競賽時保留尾流偵測、即時名次差距 `updateMultiplayerHUD`、雷達偵測、小地圖光點及多人完賽結算榜。
+
+### 2. 全數驗證結果（最後一次編輯後連貫通過）
+- `python scratch/check_syntax.py`：**9 / 9 JS 檔案全數 OK**（含 [`js/net.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/net.js)）
+- `python apex_mp_server.py --check`：**OK**（RFC 6455 握手與 `welcome` 封包通過）
+- [`scratch/verify_multiplayer.py`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_multiplayer.py)：**100% PASSED**
+  - Part A：3 客戶端配對驗證（GT3 自動同房、F1 自動隔離、`list_rooms`、6 碼私人房、統一 `raceStartServerMs`、20 Hz `peer_state` 轉發與 `finish` 排名）。
+  - Part B：雙 Chrome Headless `index.html` 端對端實跑——Host (`HOST-RAY`) 與 Peer (`PEER-KEN`) 經 6 碼房號連線、同步起跑並在賽道實時推進（Host 渲染 `PEER-KEN @ s=187.1m`、Peer 渲染 `HOST-RAY @ s=250.4m`、HUD 即時顯示 `P1 / 2` 與 `P2 / 2`）。
+- `python scratch/test_physics_math.py`：**26 PASSED, 0 FAILED**
+- `python scratch/test_rfc_improvements.py`：**38 PASSED, 0 FAILED**
+- `python scratch/test_proposal.py`：**44 / 44 PASSED**（`index.html` 啟動無報錯 `177559 chars`）
+- `python scratch/verify_driving_experience.py`：**100% PASSED**
+- `python scratch/verify_vehicle_performance.py`：**100% PASSED**
+- [`launch_apex_desktop.bat`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/launch_apex_desktop.bat) `--check`：**14 / 14 HTTP 200 OK**（含 `/__mp_info.json`）
+
+### [2026-11-28] LAN Multiplayer UX Fixes & High-Detail Opponent `.glb` Support
+- **Driver Name Persistence & Copyable URLs (`index.html`, `js/net.js`, `js/flow.js`)**:
+  - Added CSS `user-select: text !important` on `input, textarea, .af-copyable`.
+  - Fixed `pong` heartbeat full-DOM re-render resetting `#input-mp-name` (`notifyListeners('ping')` skipped by full-DOM lobby renderer; live `input` sync + `#btn-mp-apply-name` button + badge-only update).
+  - Added one-click Copy buttons (`#btn-mp-copy-game-url`, `#btn-mp-copy-ws-url`, `#btn-mp-copy-code`, `#btn-mp-copy-room-url`) with `document.execCommand('copy')` fallback for non-HTTPS `http://<LAN-IP>` origins and LAN URL generation via `/__mp_info.json`.
+- **High-Detail Opponent `.glb` Rendering (`apex_mp_server.py`, `js/net.js`, `js/render.js`)**:
+  - Added `livery` metadata synchronization between host/peers.
+  - Raised hardware GPU non-player triangle cap (`350,000 -> 1,250,000`), enabled `carAssetState.template` reuse for matching presets, preserved factory liveries (`peerLivery !== 'team'`), and disabled `castShadow` on non-player meshes `> 180k` tris while retaining procedural fallback for software WebGL.
+- **Verification (All Passed)**:
+  - `python scratch/check_syntax.py` (9/9 JS OK)
+  - `python apex_mp_server.py --check` (`OK`, `port=53724`)
+  - `python scratch/verify_multiplayer.py` (Part A protocol + Part B dual headless Chrome E2E passed, including >3s heartbeat name persistence, `user-select: text`, copy buttons, `peerLivery` slot check, 6-char room code sync)
+  - `python scratch/test_rfc_improvements.py` (`38 PASSED, 0 FAILED`)
+  - `python scratch/test_proposal.py` (`ALL PROPOSAL TESTS PASSED: 44/44`)
+  - `python scratch/verify_all_cars_and_garage.py` (all 29 `.glb` / 33 cars & 5-class physics/garage/leaderboard verified)
+  - `.\launch_apex_desktop.bat --check` (`APEX DESKTOP SERVER SELF-CHECK PASSED 100%!`)

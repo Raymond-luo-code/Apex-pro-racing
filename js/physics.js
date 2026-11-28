@@ -1540,8 +1540,10 @@ function selectCircuit(index) {
 
 function resetSession(triggerCountdown = true) {
   refreshSessionTrackConditions();
-  simState.s = 0;
-  simState.d = 0;
+  const isMP = (simState.mode === 'multiplayer');
+  simState.s = isMP ? (simState._mpGridS || 0) : 0;
+  simState.d = isMP ? (simState._mpGridD || 0) : 0;
+  simState._gridBaseS = simState.s;
   simState.lap = 1;
   simState.lapElapsed = 0;
   simState.sector1Time = null;
@@ -1559,7 +1561,7 @@ function resetSession(triggerCountdown = true) {
   document.getElementById('bench-0-200').textContent = '--.--s';
   document.getElementById('bench-0-300').textContent = '--.--s';
 
-  const startNode = sampleTrackAtS(0);
+  const startNode = sampleTrackAtS(simState.s);
   const dtReset = getCarDrivetrainSpec(getCurrentCarHandling());
   simState.heading = startNode.heading;
   simState.speedMs = 0;
@@ -1596,7 +1598,7 @@ function resetSession(triggerCountdown = true) {
   document.getElementById('hud-s2').textContent = '--.---';
   document.getElementById('hud-s3').textContent = '--.---';
   document.getElementById('hud-lap-count').textContent =
-    simState.mode === 'ai_race' ? `1 / ${simState.totalRaceLaps}` : '1';
+    (simState.mode === 'ai_race' || simState.mode === 'multiplayer') ? `1 / ${simState.totalRaceLaps}` : '1';
 
   simState.hasJumpStarted = false;
   simState.jumpStartPenaltySec = 0;
@@ -1625,12 +1627,15 @@ function resetSession(triggerCountdown = true) {
     const activePid = (typeof carAssetState !== 'undefined' && carAssetState) ? carAssetState.presetId : 'procedural';
     window.syncAIMultiCarModels(activePid);
   }
+  if (!isMP && typeof window !== 'undefined' && window.apexNet && typeof window.apexNet.hideAllPeerMeshes === 'function') {
+    window.apexNet.hideAllPeerMeshes();
+  }
 
   const startOverlay = document.getElementById('start-lights-overlay');
   if (triggerCountdown && !simState.inShowcaseMode) {
-    // Phase 1: FIA Standard 5-Red-Light Gantry Start + Random 0.25-2.0s Hold
+    // Phase 1: FIA Standard 5-Red-Light Gantry Start (+ server clock sync in Multiplayer)
     simState.countdownActive = true;
-    simState.gantryHoldDuration = Number((0.25 + Math.random() * 1.75).toFixed(2));
+    simState.gantryHoldDuration = isMP ? 0.80 : Number((0.25 + Math.random() * 1.75).toFixed(2));
     simState.countdownTimer = 3.40 + simState.gantryHoldDuration;
     simState.lastBeepStage = 0;
     updateCountdownUI();
@@ -1914,9 +1919,15 @@ function stepPhysics(dt) {
   const thr = simState.throttleInput / 100;
   const brk = simState.brakeInput / 100;
 
-  // Phase 1: FIA 5-Red-Light Gantry Start & Jump Start Detection
+  // Phase 1: FIA 5-Red-Light Gantry Start & Jump Start Detection (+ Server Clock Sync in Multiplayer)
   if (simState.countdownActive) {
-    simState.gantryElapsed += dt;
+    if (simState.mode === 'multiplayer' && simState._mpRaceStartServerMs && typeof window !== 'undefined' && window.apexNet) {
+      const srvNow = window.apexNet.getServerNowMs();
+      const seqStartMs = simState._mpRaceStartServerMs - 4200;
+      simState.gantryElapsed = Math.max(0, (srvNow - seqStartMs) / 1000);
+    } else {
+      simState.gantryElapsed += dt;
+    }
     const totalGantryTime = 3.40 + (simState.gantryHoldDuration || 1.0);
     simState.countdownTimer = Math.max(0, totalGantryTime - simState.gantryElapsed);
 
@@ -1938,6 +1949,7 @@ function stepPhysics(dt) {
         simState.lapElapsed = 0;
         simState.rpm = Math.round((dtLaunch.idleRpm || 1150) + thr * launchRpmSpan * 0.89 + Math.sin(performance.now() * 0.04) * (thr * 180));
         if (simState.mode === 'ai_race') stepAIRivals(dt);
+        if (simState.mode === 'multiplayer' && typeof window !== 'undefined' && window.apexNet) window.apexNet.stepMultiplayer(dt);
         return;
       } else {
         // Player dropped clutch / hit throttle BEFORE Lights Out! Allow creep & detect Jump Start (>0.5m)
@@ -1947,12 +1959,13 @@ function stepPhysics(dt) {
         simState.s += simState.speedMs * dt;
         simState.rpm = Math.round((dtLaunch.idleRpm || 1150) + 600 + thr * launchRpmSpan * 0.85);
         simState.lapElapsed = 0;
-        if (simState.s > 0.5 && !simState.hasJumpStarted) {
+        if ((simState.s - (simState._gridBaseS || 0)) > 0.5 && !simState.hasJumpStarted) {
           simState.hasJumpStarted = true;
           simState.jumpStartPenaltySec = 5.0;
           updateCountdownUI();
         }
         if (simState.mode === 'ai_race') stepAIRivals(dt);
+        if (simState.mode === 'multiplayer' && typeof window !== 'undefined' && window.apexNet) window.apexNet.stepMultiplayer(dt);
         return;
       }
     }
@@ -2035,7 +2048,9 @@ function stepPhysics(dt) {
   simState.inSlipstream = false;
   const wakeTargets = (simState.mode === 'ai_race')
     ? aiCars.map(a => ({ s: a.s, d: a.d }))
-    : [];
+    : ((simState.mode === 'multiplayer' && typeof window !== 'undefined' && window.apexNet && typeof window.apexNet.getRemotePeers === 'function')
+      ? window.apexNet.getRemotePeers().map(p => ({ s: p.s, d: p.d }))
+      : []);
 
   for (const target of wakeTargets) {
     let ds = target.s - simState.s;
@@ -2649,6 +2664,11 @@ function stepPhysics(dt) {
         simState.checkeredFlagTimer = 3.5;
         simState.activeFlag = 'checkered';
         simState.flagMessage = '🏁 CHECKERED FLAG // 衝線完賽！';
+        if (simState.mode === 'multiplayer' && typeof window !== 'undefined' && window.apexNet && typeof window.apexNet.reportFinish === 'function') {
+          const lapList = (simState.sessionLapTimes && simState.sessionLapTimes.length) ? simState.sessionLapTimes : [completedLapTime];
+          const totalRaceSec = lapList.reduce((a, b) => a + b, 0) + (simState.jumpStartPenaltySec || 0);
+          window.apexNet.reportFinish(totalRaceSec, Math.min.apply(null, lapList), simState.jumpStartPenaltySec || 0);
+        }
         if (typeof window.__apexFlowFinish === 'function') {
           window.__apexFlowFinish(completedLapTime);
         } else {
@@ -2677,6 +2697,8 @@ function stepPhysics(dt) {
     if (!simState.countdownActive) {
       resolveVehicleCollisions(dt);
     }
+  } else if (simState.mode === 'multiplayer' && typeof window !== 'undefined' && window.apexNet && typeof window.apexNet.stepMultiplayer === 'function') {
+    window.apexNet.stepMultiplayer(dt);
   }
   updateRaceFlags(dt);
 }

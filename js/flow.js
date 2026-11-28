@@ -620,10 +620,10 @@ function savePersonalRecord(key, lapTime) {
 }
 
 // --- 3. Flow State & Screen Transitions ---
-const ALL_FLOW_SCREENS = ['scr-splash', 'scr-loading', 'scr-home', 'scr-garage', 'scr-setup', 'scr-pause', 'scr-results', 'scr-records'];
+const ALL_FLOW_SCREENS = ['scr-splash', 'scr-loading', 'scr-home', 'scr-garage', 'scr-setup', 'scr-pause', 'scr-results', 'scr-records', 'scr-multiplayer'];
 const flowState = {
-  screen: 'splash',       // 'splash' | 'home' | 'garage' | 'setup' | 'racing' | 'pause' | 'results' | 'records'
-  garageReturnTo: 'home', // 'home' | 'setup'
+  screen: 'splash',       // 'splash' | 'home' | 'garage' | 'setup' | 'racing' | 'pause' | 'results' | 'records' | 'multiplayer'
+  garageReturnTo: 'home', // 'home' | 'setup' | 'multiplayer'
   recordsReturnTo: 'home',// 'home' | 'results'
   setupStep: 1,           // 1: edition, 2: mode, 3: circuit, 4: garage
   trackCategory: 'all',   // 'all' | 'f1_real' | 'original'
@@ -669,7 +669,8 @@ function showFlowScreen(target) {
     setup: 'scr-setup',
     pause: 'scr-pause',
     results: 'scr-results',
-    records: 'scr-records'
+    records: 'scr-records',
+    multiplayer: 'scr-multiplayer'
   };
   const activeId = map[target] || null;
   ALL_FLOW_SCREENS.forEach(id => {
@@ -837,6 +838,12 @@ function renderHomeScreen() {
 
 function enterHomeScreen(withLoading, loadingOpts) {
   clearAllHeldInputs();
+  if (typeof simState !== 'undefined' && simState && simState.mode === 'multiplayer') {
+    if (window.apexNet) window.apexNet.leaveRoom();
+    if (typeof setGameMode === 'function') setGameMode('time_attack');
+    else simState.mode = 'time_attack';
+    simState._mpRaceStartServerMs = 0;
+  }
   const doEnter = () => {
     resetSession(false);
     renderHomeScreen();
@@ -1751,9 +1758,9 @@ window.__apexFlowFinish = function (finalLapTime) {
     });
   }
 
-  // Compute AI standings snapshot (accounting for Jump Start +5.0s time penalty if any)
+  // Compute AI / Multiplayer standings snapshot (accounting for Jump Start +5.0s time penalty if any)
   const playerProgress = simState.totalRaceLaps * totalTrackLength - (jumpPenaltySec * 65);
-  const standings = [{
+  let standings = [{
     name: 'YOU (' + activeMeta.name + ')',
     progress: playerProgress,
     isPlayer: true,
@@ -1773,8 +1780,18 @@ window.__apexFlowFinish = function (finalLapTime) {
       });
     });
     standings.sort((a, b) => b.progress - a.progress);
+  } else if (simState.mode === 'multiplayer' && window.apexNet) {
+    const mpStandings = window.apexNet.getLiveStandings();
+    if (mpStandings.length) {
+      standings = mpStandings.map(s => ({
+        name: s.name + (s.isPlayer ? ' (YOU)' : ''),
+        progress: s.progress,
+        isPlayer: !!s.isPlayer,
+        timeStr: (s.finished && s.finishTime) ? formatLapTime(s.finishTime) : (s.isPlayer ? formatLapTime(totalSessionTime) : 'RACING')
+      }));
+    }
   }
-  const playerRank = standings.findIndex(s => s.isPlayer) + 1;
+  const playerRank = Math.max(1, standings.findIndex(s => s.isPlayer) + 1);
 
   flowState.lastResult = {
     mode: simState.mode,
@@ -1853,14 +1870,16 @@ function renderResultPage(pageIdx) {
 
   if (pageIdx === 0) {
     if (kickerEl) kickerEl.textContent = `RESULT 1 / 3 · ${r.circuitName}`;
-    if (titleEl) titleEl.textContent = r.mode === 'ai_race' ? '錦標賽完賽名次榜' : '單圈計時挑戰結算';
+    const isRaceStandingsMode = (r.mode === 'ai_race' || r.mode === 'multiplayer');
+    if (titleEl) titleEl.textContent = r.mode === 'multiplayer' ? '多人連線完賽名次榜' : (r.mode === 'ai_race' ? '錦標賽完賽名次榜' : '單圈計時挑戰結算');
 
-    if (r.mode === 'ai_race') {
+    if (isRaceStandingsMode) {
       const rankLabels = ['🏆 冠軍 WINNER', '🥈 亞軍 P2 PODIUM', '🥉 季軍 P3 PODIUM', '完賽 FINISHED'];
+      const totalRacers = Math.max(1, (r.standings && r.standings.length) || 1);
       bodyEl.innerHTML = `
               <div class="af-res-page af-res-hero">
                 <div class="af-kicker">${rankLabels[r.playerRank - 1] || 'FINISHED'}</div>
-                <div class="af-res-pos">P${r.playerRank}<small> / 4</small></div>
+                <div class="af-res-pos">P${r.playerRank}<small> / ${totalRacers}</small></div>
                 <div class="af-res-sub">
                   總完賽時間 <strong>${formatLapTime(r.totalTime)}</strong> · 最佳單圈 <strong>${formatLapTime(r.bestLap)}</strong> · 座駕 ${r.carName}
                 </div>
@@ -2239,8 +2258,506 @@ const btnHomeRecordsChip = document.getElementById('btn-home-records-chip');
 if (btnHomeRecordsChip) btnHomeRecordsChip.addEventListener('click', () => openRecordsScreen({ returnTo: 'home' }));
 const btnHomeGarage = document.getElementById('btn-home-garage');
 if (btnHomeGarage) btnHomeGarage.addEventListener('click', () => openGarageScreen('home'));
+const btnHomeMultiplayer = document.getElementById('btn-home-multiplayer');
+if (btnHomeMultiplayer) btnHomeMultiplayer.addEventListener('click', () => openMultiplayerScreen());
 const btnHomePlay = document.getElementById('btn-home-play');
 if (btnHomePlay) btnHomePlay.addEventListener('click', () => openSetupStep(1));
+
+// --- 12. Local & LAN Multiplayer Lobby & Staging Room ---
+const mpDraftOpts = {
+  carClass: 'GT3',
+  circuitIdx: 0,
+  edition: 'realistic',
+  weather: 'dry',
+  laps: 2,
+  collisionMode: 'soft',
+  isPublic: true
+};
+
+function escHtmlMp(str) {
+  return String(str == null ? '' : str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+async function openMultiplayerScreen() {
+  const activeMeta = getActiveCarMeta();
+  mpDraftOpts.carClass = activeMeta.carClass || 'GT3';
+  mpDraftOpts.circuitIdx = (typeof currentCircuitIndex === 'number') ? currentCircuitIndex : 0;
+  mpDraftOpts.edition = (simState && simState.edition) ? simState.edition : 'realistic';
+  mpDraftOpts.weather = (simState && simState.weather) ? simState.weather : 'dry';
+
+  showFlowScreen('multiplayer');
+  renderMultiplayerScreen();
+
+  if (window.apexNet) {
+    const snap = window.apexNet.getSnapshot();
+    if (!snap.connected && !snap.connecting) {
+      await window.apexNet.connect();
+      renderMultiplayerScreen();
+    } else if (snap.connected) {
+      window.apexNet.refreshRoomList();
+    }
+  }
+}
+
+function launchMultiplayerRace(roomSnap) {
+  if (!roomSnap) return;
+  soundEngine.init();
+  clearAllHeldInputs();
+
+  const circuitIdx = Number(roomSnap.circuitIdx) || 0;
+  if (typeof selectCircuit === 'function' && currentCircuitIndex !== circuitIdx) {
+    selectCircuit(circuitIdx);
+  }
+  if (typeof setPhysicsEdition === 'function') {
+    setPhysicsEdition(roomSnap.edition === 'arcade' ? 'arcade' : 'realistic');
+  }
+  if (typeof setWeatherMode === 'function') {
+    setWeatherMode(roomSnap.weather === 'wet' ? 'wet' : 'dry');
+  }
+  if (typeof setGameMode === 'function') {
+    setGameMode('multiplayer');
+  }
+  simState.totalRaceLaps = Math.max(1, Number(roomSnap.laps) || 2);
+
+  const netSnap = window.apexNet ? window.apexNet.getSnapshot() : { playerId: null };
+  const myId = netSnap.playerId;
+  const players = Array.isArray(roomSnap.players) ? roomSnap.players : [];
+  const me = players.find(p => p.id === myId);
+  const mySlot = me ? (me.gridSlot || 0) : 0;
+  const grid = window.apexNet
+    ? window.apexNet.getGridSlotCoords(mySlot, players.length)
+    : { s: 0, d: 0 };
+
+  simState._mpGridS = grid.s;
+  simState._mpGridD = grid.d;
+  simState._mpRaceStartServerMs = roomSnap.raceStartServerMs || 0;
+
+  if (typeof window.rebuildProBenchmarkForCurrentCar === 'function') {
+    window.rebuildProBenchmarkForCurrentCar();
+  }
+
+  showFlowScreen('racing');
+  resetSession(true);
+}
+
+function updateMultiplayerConnBadge(snap) {
+  const badgeEl = document.getElementById('lbl-mp-conn-badge');
+  if (!badgeEl || !snap) return;
+  if (snap.connected) {
+    badgeEl.textContent = `● 已連線 (${snap.rttMs} ms)`;
+    badgeEl.style.borderColor = 'rgba(52,211,153,0.55)';
+    badgeEl.style.color = '#34d399';
+  } else if (snap.connecting) {
+    badgeEl.textContent = '◌ 連線中…';
+    badgeEl.style.borderColor = 'rgba(251,191,36,0.55)';
+    badgeEl.style.color = '#fbbf24';
+  } else {
+    badgeEl.textContent = '● 未連線';
+    badgeEl.style.borderColor = 'rgba(244,63,94,0.55)';
+    badgeEl.style.color = '#fb7185';
+  }
+}
+
+function getShareableGameUrl(snap) {
+  const info = snap && snap.serverInfo;
+  if (info && info.lanMode && Array.isArray(info.lanIps) && info.lanIps.length) {
+    const portPart = info.httpPort ? `:${info.httpPort}` : '';
+    return `http://${info.lanIps[0]}${portPart}/index.html`;
+  }
+  return (typeof window !== 'undefined' && window.location && window.location.href)
+    ? window.location.href.split('#')[0]
+    : 'http://127.0.0.1:8765/index.html';
+}
+
+function copyTextWithFallback(text, triggerBtn) {
+  const val = String(text || '');
+  const flash = (ok) => {
+    if (!triggerBtn) return;
+    const orig = triggerBtn.dataset.origText || triggerBtn.textContent;
+    triggerBtn.dataset.origText = orig;
+    triggerBtn.textContent = ok ? '✔ 已複製' : '⚠ 請手動選取';
+    setTimeout(() => {
+      if (triggerBtn) triggerBtn.textContent = orig;
+    }, 1400);
+  };
+  const fallbackExec = () => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = val;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      flash(!!ok);
+    } catch (e) {
+      flash(false);
+    }
+  };
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    navigator.clipboard.writeText(val).then(() => flash(true)).catch(fallbackExec);
+  } else {
+    fallbackExec();
+  }
+}
+
+function renderMultiplayerScreen() {
+  const bodyEl = document.getElementById('mp-body');
+  if (!bodyEl || !window.apexNet) return;
+
+  const snap = window.apexNet.getSnapshot();
+  updateMultiplayerConnBadge(snap);
+
+  // Preserve active input focus value so network events never wipe what the user is typing
+  const activeEl = document.activeElement;
+  if (activeEl && bodyEl.contains(activeEl) && activeEl.tagName === 'INPUT') {
+    if (activeEl.id === 'input-mp-name' && activeEl.value) {
+      window.apexNet.setPlayerName(activeEl.value);
+    }
+  }
+
+  const driverName = (typeof window.apexNet.getPlayerName === 'function')
+    ? window.apexNet.getPlayerName()
+    : ((window.ApexRecords && typeof window.ApexRecords.getDriverName === 'function') ? window.ApexRecords.getDriverName() : 'PLAYER');
+  const shareUrl = getShareableGameUrl(snap);
+  const wsUrl = snap.serverUrl || snap.autoDiscoveredUrl || 'ws://127.0.0.1:8766';
+  const activeMeta = getActiveCarMeta();
+  const classTabs = ['STREET', 'GT3', 'HYPER', 'LMP1', 'F1'];
+  const room = snap.room;
+
+  if (!room) {
+    const roomsHtml = (snap.roomList && snap.roomList.length)
+      ? snap.roomList.map(r => {
+          const cObj = CIRCUITS[r.circuitIdx] || CIRCUITS[0];
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(15,23,42,0.85);border:1px solid rgba(148,163,184,0.22);margin-bottom:8px;">
+              <div>
+                <div style="font-size:13px;font-weight:800;color:#f8fafc;">#${escHtmlMp(r.code)} · ${escHtmlMp(cObj.shortLabel || cObj.name)}</div>
+                <div style="font-size:11px;color:#94a3b8;">房主 ${escHtmlMp(r.hostName)} · ${escHtmlMp(r.carClass)} · ${r.edition === 'arcade' ? '娛樂NOS' : '真實版'} · ${r.weather === 'wet' ? '雨天' : '乾地'} · ${r.laps}圈</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="af-chip">${r.playerCount} / ${r.maxPlayers}</span>
+                <button type="button" class="af-btn af-btn-primary af-btn-sm" data-mp-join="${escHtmlMp(r.code)}">加入</button>
+              </div>
+            </div>`;
+        }).join('')
+      : `<div style="padding:18px;text-align:center;color:#94a3b8;font-size:12px;">目前尚無公開等待中的房間 — 點擊左側「快速配對」或「建立房間」即可立即開局。</div>`;
+
+    bodyEl.innerHTML = `
+      <div class="af-panel" style="padding:14px 16px;margin-bottom:12px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#94a3b8;font-weight:700;">車手代號</span>
+            <input id="input-mp-name" type="text" maxlength="20" value="${escHtmlMp(driverName)}"
+              style="width:130px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:12px;font-weight:700;">
+            <button type="button" id="btn-mp-apply-name" class="af-pill-btn">✔ 套用</button>
+            <span style="font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px;">WS 位址</span>
+            <input id="input-mp-ws-url" type="text" value="${escHtmlMp(wsUrl)}"
+              style="width:210px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#7dd3fc;font-size:11px;font-family:monospace;">
+            <button type="button" id="btn-mp-copy-ws-url" class="af-pill-btn">📋 複製 WS</button>
+            <button type="button" id="btn-mp-connect" class="af-pill-btn is-active">${snap.connected ? '↻ 重連' : '⚡ 連線'}</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:#cbd5e1;">目前座駕：<strong style="color:#fbbf24;">${escHtmlMp(activeMeta.name)}</strong> (${escHtmlMp(activeMeta.carClass)})</span>
+            <button type="button" id="btn-mp-garage" class="af-pill-btn">🔧 換車</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:8px;border-top:1px solid rgba(148,163,184,0.16);">
+          <span style="font-size:11px;color:#94a3b8;font-weight:700;">🔗 邀請朋友遊戲網址</span>
+          <input id="input-mp-share-url" type="text" readonly value="${escHtmlMp(shareUrl)}" class="af-copyable"
+            style="flex:1;min-width:220px;padding:5px 10px;border-radius:8px;background:rgba(15,23,42,0.75);border:1px solid rgba(56,189,248,0.28);color:#e2e8f0;font-size:11px;font-family:monospace;">
+          <button type="button" id="btn-mp-copy-game-url" class="af-pill-btn is-active">📋 複製遊戲網址</button>
+        </div>
+      </div>
+
+      ${snap.lastError ? `<div style="padding:10px 14px;border-radius:10px;background:rgba(225,29,72,0.18);border:1px solid #fb7185;color:#fecdd3;font-size:12px;margin-bottom:12px;">⚠ ${escHtmlMp(snap.lastError)}</div>` : ''}
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px;">
+        <div class="af-panel" style="padding:16px;">
+          <div class="af-kicker">OPTION A · QUICK MATCH &amp; CREATE ROOM</div>
+          <div class="af-h2" style="margin-bottom:10px;">⚡ 快速配對 ／ 建立房間</div>
+
+          <div class="af-tune-row" style="margin-bottom:8px;">
+            <span>車輛級別</span>
+            <div class="af-pill-grp">
+              ${classTabs.map(c => `<button type="button" data-mp-opt-class="${c}" class="af-pill-btn ${mpDraftOpts.carClass === c ? 'is-active' : ''}">${c}</button>`).join('')}
+            </div>
+          </div>
+
+          <div class="af-tune-row" style="margin-bottom:8px;">
+            <span>賽道與天候</span>
+            <div class="af-pill-grp" style="flex-wrap:wrap;">
+              <select id="sel-mp-circuit" style="padding:4px 8px;border-radius:6px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:11px;">
+                ${CIRCUITS.map((c, idx) => `<option value="${idx}" ${mpDraftOpts.circuitIdx === idx ? 'selected' : ''}>${escHtmlMp(c.shortLabel || c.name)}</option>`).join('')}
+              </select>
+              <button type="button" data-mp-opt-weather="dry" class="af-pill-btn ${mpDraftOpts.weather === 'dry' ? 'is-active' : ''}">☀ 乾地</button>
+              <button type="button" data-mp-opt-weather="wet" class="af-pill-btn ${mpDraftOpts.weather === 'wet' ? 'is-active' : ''}">🌧 濕地</button>
+            </div>
+          </div>
+
+          <div class="af-tune-row" style="margin-bottom:8px;">
+            <span>物理與碰撞</span>
+            <div class="af-pill-grp" style="flex-wrap:wrap;">
+              <button type="button" data-mp-opt-ed="realistic" class="af-pill-btn ${mpDraftOpts.edition === 'realistic' ? 'is-active' : ''}">真實版</button>
+              <button type="button" data-mp-opt-ed="arcade" class="af-pill-btn ${mpDraftOpts.edition === 'arcade' ? 'is-active' : ''}">娛樂NOS</button>
+              <button type="button" data-mp-opt-col="soft" class="af-pill-btn ${mpDraftOpts.collisionMode === 'soft' ? 'is-active' : ''}">柔和接觸</button>
+              <button type="button" data-mp-opt-col="ghost" class="af-pill-btn ${mpDraftOpts.collisionMode === 'ghost' ? 'is-active' : ''}">幽靈無碰撞</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
+            <button type="button" id="btn-mp-quick-match" class="af-btn af-btn-primary" ${snap.connected ? '' : 'disabled'}>⚡ 一鍵快速配對</button>
+            <button type="button" id="btn-mp-create-room" class="af-btn af-btn-ghost" ${snap.connected ? '' : 'disabled'}>➕ 建立房間 (拿代碼)</button>
+          </div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:8px;">💡 快速配對會自動加入同級別等候中房間；若無可用房間則自動開新公開房。</div>
+        </div>
+
+        <div class="af-panel" style="padding:16px;">
+          <div class="af-kicker">OPTION B · JOIN BY CODE OR LOBBY</div>
+          <div class="af-h2" style="margin-bottom:10px;">🔑 輸入共同代碼 ／ 公開房列表</div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <input id="input-mp-join-code" type="text" maxlength="8" placeholder="輸入 6 碼房號 (例: A7K9M2)"
+              style="flex:1;padding:8px 12px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(56,189,248,0.45);color:#fff;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-family:monospace;">
+            <button type="button" id="btn-mp-join-code" class="af-btn af-btn-primary" ${snap.connected ? '' : 'disabled'}>加入房間</button>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:11px;color:#cbd5e1;font-weight:700;">公開大廳等候中房間</span>
+            <button type="button" id="btn-mp-refresh-list" class="af-pill-btn" ${snap.connected ? '' : 'disabled'}>↻ 重新整理</button>
+          </div>
+          <div style="max-height:220px;overflow-y:auto;">${roomsHtml}</div>
+        </div>
+      </div>`;
+  } else {
+    const isHost = (room.hostId === snap.playerId);
+    const me = (room.players || []).find(p => p.id === snap.playerId);
+    const cObj = CIRCUITS[room.circuitIdx] || CIRCUITS[0];
+
+    bodyEl.innerHTML = `
+      <div class="af-panel" style="padding:16px;margin-bottom:12px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+          <div>
+            <div class="af-kicker">STAGING ROOM · READY CHECK</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div class="af-h1 af-copyable" style="font-size:24px;letter-spacing:2px;color:#38bdf8;">房號 #${escHtmlMp(room.code)}</div>
+              <button type="button" id="btn-mp-copy-code" class="af-pill-btn is-active" data-copy-val="${escHtmlMp(room.code)}">📋 複製房號</button>
+              <button type="button" id="btn-mp-copy-room-url" class="af-pill-btn" data-copy-val="${escHtmlMp(shareUrl)}">🔗 複製網址</button>
+              <span class="af-chip">${room.players.length} / ${room.maxPlayers} 人</span>
+              <span class="af-chip" style="color:#fbbf24;">${escHtmlMp(room.carClass)} · ${escHtmlMp(cObj.shortLabel || cObj.name)}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" id="btn-mp-garage" class="af-btn af-btn-ghost af-btn-sm">🔧 更換賽車 / 烤漆</button>
+            <button type="button" id="btn-mp-leave" class="af-btn af-btn-danger af-btn-sm">◀ 離開房間</button>
+          </div>
+        </div>
+
+        ${isHost ? `
+        <div style="padding:12px;border-radius:10px;background:rgba(15,23,42,0.75);border:1px solid rgba(56,189,248,0.28);margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <span style="font-size:11px;color:#fbbf24;font-weight:700;">👑 房主設定：</span>
+            <select id="sel-mp-room-circuit" style="padding:4px 8px;border-radius:6px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:11px;">
+              ${CIRCUITS.map((c, idx) => `<option value="${idx}" ${room.circuitIdx === idx ? 'selected' : ''}>${escHtmlMp(c.shortLabel || c.name)}</option>`).join('')}
+            </select>
+            <select id="sel-mp-room-class" style="padding:4px 8px;border-radius:6px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:11px;">
+              ${classTabs.map(c => `<option value="${c}" ${room.carClass === c ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
+            <select id="sel-mp-room-laps" style="padding:4px 8px;border-radius:6px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:11px;">
+              ${[1, 2, 3, 5].map(l => `<option value="${l}" ${room.laps === l ? 'selected' : ''}>${l} 圈</option>`).join('')}
+            </select>
+            <button type="button" data-mp-room-weather="${room.weather === 'wet' ? 'dry' : 'wet'}" class="af-pill-btn ${room.weather === 'wet' ? 'is-active' : ''}">${room.weather === 'wet' ? '🌧 濕地' : '☀ 乾地'}</button>
+            <button type="button" data-mp-room-col="${room.collisionMode === 'ghost' ? 'soft' : 'ghost'}" class="af-pill-btn">${room.collisionMode === 'ghost' ? '👻 幽靈無碰撞' : '🛡 柔和接觸'}</button>
+          </div>
+        </div>` : `
+        <div style="padding:10px 12px;border-radius:10px;background:rgba(15,23,42,0.75);border:1px solid rgba(148,163,184,0.2);margin-bottom:12px;font-size:12px;color:#cbd5e1;">
+          📍 賽道：<strong>${escHtmlMp(cObj.name)}</strong> · 組別：<strong>${escHtmlMp(room.carClass)}</strong> · ${room.laps} 圈 · ${room.weather === 'wet' ? '🌧 濕地' : '☀ 乾地'} · ${room.collisionMode === 'ghost' ? '👻 幽靈無碰撞' : '🛡 柔和接觸'}
+        </div>`}
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-bottom:14px;">
+          ${(room.players || []).map(p => {
+            const pCar = CAR_CATALOG.find(c => c.id === p.presetId);
+            const isMe = (p.id === snap.playerId);
+            return `
+              <div style="padding:10px 12px;border-radius:10px;background:rgba(15,23,42,0.9);border:1px solid ${isMe ? '#38bdf8' : 'rgba(148,163,184,0.22)'};">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+                  <strong style="color:${isMe ? '#7dd3fc' : '#f8fafc'};font-size:13px;">${p.isHost ? '👑 ' : ''}${escHtmlMp(p.name)}${isMe ? ' (你)' : ''}</strong>
+                  <span style="font-size:10px;font-weight:800;color:${p.ready ? '#34d399' : '#fbbf24'};">${p.ready ? '✔ READY' : '⏳ 等待'}</span>
+                </div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:4px;">🏎 ${escHtmlMp(pCar ? pCar.name : p.presetId)} (${escHtmlMp(p.carClass)})</div>
+              </div>`;
+          }).join('')}
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
+          ${!isHost ? `<button type="button" id="btn-mp-toggle-ready" class="af-btn ${me && me.ready ? 'af-btn-ghost' : 'af-btn-primary'}">${me && me.ready ? '取消準備' : '✔ 我已準備就緒'}</button>` : ''}
+          ${isHost ? `<button type="button" id="btn-mp-start-race" class="af-btn af-btn-primary af-btn-xl">🏁 全員同步起跑（啟動發車燈）➔</button>` : ''}
+        </div>
+      </div>`;
+  }
+}
+
+if (window.apexNet) {
+  window.apexNet.onStateChange((snap, reason) => {
+    if (flowState.screen !== 'multiplayer') return;
+    updateMultiplayerConnBadge(snap);
+    // Heartbeat ping only refreshes RTT badge; never rebuild DOM while user edits inputs or copies URLs
+    if (reason === 'ping') return;
+    renderMultiplayerScreen();
+  });
+  window.apexNet.onRaceEvent((type, payload) => {
+    if (type === 'race_start') {
+      launchMultiplayerRace(payload);
+    } else if (type === 'race_standings' && flowState.screen === 'results' && flowState.resultPage === 0) {
+      if (flowState.lastResult) {
+        flowState.lastResult.standings = window.apexNet.getLiveStandings();
+        const me = flowState.lastResult.standings.findIndex(s => s.isPlayer);
+        if (me >= 0) flowState.lastResult.playerRank = me + 1;
+        renderResultPage(0);
+      }
+    }
+  });
+}
+
+const btnMpBack = document.getElementById('btn-mp-back');
+if (btnMpBack) {
+  btnMpBack.addEventListener('click', () => {
+    if (window.apexNet) window.apexNet.leaveRoom();
+    enterHomeScreen(false);
+  });
+}
+
+const mpBodyEl = document.getElementById('mp-body');
+if (mpBodyEl) {
+  mpBodyEl.addEventListener('keydown', (e) => e.stopPropagation());
+  mpBodyEl.addEventListener('input', (e) => {
+    if (e.target.id === 'input-mp-name') {
+      if (window.apexNet && typeof window.apexNet.setPlayerName === 'function') window.apexNet.setPlayerName(e.target.value);
+      if (window.ApexRecords) window.ApexRecords.setDriverName(e.target.value);
+    }
+  });
+  mpBodyEl.addEventListener('change', (e) => {
+    if (e.target.id === 'sel-mp-circuit') {
+      mpDraftOpts.circuitIdx = parseInt(e.target.value, 10) || 0;
+    } else if (e.target.id === 'sel-mp-room-circuit' && window.apexNet) {
+      window.apexNet.updateRoom({ circuitIdx: parseInt(e.target.value, 10) || 0 });
+    } else if (e.target.id === 'sel-mp-room-class' && window.apexNet) {
+      window.apexNet.updateRoom({ carClass: e.target.value });
+    } else if (e.target.id === 'sel-mp-room-laps' && window.apexNet) {
+      window.apexNet.updateRoom({ laps: parseInt(e.target.value, 10) || 2 });
+    } else if (e.target.id === 'input-mp-name') {
+      if (window.apexNet && typeof window.apexNet.setPlayerName === 'function') window.apexNet.setPlayerName(e.target.value);
+      if (window.ApexRecords) window.ApexRecords.setDriverName(e.target.value);
+    }
+  });
+  mpBodyEl.addEventListener('click', async (e) => {
+    const t = e.target;
+    const nameInp = document.getElementById('input-mp-name');
+    if (nameInp && nameInp.value.trim()) {
+      if (window.apexNet && typeof window.apexNet.setPlayerName === 'function') window.apexNet.setPlayerName(nameInp.value);
+      if (window.ApexRecords) window.ApexRecords.setDriverName(nameInp.value);
+    }
+
+    const applyNameBtn = t.closest('#btn-mp-apply-name');
+    if (applyNameBtn && window.apexNet) {
+      if (typeof window.apexNet.sendIdentityUpdate === 'function') window.apexNet.sendIdentityUpdate();
+      const orig = applyNameBtn.textContent;
+      applyNameBtn.textContent = '✔ 已套用';
+      setTimeout(() => { if (applyNameBtn) applyNameBtn.textContent = orig; }, 1200);
+      return;
+    }
+
+    const copyWsBtn = t.closest('#btn-mp-copy-ws-url');
+    if (copyWsBtn) {
+      const wsInp = document.getElementById('input-mp-ws-url');
+      copyTextWithFallback(wsInp ? wsInp.value : '', copyWsBtn);
+      return;
+    }
+    const copyGameBtn = t.closest('#btn-mp-copy-game-url');
+    if (copyGameBtn) {
+      const shareInp = document.getElementById('input-mp-share-url');
+      copyTextWithFallback(shareInp ? shareInp.value : getShareableGameUrl(window.apexNet && window.apexNet.getSnapshot()), copyGameBtn);
+      return;
+    }
+    const copyCodeBtn = t.closest('#btn-mp-copy-code') || t.closest('#btn-mp-copy-room-url');
+    if (copyCodeBtn) {
+      copyTextWithFallback(copyCodeBtn.dataset.copyVal || '', copyCodeBtn);
+      return;
+    }
+
+    if (t.closest('#btn-mp-connect') && window.apexNet) {
+      const urlInp = document.getElementById('input-mp-ws-url');
+      await window.apexNet.connect(urlInp ? urlInp.value : '');
+      renderMultiplayerScreen();
+      return;
+    }
+    if (t.closest('#btn-mp-garage')) {
+      openGarageScreen('multiplayer');
+      return;
+    }
+    const clsBtn = t.closest('[data-mp-opt-class]');
+    if (clsBtn) { mpDraftOpts.carClass = clsBtn.dataset.mpOptClass; renderMultiplayerScreen(); return; }
+    const wBtn = t.closest('[data-mp-opt-weather]');
+    if (wBtn) { mpDraftOpts.weather = wBtn.dataset.mpOptWeather; renderMultiplayerScreen(); return; }
+    const edBtn = t.closest('[data-mp-opt-ed]');
+    if (edBtn) { mpDraftOpts.edition = edBtn.dataset.mpOptEd; renderMultiplayerScreen(); return; }
+    const colBtn = t.closest('[data-mp-opt-col]');
+    if (colBtn) { mpDraftOpts.collisionMode = colBtn.dataset.mpOptCol; renderMultiplayerScreen(); return; }
+
+    if (t.closest('#btn-mp-quick-match') && window.apexNet) {
+      window.apexNet.quickMatch(mpDraftOpts);
+      return;
+    }
+    if (t.closest('#btn-mp-create-room') && window.apexNet) {
+      window.apexNet.createRoom(mpDraftOpts);
+      return;
+    }
+    if (t.closest('#btn-mp-join-code') && window.apexNet) {
+      const codeInp = document.getElementById('input-mp-join-code');
+      if (codeInp && codeInp.value.trim()) window.apexNet.joinRoom(codeInp.value.trim());
+      return;
+    }
+    const joinCardBtn = t.closest('[data-mp-join]');
+    if (joinCardBtn && window.apexNet) {
+      window.apexNet.joinRoom(joinCardBtn.dataset.mpJoin);
+      return;
+    }
+    if (t.closest('#btn-mp-refresh-list') && window.apexNet) {
+      window.apexNet.refreshRoomList();
+      return;
+    }
+    if (t.closest('#btn-mp-leave') && window.apexNet) {
+      window.apexNet.leaveRoom();
+      return;
+    }
+    const rwBtn = t.closest('[data-mp-room-weather]');
+    if (rwBtn && window.apexNet) {
+      window.apexNet.updateRoom({ weather: rwBtn.dataset.mpRoomWeather });
+      return;
+    }
+    const rcBtn = t.closest('[data-mp-room-col]');
+    if (rcBtn && window.apexNet) {
+      window.apexNet.updateRoom({ collisionMode: rcBtn.dataset.mpRoomCol });
+      return;
+    }
+    if (t.closest('#btn-mp-toggle-ready') && window.apexNet) {
+      const st = window.apexNet.getSnapshot();
+      const me = st.room && (st.room.players || []).find(p => p.id === st.playerId);
+      window.apexNet.updateMyPlayer({ ready: !(me && me.ready) });
+      return;
+    }
+    if (t.closest('#btn-mp-start-race') && window.apexNet) {
+      window.apexNet.startRace();
+      return;
+    }
+  });
+}
 
 // --- 11. Reviewable Lap Records & Anti-Pollution Class Leaderboard Hub ---
 function formatSetupTags(setup) {
@@ -2638,6 +3155,7 @@ const btnGarBack = document.getElementById('btn-garage-back');
 if (btnGarBack) {
   btnGarBack.addEventListener('click', () => {
     if (flowState.garageReturnTo === 'setup') openSetupStep(3);
+    else if (flowState.garageReturnTo === 'multiplayer') openMultiplayerScreen();
     else enterHomeScreen(false);
   });
 }
@@ -2646,6 +3164,9 @@ if (btnGarConfirm) {
   btnGarConfirm.addEventListener('click', () => {
     if (flowState.garageReturnTo === 'setup') {
       startConfiguredRace(true);
+    } else if (flowState.garageReturnTo === 'multiplayer') {
+      if (window.apexNet) window.apexNet.updateMyPlayer({});
+      openMultiplayerScreen();
     } else {
       enterHomeScreen(false);
     }
@@ -2851,5 +3372,6 @@ window.dismissSplashScreen = dismissSplashScreen;
 window.renderResultPage = renderResultPage;
 window.openRecordsScreen = openRecordsScreen;
 window.renderRecordsScreen = renderRecordsScreen;
+window.openMultiplayerScreen = openMultiplayerScreen;
 window.loadRecordAsGhost = loadRecordAsGhost;
 if (window.__apexTrace) window.__apexTrace('flow.js', 'OK');

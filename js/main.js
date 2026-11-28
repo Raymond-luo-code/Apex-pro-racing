@@ -248,6 +248,8 @@ simState.bestLapTime = PRO_LAP_TIME;
 
         if (simState.mode === 'ai_race') {
           updateAIRaceHUD();
+        } else if (simState.mode === 'multiplayer' && typeof updateMultiplayerHUD === 'function') {
+          updateMultiplayerHUD();
         } else {
           const radarBox = document.getElementById('hud-proximity-radar');
           if (radarBox) radarBox.classList.add('hidden');
@@ -352,6 +354,15 @@ simState.bestLapTime = PRO_LAP_TIME;
             minimapCtx.arc(gp.px, gp.py, 2.8, 0, Math.PI * 2);
             minimapCtx.fill();
           }
+        } else if (simState.mode === 'multiplayer' && typeof window !== 'undefined' && window.apexNet) {
+          window.apexNet.getRemotePeers().forEach(peer => {
+            const aw = sdToWorld(peer.s || 0, peer.d || 0);
+            const ap = mapWorldToCanvas(aw.x, aw.z, w, h);
+            minimapCtx.fillStyle = peer.paintHex || '#38bdf8';
+            minimapCtx.beginPath();
+            minimapCtx.arc(ap.px, ap.py, 3.0, 0, Math.PI * 2);
+            minimapCtx.fill();
+          });
         } else {
           aiCars.forEach(ai => {
             const aw = sdToWorld(ai.s, ai.d);
@@ -461,6 +472,83 @@ simState.bestLapTime = PRO_LAP_TIME;
         if (radarContainer) {
           const anyRadar = carLeft || carBehind || carRight;
           radarContainer.classList.toggle('hidden', !anyRadar);
+          const rL = document.getElementById('radar-left');
+          const rB = document.getElementById('radar-behind');
+          const rR = document.getElementById('radar-right');
+          if (rL) rL.classList.toggle('hidden', !carLeft);
+          if (rB) rB.classList.toggle('hidden', !carBehind);
+          if (rR) rR.classList.toggle('hidden', !carRight);
+        }
+      }
+
+      function updateMultiplayerHUD() {
+        if (typeof window === 'undefined' || !window.apexNet) return;
+        const standings = window.apexNet.getLiveStandings();
+        const playerIdx = standings.findIndex(s => s.isPlayer);
+        const playerRank = (playerIdx >= 0) ? (playerIdx + 1) : 1;
+        const total = Math.max(1, standings.length);
+        const posEl = document.getElementById('hud-race-pos');
+        if (posEl) posEl.textContent = `P${playerRank} / ${total}`;
+
+        const refSpeedMs = Math.max(38, simState.speedMs || 52);
+        const myProg = (playerIdx >= 0) ? standings[playerIdx].progress : 0;
+
+        const gapSummaryEl = document.getElementById('hud-gap-summary');
+        if (gapSummaryEl) {
+          if (playerIdx > 0) {
+            const ahead = standings[playerIdx - 1];
+            const sec = (ahead.progress - myProg) / Math.max(38, ((ahead.speedMs || 50) + refSpeedMs) * 0.5);
+            gapSummaryEl.textContent = `▲ 前車 -${Math.abs(sec).toFixed(2)}s`;
+            gapSummaryEl.className = 'text-amber-300 font-bold';
+          } else if (standings.length > 1) {
+            const behind = standings[1];
+            const sec = (myProg - behind.progress) / Math.max(38, ((behind.speedMs || 50) + refSpeedMs) * 0.5);
+            gapSummaryEl.textContent = `▼ 領先 +${Math.abs(sec).toFixed(2)}s`;
+            gapSummaryEl.className = 'text-emerald-400 font-bold';
+          } else {
+            gapSummaryEl.textContent = 'SOLO TEST';
+            gapSummaryEl.className = 'text-cyan-300 font-bold';
+          }
+        }
+
+        const listEl = document.getElementById('ai-drivers-list');
+        if (listEl) {
+          listEl.innerHTML = standings.map((entry, idx) => {
+            if (entry.isPlayer) {
+              return `
+          <div class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40">
+            <span class="text-emerald-300 font-extrabold truncate">P${idx + 1} ${entry.name}</span>
+            <span class="text-emerald-200 font-bold text-[9px]">${entry.stateLabel}</span>
+          </div>`;
+            }
+            const gapMeters = entry.progress - myProg;
+            const gapSec = gapMeters / Math.max(38, ((entry.speedMs || 50) + refSpeedMs) * 0.5);
+            const isAhead = gapMeters > 0;
+            const gapStr = entry.finished && entry.finishTime ? formatLapTime(entry.finishTime) : (isAhead ? `-${Math.abs(gapSec).toFixed(2)}s` : `+${Math.abs(gapSec).toFixed(2)}s`);
+            const gapCol = isAhead ? 'text-amber-300' : 'text-sky-300';
+            return `
+        <div class="flex items-center justify-between gap-1.5 px-1">
+          <span class="text-slate-200 truncate">P${idx + 1} ${entry.name}</span>
+          <span class="${gapCol} font-bold">${gapStr}</span>
+        </div>`;
+          }).join('');
+        }
+
+        let carLeft = false, carRight = false, carBehind = false;
+        window.apexNet.getRemotePeers().forEach(peer => {
+          let ds = (peer.s || 0) - simState.s;
+          if (ds > totalTrackLength * 0.5) ds -= totalTrackLength;
+          if (ds < -totalTrackLength * 0.5) ds += totalTrackLength;
+          const dd = (peer.d || 0) - simState.d;
+          if (ds >= -12 && ds <= 7) {
+            if (dd < -0.8 && dd > -5.2) carLeft = true;
+            if (dd > 0.8 && dd < 5.2) carRight = true;
+          }
+          if (ds >= -22 && ds < -2 && Math.abs(dd) <= 2.2) carBehind = true;
+        });
+        const radarContainer = document.getElementById('hud-proximity-radar');
+        if (radarContainer) {
+          radarContainer.classList.toggle('hidden', !(carLeft || carBehind || carRight));
           const rL = document.getElementById('radar-left');
           const rB = document.getElementById('radar-behind');
           const rR = document.getElementById('radar-right');
@@ -989,14 +1077,15 @@ simState.bestLapTime = PRO_LAP_TIME;
       function setGameMode(mode) {
         simState.mode = mode;
         const isTA = (mode === 'time_attack');
+        const isMP = (mode === 'multiplayer');
         document.getElementById('card-mode-ta').className = isTA
           ? 'cursor-pointer rounded-xl p-3.5 border-2 border-red-500 bg-slate-900 transition'
           : 'cursor-pointer rounded-xl p-3.5 border-2 border-slate-800 bg-slate-900 transition';
-        document.getElementById('card-mode-ai').className = !isTA
+        document.getElementById('card-mode-ai').className = (mode === 'ai_race')
           ? 'cursor-pointer rounded-xl p-3.5 border-2 border-amber-500 bg-slate-900 transition'
           : 'cursor-pointer rounded-xl p-3.5 border-2 border-slate-800 bg-slate-900 transition';
 
-        document.getElementById('badge-mode').textContent = isTA ? 'TIME ATTACK' : 'AI RACE';
+        document.getElementById('badge-mode').textContent = isMP ? 'LAN MULTI' : (isTA ? 'TIME ATTACK' : 'AI RACE');
         document.getElementById('ai-pressure-panel').classList.toggle('hidden', isTA);
         document.getElementById('hud-race-pos-box').classList.toggle('hidden', isTA);
         document.getElementById('hud-race-pos-box').classList.toggle('flex', !isTA);

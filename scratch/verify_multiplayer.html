@@ -212,6 +212,64 @@ function waitUntil(fn, timeoutMs = 30000) {
 
     winA.apexNet.disconnect();
     winB.apexNet.disconnect();
+
+    // Part C: Zero-Server WebRTC P2P Code-Connect E2E (GitHub Pages style flow)
+    winA.apexNet.setTransport('p2p');
+    winB.apexNet.setTransport('p2p');
+    const parsedInvite = winA.apexNet.parseInviteRoomFromSearch('?room=k8m4p2');
+    check(parsedInvite === 'K8M4P2', 'Invite deep-link ?room= parser normalizes room code cleanly', `parsed=${parsedInvite}`);
+
+    const okCreateP2P = await winA.apexNet.createRoom({
+      circuitIdx: 0, carClass: 'GT3', edition: 'realistic', weather: 'dry', laps: 2, collisionMode: 'soft'
+    });
+    const roomP2P = await waitUntil(() => winA.apexNet.getSnapshot().room, 15000);
+    const p2pCode = roomP2P.code;
+    const p2pShareUrl = winA.getShareableGameUrl(winA.apexNet.getSnapshot());
+    report.metrics.p2pRoomCode = p2pCode;
+    check(
+      okCreateP2P && typeof p2pCode === 'string' && p2pCode.length === 6 && p2pShareUrl.includes('room=' + p2pCode),
+      'P2P host opens 6-char room code and generates ?room= invite URL',
+      `code=${p2pCode} url=${p2pShareUrl}`
+    );
+
+    const okJoinP2P = await winB.apexNet.joinRoom(p2pCode);
+    await waitUntil(() => {
+      const rA = winA.apexNet.getSnapshot().room;
+      const rB = winB.apexNet.getSnapshot().room;
+      return rA && rB && rA.players.length === 2 && rB.players.length === 2 && rB.code === p2pCode;
+    }, 15000);
+    check(okJoinP2P, 'P2P guest joins host room using only 6-char code via zero-server WSS relay', `players=2 code=${p2pCode}`);
+
+    winA.apexNet.startRace();
+    await waitUntil(() => winA.simState.mode === 'multiplayer' && winB.simState.mode === 'multiplayer', 12000);
+    winA.simState.countdownActive = false;
+    winB.simState.countdownActive = false;
+    winA.simState.paused = false;
+    winB.simState.paused = false;
+    winA.simState.inShowcaseMode = false;
+    winB.simState.inShowcaseMode = false;
+
+    for (let i = 0; i < 12; i++) {
+      winA.simState.s = 320 + i * 2.4;
+      winB.simState.s = 260 + i * 1.9;
+      winA.stepPhysics(0.055);
+      winB.stepPhysics(0.055);
+      await new Promise(r => setTimeout(r, 45));
+    }
+
+    const p2pPeerA = winA.apexNet.getRemotePeers()[0];
+    const p2pPeerB = winB.apexNet.getRemotePeers()[0];
+    report.metrics.p2pPeerSeenByA = p2pPeerA ? { name: p2pPeerA.name, s: Number(p2pPeerA.s.toFixed(1)), meshVisible: !!(p2pPeerA.mesh && p2pPeerA.mesh.visible) } : null;
+    report.metrics.p2pPeerSeenByB = p2pPeerB ? { name: p2pPeerB.name, s: Number(p2pPeerB.s.toFixed(1)), meshVisible: !!(p2pPeerB.mesh && p2pPeerB.mesh.visible) } : null;
+    check(
+      p2pPeerA && p2pPeerA.mesh && p2pPeerA.mesh.visible && p2pPeerA.s > 240 &&
+      p2pPeerB && p2pPeerB.mesh && p2pPeerB.mesh.visible && p2pPeerB.s > 300,
+      'Zero-server WSS code relay transmits 20Hz vehicle telemetry and renders both remote 3D cars',
+      JSON.stringify({ A: report.metrics.p2pPeerSeenByA, B: report.metrics.p2pPeerSeenByB })
+    );
+
+    winB.apexNet.leaveRoom();
+    winA.apexNet.leaveRoom();
     report.status = report.errors.length === 0 ? 'ALL_PASS' : 'HAS_ERRORS';
   } catch (e) {
     report.errors.push('EXCEPTION: ' + (e && e.stack ? e.stack : String(e)));

@@ -1318,3 +1318,16 @@ Script error. at module(main.js:START):0:0
 - **Verification**:
   - `python scratch/check_syntax.py` (9/9 JS OK)
   - `python scratch/verify_multiplayer.py` (Part A protocol + Part B dual-Chrome E2E + static-host/Mixed-Content checks all PASSED)
+
+### [2026-11-28] Plan A: Zero-Server 6-Char Code-Connect Multiplayer (`?room=CODE`)
+- **Why MQTT-over-WSS instead of STUN-only WebRTC**:
+  - Real-device / Chrome Headless ICE testing showed CGNAT (`42.72.23.131`) without NAT hairpinning + `.local` mDNS blocking kept direct STUN-only WebRTC stuck at `checking/connecting` without a paid TURN relay.
+  - MQTT-over-WSS (`mqtt@5` + `wss://broker.emqx.io:8084/mqtt` / `wss://broker.hivemq.com:8884/mqtt` multi-broker failover + Last Will) works reliably across GitHub Pages HTTPS, CGNAT, mobile hotspots, and same-PC multi-tab testing with zero server setup.
+- **Implementation (`js/net.js`, `js/flow.js`, `index.html`, `scratch/verify_multiplayer.html`)**:
+  - Added dual-transport engine (`transport: 'p2p' | 'ws'`, `autoSelectTransport`, `setTransport`): static hosts / GitHub Pages automatically select `'p2p'` (zero-server 6-char code connect), while local/LAN `apex_desktop_app.py` (`/__mp_info.json`) selects `'ws'` automatically, with instant header toggle pills.
+  - Added MQTT-over-WSS host room authority (`createP2PRoom`, `joinP2PRoom`, `host/bcast/state` topics, LWT disconnect cleanup, 20 Hz telemetry relay, synchronized `race_start`, live standings).
+  - Simplified `#scr-multiplayer` lobby UI (hides WS URL complexity in code-connect mode) and wired `?room=XXXXXX` deep-link auto-join via `dismissSplashScreen()` -> `openMultiplayerScreen({ autoJoinCode })`.
+- **Verification**:
+  - `python scratch/check_syntax.py` (9/9 JS OK)
+  - `python scratch/verify_multiplayer.py` (Part A WS protocol + Part B dual-Chrome WS E2E + Part C dual-Chrome zero-server 6-char code E2E all PASSED)
+  - `.\launch_apex_desktop.bat --check` (`APEX DESKTOP SERVER SELF-CHECK PASSED 100%!`)

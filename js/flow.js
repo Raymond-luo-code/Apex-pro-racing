@@ -622,17 +622,17 @@ const RIM_SWATCHES = [
 ];
 
 const GARAGE_CLASS_META = [
-  { id: 'D',   label: 'D 入門輕跑',   short: 'D',   icon: '🩵', color: '#2dd4bf', subOptions: [{ id: 'all', label: '全部 D 級' }, { id: 'daily', label: '🚙 日常 / 入門 FR' }, { id: 'classic', label: '🏛 經典街跑' }] },
-  { id: 'C',   label: 'C 鋼砲/經典',  short: 'C',   icon: '🟢', color: '#34d399', subOptions: [{ id: 'all', label: '全部 C 級' }, { id: 'hothatch', label: '🔥 鋼砲 / 四驅' }, { id: 'classic', label: '🏛 80-90s 經典' }, { id: 'muscle', label: '💪 雙門性能 / 肌肉' }] },
-  { id: 'B',   label: 'B 現代超跑',   short: 'B',   icon: '💚', color: '#a3e635', subOptions: [{ id: 'all', label: '全部 B 級' }, { id: 'supercar', label: '🏎 超級跑車' }, { id: 'gt', label: '🛡 前置 V8/V12' }, { id: 'track_road', label: '🌪 街車空力王' }] },
-  { id: 'GT3', label: 'GT3 統規',     short: 'GT3', icon: '🟠', color: '#fb923c', subOptions: [{ id: 'all', label: '全部 GT3' }, { id: 'eu', label: '🇪🇺 歐系廠隊' }, { id: 'jp', label: '🇯🇵 日系 GT3' }, { id: 'us', label: '🇺🇸 美系 V8' }] },
-  { id: 'A',   label: 'A 公路神車',   short: 'A',   icon: '🟣', color: '#c084fc', subOptions: [{ id: 'all', label: '全部 A 級' }, { id: 'hybrid', label: '⚡ 油電神車' }, { id: 'vmax', label: '🚀 極速旗艦' }] },
-  { id: 'S',   label: 'S 終極神獸',   short: 'S',   icon: '💜', color: '#e879f9', subOptions: [{ id: 'all', label: '全部 S 級' }, { id: 'aero', label: '🌪 空力彎道' }, { id: 'vmax', label: '🚀 極速猛獸' }] },
-  { id: 'R',   label: 'R 賽道頂尖',   short: 'R',   icon: '🟡', color: '#f59e0b', subOptions: [{ id: 'all', label: '全部 R 級' }, { id: 'track', label: '🏁 現代賽道版' }, { id: 'gt1', label: '🏆 經典 GT1' }, { id: 'proto', label: '✨ 輕量原型' }] },
+  { id: 'D', label: 'D 入門輕跑', short: 'D', icon: '🩵', color: '#2dd4bf', subOptions: [{ id: 'all', label: '全部 D 級' }, { id: 'daily', label: '🚙 日常 / 入門 FR' }, { id: 'classic', label: '🏛 經典街跑' }] },
+  { id: 'C', label: 'C 鋼砲/經典', short: 'C', icon: '🟢', color: '#34d399', subOptions: [{ id: 'all', label: '全部 C 級' }, { id: 'hothatch', label: '🔥 鋼砲 / 四驅' }, { id: 'classic', label: '🏛 80-90s 經典' }, { id: 'muscle', label: '💪 雙門性能 / 肌肉' }] },
+  { id: 'B', label: 'B 現代超跑', short: 'B', icon: '💚', color: '#a3e635', subOptions: [{ id: 'all', label: '全部 B 級' }, { id: 'supercar', label: '🏎 超級跑車' }, { id: 'gt', label: '🛡 前置 V8/V12' }, { id: 'track_road', label: '🌪 街車空力王' }] },
+  { id: 'GT3', label: 'GT3 統規', short: 'GT3', icon: '🟠', color: '#fb923c', subOptions: [{ id: 'all', label: '全部 GT3' }, { id: 'eu', label: '🇪🇺 歐系廠隊' }, { id: 'jp', label: '🇯🇵 日系 GT3' }, { id: 'us', label: '🇺🇸 美系 V8' }] },
+  { id: 'A', label: 'A 公路神車', short: 'A', icon: '🟣', color: '#c084fc', subOptions: [{ id: 'all', label: '全部 A 級' }, { id: 'hybrid', label: '⚡ 油電神車' }, { id: 'vmax', label: '🚀 極速旗艦' }] },
+  { id: 'S', label: 'S 終極神獸', short: 'S', icon: '💜', color: '#e879f9', subOptions: [{ id: 'all', label: '全部 S 級' }, { id: 'aero', label: '🌪 空力彎道' }, { id: 'vmax', label: '🚀 極速猛獸' }] },
+  { id: 'R', label: 'R 賽道頂尖', short: 'R', icon: '🟡', color: '#f59e0b', subOptions: [{ id: 'all', label: '全部 R 級' }, { id: 'track', label: '🏁 現代賽道版' }, { id: 'gt1', label: '🏆 經典 GT1' }, { id: 'proto', label: '✨ 輕量原型' }] },
   { id: 'LMH', label: 'LMH 耐力原型', short: 'LMH', icon: '🔵', color: '#38bdf8', subOptions: [{ id: 'all', label: '全部 LMH' }, { id: 'wec', label: '🏆 WEC / Group C' }, { id: 'concept', label: '✨ 概念 / 無限制' }] },
-  { id: 'X',   label: 'X 終極原型',   short: 'X',   icon: '🔷', color: '#818cf8', subOptions: [{ id: 'all', label: '全部 X 級' }, { id: 'vgt', label: '✨ Vision GT' }, { id: 'unlimited', label: '👑 破紀錄神獸' }] },
-  { id: 'F1',  label: 'F1 方程式',    short: 'F1',  icon: '🔴', color: '#f43f5e', subOptions: [{ id: 'all', label: '全部 F1' }, { id: 'modern', label: '⚡ 2025-2026 混動' }, { id: 'classic', label: '🔊 V10 經典世代' }] },
-  { id: 'all', label: '全部車庫',     short: 'ALL', icon: '🌍', color: '#94a3b8', subOptions: [] }
+  { id: 'X', label: 'X 終極原型', short: 'X', icon: '🔷', color: '#818cf8', subOptions: [{ id: 'all', label: '全部 X 級' }, { id: 'vgt', label: '✨ Vision GT' }, { id: 'unlimited', label: '👑 破紀錄神獸' }] },
+  { id: 'F1', label: 'F1 方程式', short: 'F1', icon: '🔴', color: '#f43f5e', subOptions: [{ id: 'all', label: '全部 F1' }, { id: 'modern', label: '⚡ 2025-2026 混動' }, { id: 'classic', label: '🔊 V10 經典世代' }] },
+  { id: 'all', label: '全部車庫', short: 'ALL', icon: '🌍', color: '#94a3b8', subOptions: [] }
 ];
 
 function getClassAccentColor(carClass) {
@@ -2330,6 +2330,10 @@ window.addEventListener('touchmove', (e) => {
 }, { passive: true });
 
 // --- 10. Wire All New Screen Buttons ---
+let pendingInviteRoomCode = (window.apexNet && typeof window.apexNet.parseInviteRoomFromSearch === 'function')
+  ? window.apexNet.parseInviteRoomFromSearch(typeof window !== 'undefined' && window.location ? window.location.search : '')
+  : '';
+
 function dismissSplashScreen() {
   flowState.loadingActive = false;
   window.__apexPendingSplashDismiss = false;
@@ -2340,6 +2344,13 @@ function dismissSplashScreen() {
     }
   } catch (e) {
     console.warn('Audio unlock warning:', e);
+  }
+  if (pendingInviteRoomCode) {
+    const inviteCode = pendingInviteRoomCode;
+    pendingInviteRoomCode = '';
+    enterHomeScreen(false);
+    openMultiplayerScreen({ autoJoinCode: inviteCode });
+    return;
   }
   enterHomeScreen(true, {
     title: 'ENTERING GARAGE HUB',
@@ -2352,6 +2363,9 @@ window.dismissSplashScreen = dismissSplashScreen;
 
 const btnSplashStart = document.getElementById('btn-splash-start');
 if (btnSplashStart) {
+  if (pendingInviteRoomCode) {
+    btnSplashStart.textContent = `🌐 受邀加入房號 #${pendingInviteRoomCode} · 點擊進入`;
+  }
   btnSplashStart.addEventListener('click', (e) => {
     e.stopPropagation();
     dismissSplashScreen();
@@ -2419,7 +2433,7 @@ function escHtmlMp(str) {
     .replaceAll('"', '&quot;');
 }
 
-async function openMultiplayerScreen() {
+async function openMultiplayerScreen(opts = {}) {
   const activeMeta = getActiveCarMeta();
   mpDraftOpts.carClass = activeMeta.carClass || 'GT3';
   mpDraftOpts.circuitIdx = (typeof currentCircuitIndex === 'number') ? currentCircuitIndex : 0;
@@ -2430,11 +2444,23 @@ async function openMultiplayerScreen() {
   renderMultiplayerScreen();
 
   if (window.apexNet) {
+    if (opts && opts.autoJoinCode) {
+      window.apexNet.setTransport('p2p');
+      renderMultiplayerScreen();
+      await window.apexNet.joinRoom(opts.autoJoinCode);
+      renderMultiplayerScreen();
+      return;
+    }
     const snap = window.apexNet.getSnapshot();
     if (!snap.connected && !snap.connecting) {
-      await window.apexNet.connect();
+      const mode = (typeof window.apexNet.autoSelectTransport === 'function')
+        ? await window.apexNet.autoSelectTransport()
+        : 'ws';
+      if (mode === 'ws') {
+        await window.apexNet.connect();
+      }
       renderMultiplayerScreen();
-    } else if (snap.connected) {
+    } else if (snap.connected && snap.transport === 'ws') {
       window.apexNet.refreshRoomList();
     }
   }
@@ -2484,6 +2510,23 @@ function launchMultiplayerRace(roomSnap) {
 function updateMultiplayerConnBadge(snap) {
   const badgeEl = document.getElementById('lbl-mp-conn-badge');
   if (!badgeEl || !snap) return;
+  if (snap.transport === 'p2p') {
+    if (snap.connecting) {
+      badgeEl.textContent = `◌ ${snap.p2pConnectingMsg || 'P2P 連線中…'}`;
+      badgeEl.style.borderColor = 'rgba(251,191,36,0.55)';
+      badgeEl.style.color = '#fbbf24';
+    } else if (snap.connected && snap.room) {
+      const roleTxt = snap.isP2PHost ? '房主' : (snap.rttMs ? `${snap.rttMs} ms` : '已同步');
+      badgeEl.textContent = `● P2P 已連線 (${roleTxt})`;
+      badgeEl.style.borderColor = 'rgba(52,211,153,0.55)';
+      badgeEl.style.color = '#34d399';
+    } else {
+      badgeEl.textContent = '● 代碼直連就緒 (免伺服器)';
+      badgeEl.style.borderColor = 'rgba(56,189,248,0.55)';
+      badgeEl.style.color = '#7dd3fc';
+    }
+    return;
+  }
   if (snap.connected) {
     badgeEl.textContent = `● 已連線 (${snap.rttMs} ms)`;
     badgeEl.style.borderColor = 'rgba(52,211,153,0.55)';
@@ -2501,6 +2544,17 @@ function updateMultiplayerConnBadge(snap) {
 
 function getShareableGameUrl(snap) {
   const info = snap && snap.serverInfo;
+  if (snap && snap.transport === 'p2p' && snap.room && snap.room.code) {
+    const baseP2P = (typeof window !== 'undefined' && window.location && window.location.href)
+      ? window.location.href.split('#')[0]
+      : 'https://raymond-luo-code.github.io/Apex-pro-racing/';
+    try {
+      const u = new URL(baseP2P);
+      u.searchParams.delete('ws');
+      u.searchParams.set('room', snap.room.code);
+      return u.toString();
+    } catch (e) { /* fallback */ }
+  }
   if (info && info.lanMode && Array.isArray(info.lanIps) && info.lanIps.length) {
     const portPart = info.httpPort ? `:${info.httpPort}` : '';
     return `http://${info.lanIps[0]}${portPart}/index.html`;
@@ -2517,6 +2571,8 @@ function getShareableGameUrl(snap) {
   }
   return base;
 }
+
+window.getShareableGameUrl = getShareableGameUrl;
 
 function copyTextWithFallback(text, triggerBtn) {
   const val = String(text || '');
@@ -2575,12 +2631,14 @@ function renderMultiplayerScreen() {
   const activeMeta = getActiveCarMeta();
   const classTabs = ['D', 'C', 'B', 'GT3', 'A', 'S', 'R', 'LMH', 'X', 'F1'];
   const room = snap.room;
+  const isP2P = (snap.transport !== 'ws');
+  const busy = !!snap.connecting;
 
   if (!room) {
     const roomsHtml = (snap.roomList && snap.roomList.length)
       ? snap.roomList.map(r => {
-          const cObj = CIRCUITS[r.circuitIdx] || CIRCUITS[0];
-          return `
+        const cObj = CIRCUITS[r.circuitIdx] || CIRCUITS[0];
+        return `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(15,23,42,0.85);border:1px solid rgba(148,163,184,0.22);margin-bottom:8px;">
               <div>
                 <div style="font-size:13px;font-weight:800;color:#f8fafc;">#${escHtmlMp(r.code)} · ${escHtmlMp(cObj.shortLabel || cObj.name)}</div>
@@ -2591,51 +2649,98 @@ function renderMultiplayerScreen() {
                 <button type="button" class="af-btn af-btn-primary af-btn-sm" data-mp-join="${escHtmlMp(r.code)}">加入</button>
               </div>
             </div>`;
-        }).join('')
+      }).join('')
       : `<div style="padding:18px;text-align:center;color:#94a3b8;font-size:12px;">目前尚無公開等待中的房間 — 點擊左側「快速配對」或「建立房間」即可立即開局。</div>`;
+
+    const wsControlsHtml = !isP2P ? `
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:8px;border-top:1px solid rgba(148,163,184,0.16);margin-top:8px;">
+          <span style="font-size:11px;color:#94a3b8;font-weight:700;">WS 位址</span>
+          <input id="input-mp-ws-url" type="text" value="${escHtmlMp(wsUrl)}" placeholder="wss://通道位址 或 ws://127.0.0.1:8766"
+            style="width:230px;padding:5px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#7dd3fc;font-size:11px;font-family:monospace;">
+          <button type="button" id="btn-mp-copy-ws-url" class="af-pill-btn">📋 複製 WS</button>
+          <button type="button" id="btn-mp-connect" class="af-pill-btn is-active">${snap.connected ? '↻ 重連' : '⚡ 連線'}</button>
+          <span style="font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px;">🔗 邀請網址</span>
+          <input id="input-mp-share-url" type="text" readonly value="${escHtmlMp(shareUrl)}" class="af-copyable"
+            style="flex:1;min-width:190px;padding:5px 10px;border-radius:8px;background:rgba(15,23,42,0.75);border:1px solid rgba(56,189,248,0.28);color:#e2e8f0;font-size:11px;font-family:monospace;">
+          <button type="button" id="btn-mp-copy-game-url" class="af-pill-btn is-active">📋 複製網址</button>
+        </div>` : '';
+
+    const staticWsBannerHtml = (!isP2P && snap.isStaticHost && !snap.connected) ? `
+      <div style="padding:10px 14px;border-radius:10px;background:rgba(14,165,233,0.12);border:1px solid rgba(56,189,248,0.42);color:#e0f2fe;font-size:11.5px;line-height:1.55;margin-bottom:12px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+          <strong style="color:#7dd3fc;">ℹ 目前正透過靜態網頁開啟，建議切換上方「🌐 代碼直連（免伺服器）」即可直接對戰</strong>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" data-mp-transport="p2p" class="af-pill-btn is-active">🌐 切回代碼直連</button>
+            <button type="button" id="btn-mp-use-local-ws" class="af-pill-btn">⚡ 連本機 ws://127.0.0.1:8766</button>
+          </div>
+        </div>
+        <div>• 若要自架區網房間，請執行 <code style="color:#fbbf24;">launch_apex_lan_host.bat</code> 並以終端顯示的 <code style="color:#7dd3fc;">http://&lt;區網IP&gt;:8765</code> 開啟。</div>
+      </div>` : '';
+
+    const createReady = isP2P ? !busy : !!snap.connected;
+    const optionBHtml = isP2P ? `
+        <div class="af-panel" style="padding:16px;">
+          <div class="af-kicker">OPTION B · JOIN BY 6-CHAR CODE</div>
+          <div class="af-h2" style="margin-bottom:10px;">🔑 輸入朋友的 6 碼代碼加入</div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <input id="input-mp-join-code" type="text" maxlength="8" placeholder="輸入 6 碼代碼 (例: A7K9M2)"
+              style="flex:1;padding:10px 14px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(56,189,248,0.45);color:#fff;font-size:15px;font-weight:800;letter-spacing:3px;text-transform:uppercase;font-family:monospace;">
+            <button type="button" id="btn-mp-join-code" class="af-btn af-btn-primary" ${busy ? 'disabled' : ''}>🚀 加入房間</button>
+          </div>
+
+          <div style="padding:12px 14px;border-radius:10px;background:rgba(15,23,42,0.72);border:1px solid rgba(56,189,248,0.22);font-size:12px;color:#cbd5e1;line-height:1.7;">
+            <div style="font-weight:800;color:#7dd3fc;margin-bottom:4px;">🌐 免架站 · 三步驟代碼互聯：</div>
+            <div>1. 房主點左側「<strong>➕ 建立房間</strong>」取得 <strong>6 碼代碼</strong> 或 <strong>一鍵邀請連結</strong>。</div>
+            <div>2. 朋友開啟同一網頁，輸入 6 碼代碼按加入（或直接點連結自動連線）。</div>
+            <div>3. 不需開本機伺服器或輸入 IP，手機與電腦跨網即可開跑；同 Wi-Fi 若偏好區網伺服器可隨時切右側模式。</div>
+          </div>
+        </div>` : `
+        <div class="af-panel" style="padding:16px;">
+          <div class="af-kicker">OPTION B · JOIN BY CODE OR LOBBY</div>
+          <div class="af-h2" style="margin-bottom:10px;">🔑 輸入共同代碼 ／ 公開房列表</div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <input id="input-mp-join-code" type="text" maxlength="8" placeholder="輸入 6 碼房號 (例: A7K9M2)"
+              style="flex:1;padding:8px 12px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(56,189,248,0.45);color:#fff;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-family:monospace;">
+            <button type="button" id="btn-mp-join-code" class="af-btn af-btn-primary" ${snap.connected ? '' : 'disabled'}>加入房間</button>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:11px;color:#cbd5e1;font-weight:700;">公開大廳等候中房間</span>
+            <button type="button" id="btn-mp-refresh-list" class="af-pill-btn" ${snap.connected ? '' : 'disabled'}>↻ 重新整理</button>
+          </div>
+          <div style="max-height:220px;overflow-y:auto;">${roomsHtml}</div>
+        </div>`;
 
     bodyEl.innerHTML = `
       <div class="af-panel" style="padding:14px 16px;margin-bottom:12px;">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
           <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
             <span style="font-size:11px;color:#94a3b8;font-weight:700;">車手代號</span>
             <input id="input-mp-name" type="text" maxlength="20" value="${escHtmlMp(driverName)}"
               style="width:130px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:12px;font-weight:700;">
             <button type="button" id="btn-mp-apply-name" class="af-pill-btn">✔ 套用</button>
-            <span style="font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px;">WS 位址</span>
-            <input id="input-mp-ws-url" type="text" value="${escHtmlMp(wsUrl)}" placeholder="wss://通道位址 或 ws://127.0.0.1:8766"
-              style="width:240px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#7dd3fc;font-size:11px;font-family:monospace;">
-            <button type="button" id="btn-mp-copy-ws-url" class="af-pill-btn">📋 複製 WS</button>
-            <button type="button" id="btn-mp-connect" class="af-pill-btn is-active">${snap.connected ? '↻ 重連' : '⚡ 連線'}</button>
+            <div class="af-pill-grp" style="margin-left:6px;">
+              <button type="button" data-mp-transport="p2p" class="af-pill-btn ${isP2P ? 'is-active' : ''}">🌐 代碼直連 (免伺服器)</button>
+              <button type="button" data-mp-transport="ws" class="af-pill-btn ${!isP2P ? 'is-active' : ''}">🖥 本機 / 區網伺服器</button>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:11px;color:#cbd5e1;">目前座駕：<strong style="color:#fbbf24;">${escHtmlMp(activeMeta.name)}</strong> (${escHtmlMp(activeMeta.carClass)})</span>
             <button type="button" id="btn-mp-garage" class="af-pill-btn">🔧 換車</button>
           </div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:8px;border-top:1px solid rgba(148,163,184,0.16);">
-          <span style="font-size:11px;color:#94a3b8;font-weight:700;">🔗 邀請朋友遊戲網址</span>
-          <input id="input-mp-share-url" type="text" readonly value="${escHtmlMp(shareUrl)}" class="af-copyable"
-            style="flex:1;min-width:220px;padding:5px 10px;border-radius:8px;background:rgba(15,23,42,0.75);border:1px solid rgba(56,189,248,0.28);color:#e2e8f0;font-size:11px;font-family:monospace;">
-          <button type="button" id="btn-mp-copy-game-url" class="af-pill-btn is-active">📋 複製遊戲網址</button>
-        </div>
+        ${wsControlsHtml}
       </div>
 
       ${snap.lastError ? `<div style="padding:10px 14px;border-radius:10px;background:rgba(225,29,72,0.18);border:1px solid #fb7185;color:#fecdd3;font-size:12px;margin-bottom:12px;">⚠ ${escHtmlMp(snap.lastError)}</div>` : ''}
-      ${(snap.isStaticHost && !snap.connected) ? `
-      <div style="padding:10px 14px;border-radius:10px;background:rgba(14,165,233,0.12);border:1px solid rgba(56,189,248,0.42);color:#e0f2fe;font-size:11.5px;line-height:1.55;margin-bottom:12px;">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
-          <strong style="color:#7dd3fc;">ℹ 目前正透過 GitHub Pages 等靜態網頁開啟，主機本身不含多人伺服器</strong>
-          <button type="button" id="btn-mp-use-local-ws" class="af-pill-btn">⚡ 填入本機 ws://127.0.0.1:8766</button>
-        </div>
-        <div>• <strong>同 Wi-Fi / 區網連線（最推薦）：</strong>請於本機專案目錄執行 <code style="color:#fbbf24;">launch_apex_lan_host.bat</code>，將終端顯示的 <code style="color:#7dd3fc;">http://&lt;區網IP&gt;:8765</code> 傳給朋友開啟；若自己留在此頁也可直連 <code style="color:#7dd3fc;">ws://127.0.0.1:8766</code>。</div>
-        <div>• <strong>跨網路從 GitHub Pages 連線：</strong>將本機 8766 埠透過支援 <code style="color:#34d399;">wss://</code> 的通道（如 <code style="color:#cbd5e1;">cloudflared tunnel --url http://127.0.0.1:8766</code>）公開後貼上 <code style="color:#34d399;">wss://...</code> 按「連線」，上方邀請網址會自動帶入 <code style="color:#cbd5e1;">?ws=</code>。</div>
-      </div>` : ''}
+      ${staticWsBannerHtml}
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px;">
         <div class="af-panel" style="padding:16px;">
-          <div class="af-kicker">OPTION A · QUICK MATCH &amp; CREATE ROOM</div>
-          <div class="af-h2" style="margin-bottom:10px;">⚡ 快速配對 ／ 建立房間</div>
+          <div class="af-kicker">${isP2P ? 'OPTION A · CREATE CODE ROOM' : 'OPTION A · QUICK MATCH & CREATE ROOM'}</div>
+          <div class="af-h2" style="margin-bottom:10px;">${isP2P ? '➕ 建立房間（取得 6 碼代碼）' : '⚡ 快速配對 ／ 建立房間'}</div>
 
           <div class="af-tune-row" style="margin-bottom:8px;">
             <span>車輛級別</span>
@@ -2665,29 +2770,19 @@ function renderMultiplayerScreen() {
             </div>
           </div>
 
+          ${isP2P ? `
+          <div style="margin-top:14px;">
+            <button type="button" id="btn-mp-create-room" class="af-btn af-btn-primary af-btn-block" ${createReady ? '' : 'disabled'}>${busy ? '◌ 正在建立 6 碼房間…' : '➕ 建立房間（立即拿 6 碼代碼）'}</button>
+          </div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:8px;">💡 建房後會產生 6 碼代碼與一鍵邀請網址，分享給朋友即可立刻加入。</div>` : `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
             <button type="button" id="btn-mp-quick-match" class="af-btn af-btn-primary" ${snap.connected ? '' : 'disabled'}>⚡ 一鍵快速配對</button>
             <button type="button" id="btn-mp-create-room" class="af-btn af-btn-ghost" ${snap.connected ? '' : 'disabled'}>➕ 建立房間 (拿代碼)</button>
           </div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:8px;">💡 快速配對會自動加入同級別等候中房間；若無可用房間則自動開新公開房。</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:8px;">💡 快速配對會自動加入同級別等候中房間；若無可用房間則自動開新公開房。</div>`}
         </div>
 
-        <div class="af-panel" style="padding:16px;">
-          <div class="af-kicker">OPTION B · JOIN BY CODE OR LOBBY</div>
-          <div class="af-h2" style="margin-bottom:10px;">🔑 輸入共同代碼 ／ 公開房列表</div>
-
-          <div style="display:flex;gap:8px;margin-bottom:14px;">
-            <input id="input-mp-join-code" type="text" maxlength="8" placeholder="輸入 6 碼房號 (例: A7K9M2)"
-              style="flex:1;padding:8px 12px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(56,189,248,0.45);color:#fff;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-family:monospace;">
-            <button type="button" id="btn-mp-join-code" class="af-btn af-btn-primary" ${snap.connected ? '' : 'disabled'}>加入房間</button>
-          </div>
-
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:11px;color:#cbd5e1;font-weight:700;">公開大廳等候中房間</span>
-            <button type="button" id="btn-mp-refresh-list" class="af-pill-btn" ${snap.connected ? '' : 'disabled'}>↻ 重新整理</button>
-          </div>
-          <div style="max-height:220px;overflow-y:auto;">${roomsHtml}</div>
-        </div>
+        ${optionBHtml}
       </div>`;
   } else {
     const isHost = (room.hostId === snap.playerId);
@@ -2698,11 +2793,11 @@ function renderMultiplayerScreen() {
       <div class="af-panel" style="padding:16px;margin-bottom:12px;">
         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
           <div>
-            <div class="af-kicker">STAGING ROOM · READY CHECK</div>
+            <div class="af-kicker">STAGING ROOM · ${isP2P ? 'P2P CODE DIRECT' : 'LAN WEBSOCKET'} · READY CHECK</div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <div class="af-h1 af-copyable" style="font-size:24px;letter-spacing:2px;color:#38bdf8;">房號 #${escHtmlMp(room.code)}</div>
-              <button type="button" id="btn-mp-copy-code" class="af-pill-btn is-active" data-copy-val="${escHtmlMp(room.code)}">📋 複製房號</button>
-              <button type="button" id="btn-mp-copy-room-url" class="af-pill-btn" data-copy-val="${escHtmlMp(shareUrl)}">🔗 複製網址</button>
+              <button type="button" id="btn-mp-copy-code" class="af-pill-btn is-active" data-copy-val="${escHtmlMp(room.code)}">📋 複製代碼</button>
+              <button type="button" id="btn-mp-copy-room-url" class="af-pill-btn" data-copy-val="${escHtmlMp(shareUrl)}">🔗 複製邀請連結</button>
               <span class="af-chip">${room.players.length} / ${room.maxPlayers} 人</span>
               <span class="af-chip" style="color:#fbbf24;">${escHtmlMp(room.carClass)} · ${escHtmlMp(cObj.shortLabel || cObj.name)}</span>
             </div>
@@ -2736,9 +2831,9 @@ function renderMultiplayerScreen() {
 
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-bottom:14px;">
           ${(room.players || []).map(p => {
-            const pCar = CAR_CATALOG.find(c => c.id === p.presetId);
-            const isMe = (p.id === snap.playerId);
-            return `
+      const pCar = CAR_CATALOG.find(c => c.id === p.presetId);
+      const isMe = (p.id === snap.playerId);
+      return `
               <div style="padding:10px 12px;border-radius:10px;background:rgba(15,23,42,0.9);border:1px solid ${isMe ? '#38bdf8' : 'rgba(148,163,184,0.22)'};">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
                   <strong style="color:${isMe ? '#7dd3fc' : '#f8fafc'};font-size:13px;">${p.isHost ? '👑 ' : ''}${escHtmlMp(p.name)}${isMe ? ' (你)' : ''}</strong>
@@ -2746,7 +2841,7 @@ function renderMultiplayerScreen() {
                 </div>
                 <div style="font-size:11px;color:#94a3b8;margin-top:4px;">🏎 ${escHtmlMp(pCar ? pCar.name : p.presetId)} (${escHtmlMp(p.carClass)})</div>
               </div>`;
-          }).join('')}
+    }).join('')}
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
@@ -2795,6 +2890,12 @@ if (mpBodyEl) {
       e.preventDefault();
       await window.apexNet.connect(e.target.value);
       renderMultiplayerScreen();
+    } else if (e.key === 'Enter' && e.target.id === 'input-mp-join-code' && window.apexNet) {
+      e.preventDefault();
+      if (e.target.value && e.target.value.trim()) {
+        await window.apexNet.joinRoom(e.target.value.trim());
+        renderMultiplayerScreen();
+      }
     }
   });
   mpBodyEl.addEventListener('input', (e) => {
@@ -2852,6 +2953,17 @@ if (mpBodyEl) {
       return;
     }
 
+    const transportBtn = t.closest('[data-mp-transport]');
+    if (transportBtn && window.apexNet) {
+      const mode = transportBtn.dataset.mpTransport === 'ws' ? 'ws' : 'p2p';
+      window.apexNet.setTransport(mode);
+      renderMultiplayerScreen();
+      if (mode === 'ws') {
+        await window.apexNet.connect();
+        renderMultiplayerScreen();
+      }
+      return;
+    }
     if (t.closest('#btn-mp-connect') && window.apexNet) {
       const urlInp = document.getElementById('input-mp-ws-url');
       await window.apexNet.connect(urlInp ? urlInp.value : '');
@@ -2880,16 +2992,21 @@ if (mpBodyEl) {
     if (colBtn) { mpDraftOpts.collisionMode = colBtn.dataset.mpOptCol; renderMultiplayerScreen(); return; }
 
     if (t.closest('#btn-mp-quick-match') && window.apexNet) {
-      window.apexNet.quickMatch(mpDraftOpts);
+      await window.apexNet.quickMatch(mpDraftOpts);
+      renderMultiplayerScreen();
       return;
     }
     if (t.closest('#btn-mp-create-room') && window.apexNet) {
-      window.apexNet.createRoom(mpDraftOpts);
+      await window.apexNet.createRoom(mpDraftOpts);
+      renderMultiplayerScreen();
       return;
     }
     if (t.closest('#btn-mp-join-code') && window.apexNet) {
       const codeInp = document.getElementById('input-mp-join-code');
-      if (codeInp && codeInp.value.trim()) window.apexNet.joinRoom(codeInp.value.trim());
+      if (codeInp && codeInp.value.trim()) {
+        await window.apexNet.joinRoom(codeInp.value.trim());
+        renderMultiplayerScreen();
+      }
       return;
     }
     const joinCardBtn = t.closest('[data-mp-join]');

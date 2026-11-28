@@ -81,6 +81,56 @@ function waitUntil(fn, timeoutMs = 30000) {
       `nameSel=${selStyle} wsSel=${wsStyle}`);
     winA.apexNet.setPlayerName('HOST-RAY');
 
+    // Static hosting / GitHub Pages & HTTPS Mixed Content URL resolution & validation checks
+    const ghDefault = winA.apexNet.computeDefaultWsUrl({
+      hostname: 'raymond-luo-code.github.io',
+      protocol: 'https:',
+      search: '',
+      saved: '',
+      serverInfo: null
+    });
+    const ghStaleSaved = winA.apexNet.computeDefaultWsUrl({
+      hostname: 'raymond-luo-code.github.io',
+      protocol: 'https:',
+      search: '',
+      saved: 'ws://raymond-luo-code.github.io:8766',
+      serverInfo: null
+    });
+    const ghQueryOverride = winA.apexNet.computeDefaultWsUrl({
+      hostname: 'raymond-luo-code.github.io',
+      protocol: 'https:',
+      search: '?ws=wss://demo.trycloudflare.com',
+      saved: '',
+      serverInfo: null
+    });
+    const lanDefault = winA.apexNet.computeDefaultWsUrl({
+      hostname: '192.168.1.241',
+      protocol: 'http:',
+      search: '',
+      saved: '',
+      serverInfo: { wsPort: 8766 }
+    });
+    const valStatic = winA.apexNet.validateWsUrlForPage('ws://raymond-luo-code.github.io:8766', 'https:');
+    const valMixed = winA.apexNet.validateWsUrlForPage('ws://192.168.1.50:8766', 'https:');
+    const valLocalHttps = winA.apexNet.validateWsUrlForPage('ws://127.0.0.1:8766', 'https:');
+    const valTunnelHttps = winA.apexNet.validateWsUrlForPage('https://demo.trycloudflare.com', 'https:');
+    check(
+      ghDefault.url === 'ws://127.0.0.1:8766' && ghDefault.isStaticHost === true &&
+      ghStaleSaved.url === 'ws://127.0.0.1:8766' && ghStaleSaved.discardSaved === true &&
+      ghQueryOverride.url === 'wss://demo.trycloudflare.com' &&
+      lanDefault.url === 'ws://192.168.1.241:8766' && lanDefault.isStaticHost === false,
+      'Static hosting / GitHub Pages WS auto-discovery falls back to local loopback & honors ?ws=wss:// query',
+      JSON.stringify({ ghDefault, ghStaleSaved, ghQueryOverride, lanDefault })
+    );
+    check(
+      !valStatic.ok && valStatic.code === 'STATIC_HOST' &&
+      !valMixed.ok && valMixed.code === 'MIXED_CONTENT' &&
+      valLocalHttps.ok && valLocalHttps.url === 'ws://127.0.0.1:8766' &&
+      valTunnelHttps.ok && valTunnelHttps.url === 'wss://demo.trycloudflare.com',
+      'WS validator distinguishes static host, HTTPS Mixed Content, local loopback, and wss:// tunnel URLs cleanly',
+      JSON.stringify({ valStatic: valStatic.code, valMixed: valMixed.code, valTunnelHttps })
+    );
+
     // Verify HiFi opponent mesh template reuse & raised hardware triangle cap
     const peerHighMesh = winA.createRemotePeerVehicleMesh('amggt3', '#ef4444', false, 'original');
     const peerSlot = peerHighMesh && peerHighMesh.userData && peerHighMesh.userData.vehicleSlot;

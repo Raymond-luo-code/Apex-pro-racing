@@ -1306,3 +1306,15 @@ Script error. at module(main.js:START):0:0
   - `python scratch/check_syntax.py` (9/9 OK)
   - `python scratch/verify_all_cars_and_garage.py` (75/75 GLBs, 79/79 cars, 10-class counts/PI spreads/strength differentiation & 10-class pace hierarchy + anti-pollution leaderboard isolation)
   - `python scratch/verify_vehicle_performance.py`, `python scratch/verify_driving_experience.py`, `python scratch/test_proposal.py` (`44/44`), `python scratch/test_rfc_improvements.py` (`38/38`), `python scratch/verify_multiplayer.py` (Part A + Part B E2E), `.\launch_apex_desktop.bat --check`
+
+### [2026-11-28] Fix GitHub Pages / HTTPS Static-Host WebSocket URL & Mixed-Content Error Handling
+- **Root Cause**:
+  1. Opening the game on GitHub Pages (`https://raymond-luo-code.github.io/Apex-pro-racing/`) has no `/__mp_info.json` and no Python WebSocket server (`apex_mp_server.py`) on `raymond-luo-code.github.io:8766`, yet `resolveDefaultWsUrl()` fell back to `ws://${window.location.hostname}:8766`.
+  2. Calling `new WebSocket('ws://raymond-luo-code.github.io:8766')` from an `https://` page throws `DOMException: SecurityError` (Mixed Content), which `connect()` mislabeled as `'WebSocket 位址格式無效：...'`.
+- **Fix (`js/net.js`, `js/flow.js`, `scratch/verify_multiplayer.html`)**:
+  - Added `isLoopbackHost`, `isStaticHostingDomain`, `normalizeWsUrl`, `validateWsUrlForPage`, and `computeDefaultWsUrl` in [`js/net.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/net.js). On static hosts / non-loopback `https://` without `/__mp_info.json`, default WS falls back to `ws://127.0.0.1:8766` (loopback exempt from Mixed Content), honors `?ws=wss://...` query overrides, discards stale saved static-host URLs, and reports explicit `STATIC_HOST` / `MIXED_CONTENT` guidance instead of bogus syntax errors.
+  - Updated [`js/flow.js`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/js/flow.js) (`getShareableGameUrl`, `#btn-mp-use-local-ws`, `#input-mp-ws-url` Enter-to-connect, and static-host connection guide banner) to explain LAN host vs `wss://` tunnel usage and propagate `?ws=` in share links.
+  - Added GitHub Pages / HTTPS / Mixed Content unit & E2E assertions in [`scratch/verify_multiplayer.html`](file:///c:/Users/raymo/OneDrive/桌面/apex-pro-racing/scratch/verify_multiplayer.html).
+- **Verification**:
+  - `python scratch/check_syntax.py` (9/9 JS OK)
+  - `python scratch/verify_multiplayer.py` (Part A protocol + Part B dual-Chrome E2E + static-host/Mixed-Content checks all PASSED)

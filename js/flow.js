@@ -2505,9 +2505,17 @@ function getShareableGameUrl(snap) {
     const portPart = info.httpPort ? `:${info.httpPort}` : '';
     return `http://${info.lanIps[0]}${portPart}/index.html`;
   }
-  return (typeof window !== 'undefined' && window.location && window.location.href)
+  const base = (typeof window !== 'undefined' && window.location && window.location.href)
     ? window.location.href.split('#')[0]
     : 'http://127.0.0.1:8765/index.html';
+  if (snap && snap.serverUrl && String(snap.serverUrl).toLowerCase().startsWith('wss://')) {
+    try {
+      const u = new URL(base);
+      u.searchParams.set('ws', snap.serverUrl);
+      return u.toString();
+    } catch (e) { /* fallback to base */ }
+  }
+  return base;
 }
 
 function copyTextWithFallback(text, triggerBtn) {
@@ -2595,8 +2603,8 @@ function renderMultiplayerScreen() {
               style="width:130px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#fff;font-size:12px;font-weight:700;">
             <button type="button" id="btn-mp-apply-name" class="af-pill-btn">✔ 套用</button>
             <span style="font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px;">WS 位址</span>
-            <input id="input-mp-ws-url" type="text" value="${escHtmlMp(wsUrl)}"
-              style="width:210px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#7dd3fc;font-size:11px;font-family:monospace;">
+            <input id="input-mp-ws-url" type="text" value="${escHtmlMp(wsUrl)}" placeholder="wss://通道位址 或 ws://127.0.0.1:8766"
+              style="width:240px;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.35);color:#7dd3fc;font-size:11px;font-family:monospace;">
             <button type="button" id="btn-mp-copy-ws-url" class="af-pill-btn">📋 複製 WS</button>
             <button type="button" id="btn-mp-connect" class="af-pill-btn is-active">${snap.connected ? '↻ 重連' : '⚡ 連線'}</button>
           </div>
@@ -2614,6 +2622,15 @@ function renderMultiplayerScreen() {
       </div>
 
       ${snap.lastError ? `<div style="padding:10px 14px;border-radius:10px;background:rgba(225,29,72,0.18);border:1px solid #fb7185;color:#fecdd3;font-size:12px;margin-bottom:12px;">⚠ ${escHtmlMp(snap.lastError)}</div>` : ''}
+      ${(snap.isStaticHost && !snap.connected) ? `
+      <div style="padding:10px 14px;border-radius:10px;background:rgba(14,165,233,0.12);border:1px solid rgba(56,189,248,0.42);color:#e0f2fe;font-size:11.5px;line-height:1.55;margin-bottom:12px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+          <strong style="color:#7dd3fc;">ℹ 目前正透過 GitHub Pages 等靜態網頁開啟，主機本身不含多人伺服器</strong>
+          <button type="button" id="btn-mp-use-local-ws" class="af-pill-btn">⚡ 填入本機 ws://127.0.0.1:8766</button>
+        </div>
+        <div>• <strong>同 Wi-Fi / 區網連線（最推薦）：</strong>請於本機專案目錄執行 <code style="color:#fbbf24;">launch_apex_lan_host.bat</code>，將終端顯示的 <code style="color:#7dd3fc;">http://&lt;區網IP&gt;:8765</code> 傳給朋友開啟；若自己留在此頁也可直連 <code style="color:#7dd3fc;">ws://127.0.0.1:8766</code>。</div>
+        <div>• <strong>跨網路從 GitHub Pages 連線：</strong>將本機 8766 埠透過支援 <code style="color:#34d399;">wss://</code> 的通道（如 <code style="color:#cbd5e1;">cloudflared tunnel --url http://127.0.0.1:8766</code>）公開後貼上 <code style="color:#34d399;">wss://...</code> 按「連線」，上方邀請網址會自動帶入 <code style="color:#cbd5e1;">?ws=</code>。</div>
+      </div>` : ''}
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px;">
         <div class="af-panel" style="padding:16px;">
@@ -2772,7 +2789,14 @@ if (btnMpBack) {
 
 const mpBodyEl = document.getElementById('mp-body');
 if (mpBodyEl) {
-  mpBodyEl.addEventListener('keydown', (e) => e.stopPropagation());
+  mpBodyEl.addEventListener('keydown', async (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter' && e.target.id === 'input-mp-ws-url' && window.apexNet) {
+      e.preventDefault();
+      await window.apexNet.connect(e.target.value);
+      renderMultiplayerScreen();
+    }
+  });
   mpBodyEl.addEventListener('input', (e) => {
     if (e.target.id === 'input-mp-name') {
       if (window.apexNet && typeof window.apexNet.setPlayerName === 'function') window.apexNet.setPlayerName(e.target.value);
@@ -2831,6 +2855,14 @@ if (mpBodyEl) {
     if (t.closest('#btn-mp-connect') && window.apexNet) {
       const urlInp = document.getElementById('input-mp-ws-url');
       await window.apexNet.connect(urlInp ? urlInp.value : '');
+      renderMultiplayerScreen();
+      return;
+    }
+    if (t.closest('#btn-mp-use-local-ws') && window.apexNet) {
+      const localWs = 'ws://127.0.0.1:8766';
+      const urlInp = document.getElementById('input-mp-ws-url');
+      if (urlInp) urlInp.value = localWs;
+      await window.apexNet.connect(localWs);
       renderMultiplayerScreen();
       return;
     }

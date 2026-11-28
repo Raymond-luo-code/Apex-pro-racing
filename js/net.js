@@ -16,6 +16,7 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
     connecting: false,
     serverUrl: '',
     autoDiscoveredUrl: '',
+    isStaticHost: false,
     playerId: null,
     rttMs: 0,
     clockOffsetMs: 0,
@@ -46,28 +47,164 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
     });
   }
 
+  function isLoopbackHost(hostname) {
+    const h = String(hostname || '').trim().toLowerCase();
+    return h === '127.0.0.1' || h === 'localhost' || h === '::1' || h === '[::1]' || h === '0.0.0.0';
+  }
+
+  function isStaticHostingDomain(hostname) {
+    const h = String(hostname || '').trim().toLowerCase().replace(/\.+$/, '');
+    if (!h) return false;
+    const suffixes = ['github.io', 'gitlab.io', 'pages.dev', 'netlify.app', 'vercel.app'];
+    return suffixes.some(s => h === s || h.endsWith('.' + s));
+  }
+
+  function normalizeWsUrl(rawUrl, pageProtocol) {
+    let s = String(rawUrl || '').trim();
+    if (!s) return '';
+    const lower = s.toLowerCase();
+    if (lower.startsWith('http://')) s = 'ws://' + s.slice(7);
+    else if (lower.startsWith('https://')) s = 'wss://' + s.slice(8);
+    if (!s.includes('://')) {
+      const hasSlash = s.includes('/');
+      const hostPort = hasSlash ? s.split('/')[0] : s;
+      const hostOnly = hostPort.startsWith('[')
+        ? hostPort.slice(0, hostPort.indexOf(']') + 1)
+        : hostPort.split(':')[0];
+      const hasExplicitPort = hostPort.startsWith('[')
+        ? /\]:\d+$/.test(hostPort)
+        : /:\d+$/.test(hostPort);
+      const useWs = isLoopbackHost(hostOnly) || pageProtocol !== 'https:';
+      const scheme = useWs ? 'ws://' : 'wss://';
+      if (!hasExplicitPort && !hasSlash && useWs) {
+        s = `${scheme}${s}:${DEFAULT_WS_PORT}`;
+      } else {
+        s = `${scheme}${s}`;
+      }
+    }
+    return s;
+  }
+
+  function validateWsUrlForPage(rawUrl, pageProtocol) {
+    const rawTrim = String(rawUrl || '').trim();
+    const normalized = normalizeWsUrl(rawTrim, pageProtocol);
+    if (!normalized) {
+      return { ok: false, code: 'INVALID_SYNTAX', url: '', message: 'WebSocket 位址不可為空' };
+    }
+    let parsed;
+    try {
+      parsed = new URL(normalized);
+    } catch (e) {
+      return { ok: false, code: 'INVALID_SYNTAX', url: normalized, message: 'WebSocket 位址格式無效：' + rawTrim };
+    }
+    if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
+      return { ok: false, code: 'INVALID_SYNTAX', url: normalized, message: 'WebSocket 位址格式無效：' + rawTrim };
+    }
+    if (isStaticHostingDomain(parsed.hostname)) {
+      return {
+        ok: false,
+        code: 'STATIC_HOST',
+        url: normalized,
+        message: 'GitHub Pages 等靜態網頁主機未內建多人伺服器（無法連至 ' + parsed.host + '）。請在本機執行 launch_apex_lan_host.bat 連 ws://127.0.0.1:8766，或填入支援 wss:// 的伺服器通道位址。'
+      };
+    }
+    if (pageProtocol === 'https:' && parsed.protocol === 'ws:' && !isLoopbackHost(parsed.hostname)) {
+      return {
+        ok: false,
+        code: 'MIXED_CONTENT',
+        url: normalized,
+        message: 'HTTPS 安全網頁禁止連線至未加密的遠端 ws:// 位址（' + normalized + '）。請改用加密的 wss:// 位址、連至本機 ws://127.0.0.1:8766，或改以區網 http://<主機IP>:8765 開啟遊戲。'
+      };
+    }
+    return { ok: true, code: 'OK', url: normalized, message: null };
+  }
+
+  function computeDefaultWsUrl(ctx) {
+    const loc = (typeof window !== 'undefined' && window.location) ? window.location : {};
+    const c = ctx || {};
+    const pageProtocol = c.protocol !== undefined ? c.protocol : (loc.protocol || 'http:');
+    const host = c.hostname !== undefined ? c.hostname : (loc.hostname || '127.0.0.1');
+    const search = c.search !== undefined ? c.search : (loc.search || '');
+    const serverInfo = c.serverInfo !== undefined ? c.serverInfo : netState.serverInfo;
+    const saved = c.saved !== undefined
+      ? String(c.saved || '').trim()
+      : ((typeof localStorage !== 'undefined') ? (localStorage.getItem(STORAGE_URL_KEY) || '').trim() : '');
+    const wsPort = (serverInfo && Number(serverInfo.wsPort)) || DEFAULT_WS_PORT;
+
+    try {
+      const qWs = new URLSearchParams(search || '').get('ws');
+      if (qWs && qWs.trim()) {
+        const qVal = validateWsUrlForPage(qWs, pageProtocol);
+        if (qVal.ok) {
+          return {
+            url: qVal.url,
+            autoUrl: qVal.url,
+            isStaticHost: isStaticHostingDomain(host) && !serverInfo,
+            discardSaved: false
+          };
+        }
+      }
+    } catch (e) { /* ignore malformed query */ }
+
+    const hasLocalServer = !!serverInfo;
+    const staticHost = !hasLocalServer && (isStaticHostingDomain(host) || (pageProtocol === 'https:' && !isLoopbackHost(host)));
+    let autoUrl;
+    if (staticHost) {
+      autoUrl = `ws://127.0.0.1:${wsPort}`;
+    } else {
+      const proto = (pageProtocol === 'https:') ? 'wss' : 'ws';
+      autoUrl = `${proto}://${host || '127.0.0.1'}:${wsPort}`;
+    }
+
+    let chosenUrl = autoUrl;
+    let discardSaved = false;
+    if (saved) {
+      const savedVal = validateWsUrlForPage(saved, pageProtocol);
+      if (savedVal.ok) {
+        chosenUrl = savedVal.url;
+      } else {
+        discardSaved = true;
+      }
+    }
+    return { url: chosenUrl, autoUrl, isStaticHost: staticHost, discardSaved };
+  }
+
   async function resolveDefaultWsUrl() {
     const saved = (typeof localStorage !== 'undefined') ? (localStorage.getItem(STORAGE_URL_KEY) || '').trim() : '';
     const host = (typeof window !== 'undefined' && window.location && window.location.hostname)
       ? window.location.hostname
       : '127.0.0.1';
-    let wsPort = DEFAULT_WS_PORT;
-    if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.protocol.startsWith('http')) {
+    const pageProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol)
+      ? window.location.protocol
+      : 'http:';
+    const search = (typeof window !== 'undefined' && window.location && window.location.search)
+      ? window.location.search
+      : '';
+    if (typeof window !== 'undefined' && pageProtocol && pageProtocol.startsWith('http')) {
       try {
         const res = await fetch('/__mp_info.json', { cache: 'no-store' });
         if (res.ok) {
           const info = await res.json();
           if (info) {
             netState.serverInfo = info;
-            if (info.wsPort) wsPort = Number(info.wsPort) || DEFAULT_WS_PORT;
           }
         }
-      } catch (e) { /* fallback to default port */ }
+      } catch (e) { /* fallback to static/local heuristic */ }
     }
-    const autoUrl = `ws://${host}:${wsPort}`;
-    netState.autoDiscoveredUrl = autoUrl;
+    const resolved = computeDefaultWsUrl({
+      hostname: host,
+      protocol: pageProtocol,
+      search,
+      saved,
+      serverInfo: netState.serverInfo
+    });
+    if (resolved.discardSaved && typeof localStorage !== 'undefined') {
+      try { localStorage.removeItem(STORAGE_URL_KEY); } catch (e) {}
+    }
+    netState.isStaticHost = resolved.isStaticHost;
+    netState.autoDiscoveredUrl = resolved.autoUrl;
     if (!netState.serverUrl) {
-      netState.serverUrl = saved || autoUrl;
+      netState.serverUrl = resolved.url;
     }
     return netState.serverUrl;
   }
@@ -233,9 +370,12 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
   }
 
   async function connect(customUrl) {
-    if (customUrl) {
-      netState.serverUrl = String(customUrl).trim();
-      try { localStorage.setItem(STORAGE_URL_KEY, netState.serverUrl); } catch (e) {}
+    const pageProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol)
+      ? window.location.protocol
+      : 'http:';
+    const hasCustom = typeof customUrl === 'string' ? !!customUrl.trim() : !!customUrl;
+    if (hasCustom) {
+      netState.serverUrl = normalizeWsUrl(customUrl, pageProtocol);
     } else if (!netState.serverUrl) {
       await resolveDefaultWsUrl();
     }
@@ -250,6 +390,20 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
       netState.pingTimer = null;
     }
 
+    const check = validateWsUrlForPage(targetUrl, pageProtocol);
+    if (!check.ok) {
+      netState.connecting = false;
+      netState.connected = false;
+      netState.lastError = check.message;
+      notifyListeners();
+      return false;
+    }
+    const finalUrl = check.url;
+    netState.serverUrl = finalUrl;
+    if (hasCustom && typeof localStorage !== 'undefined') {
+      try { localStorage.setItem(STORAGE_URL_KEY, finalUrl); } catch (e) {}
+    }
+
     netState.connecting = true;
     netState.connected = false;
     netState.lastError = null;
@@ -262,10 +416,14 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
       };
       let ws;
       try {
-        ws = new WebSocket(targetUrl);
+        ws = new WebSocket(finalUrl);
       } catch (e) {
         netState.connecting = false;
-        netState.lastError = 'WebSocket 位址格式無效：' + targetUrl;
+        if (e && e.name === 'SecurityError') {
+          netState.lastError = `HTTPS 安全網頁禁止連線至未加密的遠端 ws:// 位址（${finalUrl}）。請改用 wss:// 通道位址或連至本機 ws://127.0.0.1:${DEFAULT_WS_PORT}。`;
+        } else {
+          netState.lastError = 'WebSocket 位址格式無效：' + finalUrl;
+        }
         notifyListeners();
         done(false);
         return;
@@ -380,7 +538,11 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
 
       ws.onerror = () => {
         if (!netState.connected) {
-          netState.lastError = `無法連線至多人伺服器 (${targetUrl})，請確認伺服器已啟動`;
+          if (netState.isStaticHost) {
+            netState.lastError = `無法連線至多人伺服器 (${finalUrl})。GitHub Pages 為靜態網頁，未內建多人伺服器；請在本機執行 launch_apex_lan_host.bat（或 launch_apex_desktop.bat），或貼上支援 wss:// 的外部通道位址後再按「連線」。`;
+          } else {
+            netState.lastError = `無法連線至多人伺服器 (${finalUrl})，請確認伺服器已啟動`;
+          }
         }
         notifyListeners();
         done(false);
@@ -653,6 +815,7 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
       connecting: netState.connecting,
       serverUrl: netState.serverUrl,
       autoDiscoveredUrl: netState.autoDiscoveredUrl,
+      isStaticHost: netState.isStaticHost,
       playerId: netState.playerId,
       rttMs: netState.rttMs,
       clockOffsetMs: netState.clockOffsetMs,
@@ -668,6 +831,9 @@ if (window.__apexTrace) window.__apexTrace('net.js', 'START');
 
   window.apexNet = {
     resolveDefaultWsUrl,
+    normalizeWsUrl,
+    validateWsUrlForPage,
+    computeDefaultWsUrl,
     setPlayerName,
     getPlayerName,
     sendIdentityUpdate,
